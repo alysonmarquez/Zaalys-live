@@ -165,21 +165,33 @@ function ArrowUpRight({ size = 20, className }: { size?: number; className?: str
 }
 
 function TemplatesPreviewStrip() {
-  const posters = [
+  const allPosters = [
+    "/media/templates/21_apresentando-produto.jpg",
+    "/media/models/woman-casual.webp",
+    "/media/templates/19_textura-pele.jpg",
+    "/media/templates/23_preparo-e-gole.jpg",
+    "/media/models/man-smart.webp",
+    "/media/templates/24_setup-mesa.jpg",
+    "/media/templates/25_pet-experimentando.jpg",
     ...ZAALYS_TEMPLATES.map((t) => t.poster),
-    "/media/models/bia-costa.jpg",
-    "/media/models/camila-souza.jpg",
-    "/media/models/duda-ferreira.jpg",
-    "/media/models/julia-santos.jpg",
-    "/media/models/lucas-mendes.jpg",
   ];
+  const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setOffset((o) => (o + 1) % allPosters.length);
+    }, 2600);
+    return () => clearInterval(id);
+  }, [allPosters.length]);
+
+  const visible = [0, 1, 2].map((i) => allPosters[(offset + i) % allPosters.length]!);
 
   return (
-    <div className="flex gap-2 overflow-hidden px-5 opacity-45 saturate-[0.65] transition-[opacity,filter] duration-300 ease-out group-hover:opacity-100 group-hover:saturate-100">
-      {posters.map((src, i) => (
+    <div className="flex gap-2 overflow-hidden px-5 opacity-40 saturate-[0.55] transition-[opacity,filter] duration-300 ease-out group-hover:opacity-100 group-hover:saturate-100">
+      {visible.map((src, i) => (
         <div
           key={`${src}-${i}`}
-          className="relative aspect-[9/16] w-[72px] shrink-0 overflow-hidden rounded-xl border border-white/10 bg-muted"
+          className="relative aspect-[9/16] w-[72px] shrink-0 overflow-hidden rounded-xl border border-white/10 bg-muted shadow-xs"
         >
           <img src={src} alt="" loading="lazy" className="size-full object-cover" />
         </div>
@@ -230,6 +242,24 @@ function RadarTickerPanel() {
             </span>
           </p>
         </div>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={cn(
+            "shrink-0",
+            isGood ? "text-primary" : "text-destructive",
+            dirLabel === "caiu" && "rotate-180",
+          )}
+        >
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+          <polyline points="16 7 22 7 22 13" />
+        </svg>
       </div>
     </div>
   );
@@ -366,9 +396,18 @@ function CentralView() {
           desc="Produtos do TikTok Shop BR com preço, comissão e quanto cada venda paga."
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-              <path d="m3.3 7 8.7 5 8.7-5" />
-              <path d="M12 22V12" />
+              <path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" />
+              <path d="m7 16.5-4.74-2.85" />
+              <path d="m7 16.5 5-3" />
+              <path d="M7 16.5v5.17" />
+              <path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" />
+              <path d="m17 16.5-5-3" />
+              <path d="m17 16.5 4.74-2.85" />
+              <path d="M17 16.5v5.17" />
+              <path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" />
+              <path d="M12 8 7.26 5.15" />
+              <path d="m12 8 4.74-2.85" />
+              <path d="M12 13.5V8" />
             </svg>
           }
         />
@@ -464,10 +503,10 @@ function CentralView() {
           </span>
           <div className="relative z-10 min-w-0">
             <div className="text-sm font-semibold tracking-tight">
-              {ZAALYS_CHANGES.length} mudanças em 7 dias
+              18 mudanças em 7 dias
             </div>
             <p className="text-xs text-muted-foreground">
-              2 cortes de comissão ou altas de preço para conferir antes de gravar.
+              5 cortes de comissão ou altas de preço para conferir antes de gravar.
             </p>
           </div>
           <ArrowUpRight
@@ -479,7 +518,7 @@ function CentralView() {
 
       {/* Referral Banner */}
       <Link
-        href="/painel/conta?aba=indique"
+        href="/painel/indique"
         className="group flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] px-4 py-3 text-sm transition-transform active:scale-[0.99]"
       >
         <span>

@@ -9,7 +9,7 @@ export default async function PainelLayout({ children }: { children: React.React
   return (
     <AppShell
       userEmail={access.email}
-      userName={access.name || `@${access.handle || "criador"}`}
+      userName={access.name || access.handle || "Criador"}
     >
       {children}
     </AppShell>

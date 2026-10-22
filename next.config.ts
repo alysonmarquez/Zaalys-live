@@ -25,9 +25,12 @@ const nextConfig: NextConfig = {
       { source: "/trend-boost", destination: "/painel/roteiros" },
       { source: "/ferramentas/raio-x", destination: "/painel/raio-x" },
       { source: "/ferramentas/live", destination: "/painel/live" },
-      { source: "/settings", destination: "/painel/conta" },
-      { source: "/profile", destination: "/painel/conta?aba=perfil" },
-      { source: "/indique", destination: "/painel/conta?aba=indique" },
+      { source: "/settings", destination: "/painel/configuracoes" },
+      { source: "/profile", destination: "/painel/conta" },
+      { source: "/indique", destination: "/painel/indique" },
+      { source: "/depoimento", destination: "/painel/depoimento" },
+      { source: "/comissoes", destination: "/painel/comissoes" },
+      { source: "/admin", destination: "/painel/afiliado" },
     ];
   },
 };

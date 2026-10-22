@@ -1,340 +1,535 @@
 "use client";
 
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useState } from "react";
-import { Brand, RaisedButton, cn } from "@/components/brand";
-import { createClient } from "@/lib/supabase/client";
+import {
+  Gift,
+  Bell,
+  Headphones,
+  Moon,
+  Sun,
+  UserRound,
+  Settings,
+  Heart,
+  Wallet,
+  ShieldCheck,
+  LogOut,
+  ChevronRight,
+  Check,
+  Copy,
+  ShoppingBag,
+  X,
+  RotateCcw,
+  Send,
+  Sparkles,
+} from "lucide-react";
+import { ZAALYS_NOTIFICATIONS, formatBRL } from "@/lib/zaalys-data";
 
-function IconHome({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative z-10 shrink-0">
-      <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
-      <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    </svg>
-  );
-}
-
-function IconBoxes({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative z-10 shrink-0">
-      <path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" />
-      <path d="m7 16.5-4.74-2.85" />
-      <path d="m7 16.5 5-3" />
-      <path d="M7 16.5v5.17" />
-      <path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" />
-      <path d="m17 16.5-5-3" />
-      <path d="m17 16.5 4.74-2.85" />
-      <path d="M17 16.5v5.17" />
-      <path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" />
-      <path d="M12 8 7.26 5.15" />
-      <path d="m12 8 4.74-2.85" />
-      <path d="M12 13.5V8" />
-    </svg>
-  );
-}
-
-function IconClapperboard({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative z-10 shrink-0">
-      <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" />
-      <path d="m6.2 5.3 3.1 3.9" />
-      <path d="m12.4 3.4 3.1 4" />
-      <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
-    </svg>
-  );
-}
-
-function IconChartSpline({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative z-10 shrink-0">
-      <path d="M3 3v16a2 2 0 0 0 2 2h16" />
-      <path d="M7 16c.5-2 1.5-7 4-7 2 0 2 3 4 3 2.5 0 4.5-5 5-7" />
-    </svg>
-  );
-}
-
-function IconRocket({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative z-10 shrink-0">
-      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
-      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
-      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
-    </svg>
-  );
-}
-
-function IconFilm({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative z-10 shrink-0">
-      <rect width="18" height="18" x="3" y="3" rx="2" />
-      <path d="M7 3v18" />
-      <path d="M3 7.5h4" />
-      <path d="M3 12h18" />
-      <path d="M3 16.5h4" />
-      <path d="M17 3v18" />
-      <path d="M17 7.5h4" />
-      <path d="M17 16.5h4" />
-    </svg>
-  );
-}
-
-function IconHeadphones({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative z-10 shrink-0">
-      <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
-    </svg>
-  );
-}
-
-function IconGift({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="8" width="18" height="4" rx="1" />
-      <path d="M12 8v13" />
-      <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
-      <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
-    </svg>
-  );
-}
-
-function IconBell({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10.268 21a2 2 0 0 0 3.464 0" />
-      <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
-    </svg>
-  );
-}
-
-const DOCK_ITEMS = [
-  { href: "/painel", aliases: ["/painel"], label: "Início", icon: IconHome, exact: true },
-  { href: "/painel/catalogo", aliases: ["/painel/catalogo", "/products"], label: "Produtos", icon: IconBoxes },
-  { href: "/painel/influencers", aliases: ["/painel/influencers", "/templates"], label: "Templates", icon: IconClapperboard },
-  { href: "/painel/radar", aliases: ["/painel/radar", "/radar"], label: "Radar", icon: IconChartSpline },
-  { href: "/painel/roteiros", aliases: ["/painel/roteiros", "/trend-boost"], label: "Trend", icon: IconRocket },
-  { href: "/painel/raio-x", aliases: ["/painel/raio-x", "/ferramentas/raio-x"], label: "Raio-X", icon: IconFilm },
-  { href: "/painel/live", aliases: ["/painel/live", "/ferramentas/live"], label: "Live", icon: IconHeadphones },
-];
-
-export function AppShell({
-  children,
-  userEmail = "criador@zaalys.com",
-  userName = "Criador Zaalys",
-}: {
-  children: React.ReactNode;
-  userEmail?: string;
+type AppShellProps = {
+  userEmail: string;
   userName?: string;
-}) {
+  children: React.ReactNode;
+};
+
+const ROUTE_TITLES: Record<string, string> = {
+  "/painel/catalogo": "Produtos Virais",
+  "/products": "Produtos Virais",
+  "/painel/influencers": "Templates Virais",
+  "/templates": "Templates Virais",
+  "/painel/radar": "Radar de mudanças",
+  "/radar": "Radar de mudanças",
+  "/painel/roteiros": "Trend AI",
+  "/trend-boost": "Trend AI",
+  "/painel/raio-x": "Raio-X de Vídeo",
+  "/ferramentas/raio-x": "Raio-X de Vídeo",
+  "/painel/live": "Assistente de Live",
+  "/ferramentas/live": "Assistente de Live",
+  "/painel/conta": "Meu Perfil",
+  "/profile": "Meu Perfil",
+  "/painel/configuracoes": "Configurações",
+  "/settings": "Configurações",
+  "/painel/indique": "Indique e ganhe",
+  "/indique": "Indique e ganhe",
+  "/painel/depoimento": "Depoimento",
+  "/depoimento": "Depoimento",
+  "/painel/comissoes": "Saque de comissões",
+  "/comissoes": "Saque de comissões",
+  "/painel/afiliado": "Painel do Afiliado",
+  "/admin": "Painel do Afiliado",
+};
+
+type ZaalQA = {
+  q: string;
+  a: string;
+  video: string;
+};
+
+const ZAAL_QUESTIONS_BY_ROUTE: Record<string, ZaalQA[]> = {
+  default: [
+    {
+      q: "Por onde eu começo?",
+      a: "Comece pelo card **Produtos Virais**: escolha um produto com comissão acima de 18% e clique em **Afiliar no TikTok Shop**. Depois, clique em **Templates Virais** ou **Assistente de Live** para a IA montar seu roteiro pronto!",
+      video: "/zaal/zaal-presenting.mp4",
+    },
+    {
+      q: "O que tem em cada atalho?",
+      a: "• **Produtos Virais**: catálogo com preço, comissão e ganho real por venda.\n• **Templates Virais**: cenas prontas para gerar vídeo com IA no Google Flow.\n• **Radar**: avisa quando um produto sobe a comissão ou baixa o preço.\n• **Trend AI**: roteiros virais de 8 segundos com personagens.\n• **Raio-X**: analisa qualquer vídeo que está vendendo no TikTok.\n• **Assistente de Live**: sua live automática em loop com extensão do Chrome.",
+      video: "/zaal/zaal-thumbs-up.mp4",
+    },
+    {
+      q: "Por que o Dashboard está vazio?",
+      a: "Os números de vendas ao vivo e atividades aparecem assim que você conecta a extensão **Zaalys Live** na sua primeira transmissão do TikTok Shop ou compartilha seu link de indicação em **Indique e ganhe**.",
+      video: "/zaal/zaal-waving.mp4",
+    },
+  ],
+  "/painel/catalogo": [
+    {
+      q: "Como escolho um produto bom?",
+      a: "Olhe sempre o **Ganho por venda** (em verde) e o selo **Comissão alta**. Produtos entre R$ 59 e R$ 149 com mais de 18% de comissão vendem no impulso e batem R$ 1.000 com poucas vendas.",
+      video: "/zaal/zaal-presenting.mp4",
+    },
+    {
+      q: "Como me afilio no TikTok Shop?",
+      a: "Toque no produto para abrir os detalhes e clique em **Afiliar no TikTok Shop**. Adicione o produto à sua vitrine de afiliado e volte aqui para gerar o vídeo ou a live.",
+      video: "/zaal/zaal-thumbs-up.mp4",
+    },
+    {
+      q: "Posso cadastrar um produto meu?",
+      a: "Sim! Clique no botão **+ Adicionar produto** no topo direito da lista e cole o link do produto do TikTok Shop.",
+      video: "/zaal/zaal-waving.mp4",
+    },
+  ],
+  "/painel/live": [
+    {
+      q: "Como funciona a Live Infinita?",
+      a: "1. Escolha o produto aqui no **Assistente de Live**.\n2. Gere ou baixe os clipes curtos.\n3. Instale a extensão **Zaalys Live** no navegador.\n4. Abra a página de LIVE do TikTok Shop: a extensão mantém seus clipes em loop, fixa o produto e responde o chat sozinha!",
+      video: "/zaal/zaal-presenting.mp4",
+    },
+    {
+      q: "Preciso aparecer na câmera?",
+      a: "Não! Na Live Infinita, os seus clipes do produto rodam em loop como câmera virtual enquanto a extensão comenta e fixa o link na sacola.",
+      video: "/zaal/zaal-thumbs-up.mp4",
+    },
+    {
+      q: "Como recebo aviso se a live cair?",
+      a: "Vá em **Configurações → Avisos no celular** e clique em **Avisar neste aparelho**. Se a transmissão encerrar ou receber aviso, seu celular toca na hora.",
+      video: "/zaal/zaal-waving.mp4",
+    },
+  ],
+};
+
+export function BrandLogo() {
+  return (
+    <Link
+      href="/painel"
+      className="group inline-flex items-center gap-2 font-display text-lg font-extrabold tracking-tight text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+    >
+      <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground shadow-2xs transition-transform duration-150 group-hover:scale-105">
+        <svg viewBox="0 0 100 100" fill="none" className="size-4" aria-hidden="true">
+          <g
+            stroke="currentColor"
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M25 25H75L25 75H75" />
+            <path d="M75 25V51" />
+          </g>
+        </svg>
+      </span>
+      <span>Zaalys</span>
+    </Link>
+  );
+}
+
+export function AppShell({ userEmail, userName, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [creatorOpen, setCreatorOpen] = useState(false);
-  const [supportOpen, setSupportOpen] = useState(false);
+  const displayName =
+    userName?.trim() ||
+    userEmail
+      .split("@")[0]
+      .replace(/[._-]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase()) ||
+    "Creator";
+  const initial = displayName.charAt(0).toUpperCase();
+
+  const isCentral = pathname === "/painel" || pathname === "/";
+  const currentTitle = ROUTE_TITLES[pathname] ?? null;
+
+  // Theme state (default light matching zaalys.com studio, toggleable to dark)
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("zaalys_theme");
+      const isDark =
+        saved === "dark" ||
+        (!saved && document.documentElement.classList.contains("dark"));
+      setTheme(isDark ? "dark" : "light");
+      document.documentElement.classList.toggle("dark", isDark);
+    } catch {}
+  }, []);
+
+  function toggleTheme() {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.classList.toggle("dark", next === "dark");
+    try {
+      localStorage.setItem("zaalys_theme", next);
+    } catch {}
+  }
+
+  // Popovers & Modals
   const [notifOpen, setNotifOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [copiedInvite, setCopiedInvite] = useState(false);
-  const [supportSubject, setSupportSubject] = useState("");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [creatorOpen, setCreatorOpen] = useState(false);
+  const [creatorStep, setCreatorStep] = useState<"offer" | "configure" | "link">("offer");
+  const [creatorUses, setCreatorUses] = useState(5);
+  const [creatorCopied, setCreatorCopied] = useState(false);
+
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [supportTopic, setSupportTopic] = useState("Dúvida sobre ferramenta");
   const [supportMessage, setSupportMessage] = useState("");
   const [supportSent, setSupportSent] = useState(false);
-  const [localUser, setLocalUser] = useState<{ name?: string; email?: string } | null>(null);
 
-  React.useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("zaalys_current_user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.email) {
-          setLocalUser({ name: parsed.name, email: parsed.email });
-        }
+  const [notifications, setNotifications] = useState(ZAALYS_NOTIFICATIONS);
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
+  // Zaal Mascot Assistant state
+  const [zaalBubbleDismissed, setZaalBubbleDismissed] = useState(false);
+  const [zaalDrawerOpen, setZaalDrawerOpen] = useState(false);
+  const [zaalHovered, setZaalHovered] = useState(false);
+  const [zaalVideo, setZaalVideo] = useState("/zaal/zaal-waving.mp4");
+  const [zaalMessages, setZaalMessages] = useState<
+    { role: "user" | "zaal"; text: string }[]
+  >([
+    {
+      role: "zaal",
+      text: `Oi, ${displayName.split(" ")[0]}! Sou o **Zaal** 👋\nEscolha uma dúvida abaixo ou escreva sua pergunta sobre a Zaalys.`,
+    },
+  ]);
+  const [zaalInput, setZaalInput] = useState("");
+
+  const notifRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
       }
-    } catch {
-      // ignore
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
     }
-  }, [pathname]);
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
 
-  const activeName =
-    localUser?.name ||
-    (userName !== "Criador Zaalys" ? userName : localUser?.name || userName);
-  const activeEmail =
-    localUser?.email ||
-    (userEmail !== "criador@zaalys.com" ? userEmail : localUser?.email || userEmail);
+  const currentQuestions =
+    ZAAL_QUESTIONS_BY_ROUTE[pathname] ?? ZAAL_QUESTIONS_BY_ROUTE.default;
 
-  const initials = (activeName || activeEmail || "CZ")
-    .split(/[\s@._-]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((s) => s[0]?.toUpperCase())
-    .join("");
+  function askZaal(qa: ZaalQA) {
+    setZaalDrawerOpen(true);
+    setZaalVideo(qa.video);
+    setZaalMessages((prev) => [
+      ...prev,
+      { role: "user", text: qa.q },
+      { role: "zaal", text: qa.a },
+    ]);
+  }
+
+  function handleZaalSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const q = zaalInput.trim();
+    if (!q) return;
+    setZaalInput("");
+    setZaalVideo("/zaal/zaal-presenting.mp4");
+    const lower = q.toLowerCase();
+    let reply =
+      "Você pode acessar todas as ferramentas pela **Central**: comece escolhendo um item em **Produtos Virais**, gere seus vídeos em **Templates Virais** ou configure sua transmissão em **Assistente de Live**.";
+    if (lower.includes("live") || lower.includes("extens")) {
+      reply =
+        "Para usar a **Live Infinita**, abra o **Assistente de Live**, escolha seu produto, baixe os clipes e instale a extensão **Zaalys Live** no Chrome. A chave de ativação fica em **Configurações**.";
+    } else if (lower.includes("flow") || lower.includes("video") || lower.includes("vídeo") || lower.includes("template")) {
+      reply =
+        "Em **Templates Virais**, escolha um movimento de cena, selecione o produto e o modelo de IA e clique em **Gerar roteiro**. Depois é só abrir o **Google Flow** no modo *Ingredientes para vídeo*, subir as 2 fotos e colar o prompt!";
+    } else if (lower.includes("comiss") || lower.includes("indique") || lower.includes("afiliado") || lower.includes("pix")) {
+      reply =
+        "No programa **Indique e ganhe**, seu amigo recebe **R$ 30,00 de desconto** no plano vitalício e você recebe **R$ 50,00 no Pix** após o prazo de garantia. Configure sua chave Pix em **Indique e ganhe** ou **Saque de comissões**!";
+    }
+    setZaalMessages((prev) => [
+      ...prev,
+      { role: "user", text: q },
+      { role: "zaal", text: reply },
+    ]);
+  }
 
   async function handleSignOut() {
+    setUserMenuOpen(false);
     try {
-      window.localStorage.removeItem("zaalys_current_user");
-      document.cookie = "zaalys_session=; path=/; max-age=0; samesite=lax";
-      await fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
-      const supabase = createClient();
-      await supabase.auth.signOut().catch(() => {});
-    } catch {
-      // ignore
-    }
+      await fetch("/api/auth/session", { method: "DELETE" });
+    } catch {}
     router.push("/login");
     router.refresh();
   }
 
-  function handleCopyInvite() {
-    const url = `${typeof window !== "undefined" ? window.location.origin : "https://www.zaalys.com"}/checkout/vitalicio?invite=creator-vip`;
-    navigator.clipboard?.writeText(url).catch(() => {});
-    setCopiedInvite(true);
-    setTimeout(() => setCopiedInvite(false), 2500);
-  }
-
-  function handleSendSupport(e: React.FormEvent) {
-    e.preventDefault();
-    if (!supportMessage.trim()) return;
-    setSupportSent(true);
-    setTimeout(() => {
-      setSupportSent(false);
-      setSupportSubject("");
-      setSupportMessage("");
-      setSupportOpen(false);
-    }, 1500);
-  }
+  const creatorInviteLink = `https://zaalys.com/convite/creator-${displayName
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 10) || "vip"}-${creatorUses}x`;
 
   return (
-    <div className="bg-studio flex min-h-dvh flex-col text-foreground">
-      {/* Top Sticky Glass Header */}
-      <header className="sticky top-0 z-30">
-        <div className="absolute inset-0 border-b border-black/[0.05] bg-background/75 backdrop-blur-2xl dark:border-white/[0.08]" />
-        <div className="relative mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link
-            href="/painel"
-            className="rounded-xl outline-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-ring/50 active:scale-[0.97]"
-          >
-            <Brand />
-          </Link>
+    <div className="min-h-svh bg-studio text-foreground flex flex-col">
+      {/* Top Navbar matching 3jz1kpdvh_75d.js */}
+      <header className="sticky top-0 z-30 border-b border-black/[0.06] bg-background/85 backdrop-blur-xl dark:border-white/[0.08]">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:px-6">
+          {/* Left: Brand + Breadcrumb */}
+          <div className="flex min-w-0 items-center gap-1.5">
+            <BrandLogo />
+            {!isCentral && currentTitle && (
+              <>
+                <ChevronRight
+                  size={14}
+                  className="shrink-0 text-muted-foreground/60"
+                />
+                <Link
+                  href="/painel"
+                  className="rounded-full bg-muted/70 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  Central
+                </Link>
+                <ChevronRight
+                  size={14}
+                  className="shrink-0 text-muted-foreground/60"
+                />
+                <span className="truncate text-xs font-semibold text-foreground sm:text-sm">
+                  {currentTitle}
+                </span>
+              </>
+            )}
+          </div>
 
-          <div className="flex items-center gap-1.5">
+          {/* Right: 1. Acesso Creator | 2. Bell (9+) | 3. Suporte | 4. Moon/Sun | 5. Avatar Circle */}
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+            {/* 1. Acesso Creator */}
             <button
               type="button"
-              onClick={() => setCreatorOpen(true)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-foreground/[0.05] hover:text-foreground cursor-pointer"
+              onClick={() => {
+                setCreatorStep("offer");
+                setCreatorOpen(true);
+              }}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-black/[0.06] bg-card px-3 text-xs font-semibold text-foreground shadow-2xs transition-[transform,border-color,background-color] duration-150 hover:bg-muted active:scale-[0.97] dark:border-white/[0.08] cursor-pointer sm:px-3.5"
             >
-              <IconGift size={16} />
-              <span className="hidden sm:inline">Acesso Creator</span>
+              <Gift size={15} className="shrink-0 text-primary" />
+              <span className="hidden xs:inline sm:inline">Acesso Creator</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setSupportOpen(true)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-foreground/[0.05] hover:text-foreground cursor-pointer"
-            >
-              <IconHeadphones size={16} />
-              <span className="hidden sm:inline">Suporte</span>
-            </button>
-
-            {/* Notifications popover */}
-            <div className="relative">
+            {/* 2. Bell Notifications with 9+ lime badge */}
+            <div ref={notifRef} className="relative">
               <button
                 type="button"
+                aria-label="Notificações"
                 onClick={() => {
                   setNotifOpen((o) => !o);
-                  setMenuOpen(false);
+                  setUserMenuOpen(false);
                 }}
-                aria-label="Notificações"
-                className="relative grid size-8 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/[0.05] hover:text-foreground cursor-pointer"
+                className="relative grid size-9 place-items-center rounded-full text-muted-foreground transition-[transform,color,background-color] duration-150 hover:bg-foreground/[0.05] hover:text-foreground active:scale-95 cursor-pointer"
               >
-                <IconBell size={16} />
-                <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-primary" />
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="tabular-nums absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold leading-4 text-primary-foreground shadow-2xs">
+                    {unreadCount >= 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </button>
+
               {notifOpen && (
-                <div className="apple-glass absolute right-0 mt-2 w-80 rounded-2xl p-3.5 text-sm shadow-2xl">
-                  <div className="flex items-center justify-between pb-2.5 border-b border-border">
-                    <span className="font-semibold">Notificações</span>
-                    <button
-                      type="button"
-                      onClick={() => setNotifOpen(false)}
-                      className="text-xs text-primary hover:underline cursor-pointer"
-                    >
-                      Marcar todas como lidas
-                    </button>
-                  </div>
-                  <div className="divide-y divide-border/60 py-1 text-xs">
-                    <div className="py-2.5">
-                      <p className="font-medium text-foreground">Radar leu +18 produtos novos</p>
-                      <p className="mt-0.5 text-muted-foreground">
-                        Escova Alisadora 5 em 1 subiu comissão para 22% no TikTok Shop BR.
-                      </p>
+                <div className="absolute right-0 top-11 z-50 w-80 overflow-hidden rounded-3xl border border-black/[0.08] bg-popover p-0 text-popover-foreground shadow-[0_24px_64px_-12px_rgba(0,0,0,0.45)] sm:w-96 dark:border-white/[0.1]">
+                  <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display text-sm font-bold">
+                        Notificações
+                      </span>
+                      {unreadCount > 0 && (
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">
+                          {unreadCount >= 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
                     </div>
-                    <div className="py-2.5">
-                      <p className="font-medium text-foreground">Zaalys Live v3.17.0 disponível</p>
-                      <p className="mt-0.5 text-muted-foreground">
-                        Novo controle de comentários automáticos e reconexão rápida.
-                      </p>
-                    </div>
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setNotifications((prev) =>
+                            prev.map((n) => ({ ...n, unread: false }))
+                          )
+                        }
+                        className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        Marcar todas como lidas
+                      </button>
+                    )}
                   </div>
+
+                  <ul className="max-h-[340px] divide-y divide-border/50 overflow-y-auto">
+                    {notifications.map((item) => (
+                      <li
+                        key={item.id}
+                        className={`flex items-center gap-3 px-4 py-3 text-xs transition-colors ${
+                          item.unread ? "bg-primary/[0.04]" : ""
+                        }`}
+                      >
+                        <div className="relative size-10 shrink-0">
+                          <img
+                            src={item.productImage}
+                            alt=""
+                            className="size-10 rounded-xl object-cover border border-black/[0.06] dark:border-white/[0.08]"
+                          />
+                          <span className="absolute -bottom-1 -right-1 grid size-4 place-items-center rounded-full bg-primary text-primary-foreground shadow-2xs">
+                            <ShoppingBag size={10} />
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-foreground">
+                              Venda ao vivo
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              · {item.timeAgo}
+                            </span>
+                          </div>
+                          <p className="truncate text-muted-foreground">
+                            {item.productTitle}
+                          </p>
+                        </div>
+                        <span className="shrink-0 font-mono text-xs font-bold tabular-nums text-primary">
+                          +{formatBRL(item.priceCents)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href="/painel/afiliado"
+                    onClick={() => setNotifOpen(false)}
+                    className="block border-t border-border/60 py-2.5 text-center text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                  >
+                    Ver painel de atividades
+                  </Link>
                 </div>
               )}
             </div>
 
-            {/* User Profile Dropdown */}
-            <div className="relative">
+            {/* 3. Suporte */}
+            <button
+              type="button"
+              onClick={() => {
+                setSupportSent(false);
+                setSupportOpen(true);
+              }}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-black/[0.06] bg-card px-3 text-xs font-semibold text-foreground shadow-2xs transition-[transform,border-color,background-color] duration-150 hover:bg-muted active:scale-[0.97] dark:border-white/[0.08] cursor-pointer sm:px-3.5"
+            >
+              <Headphones size={15} className="shrink-0 text-muted-foreground" />
+              <span className="hidden xs:inline sm:inline">Suporte</span>
+            </button>
+
+            {/* 4. Theme Toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Alternar tema"
+              className="grid size-9 place-items-center rounded-full text-muted-foreground transition-[transform,color,background-color] duration-150 hover:bg-foreground/[0.05] hover:text-foreground active:scale-95 cursor-pointer"
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
+            {/* 5. User Avatar Circle + Dropdown */}
+            <div ref={userMenuRef} className="relative">
               <button
                 type="button"
+                aria-label="Menu da conta"
                 onClick={() => {
-                  setMenuOpen((o) => !o);
+                  setUserMenuOpen((o) => !o);
                   setNotifOpen(false);
                 }}
-                aria-label="Menu da conta"
-                className="flex h-8 items-center gap-2 rounded-full border border-white/10 bg-card/90 pl-1 pr-2.5 text-xs font-semibold text-foreground transition-colors hover:border-white/20 cursor-pointer"
+                className="grid size-9 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary transition-transform duration-150 hover:bg-primary/25 active:scale-95 cursor-pointer"
               >
-                <span className="grid size-6 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
-                  {initials || "CZ"}
-                </span>
-                <span className="hidden max-w-[110px] truncate sm:inline">{activeName}</span>
+                {initial}
               </button>
 
-              {menuOpen && (
-                <div className="apple-glass absolute right-0 mt-2 w-60 rounded-2xl p-2 text-sm shadow-2xl">
-                  <div className="border-b border-border px-3 py-2">
-                    <p className="truncate font-semibold text-foreground">{activeName}</p>
-                    <p className="truncate text-xs text-muted-foreground">{activeEmail}</p>
-                    <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                      Vitalício · Ativo
-                    </span>
+              {userMenuOpen && (
+                <div className="absolute right-0 top-11 z-50 w-56 rounded-2xl border border-black/[0.08] bg-popover p-1.5 text-popover-foreground shadow-[0_20px_48px_-12px_rgba(0,0,0,0.4)] dark:border-white/[0.1]">
+                  <div className="px-2.5 py-2">
+                    <div className="truncate text-sm font-semibold">
+                      {displayName}
+                    </div>
+                    <div className="truncate text-xs font-normal text-muted-foreground">
+                      {userEmail}
+                    </div>
                   </div>
-                  <div className="py-1">
-                    <Link
-                      href="/painel/conta"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-foreground/[0.06]"
-                    >
-                      <span>Configurações & Extensão</span>
-                    </Link>
-                    <Link
-                      href="/painel?vista=dashboard"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-foreground/[0.06]"
-                    >
-                      <span>Dashboard de Vendas</span>
-                    </Link>
-                    <Link
-                      href="/"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
-                    >
-                      <span>Ver página inicial (Site)</span>
-                    </Link>
-                  </div>
-                  <div className="border-t border-border pt-1">
-                    <button
-                      type="button"
-                      onClick={handleSignOut}
-                      className="flex w-full items-center rounded-xl px-3 py-2 text-left text-xs font-medium text-destructive hover:bg-destructive/10 cursor-pointer"
-                    >
-                      Sair da conta
-                    </button>
-                  </div>
+                  <div className="my-1 h-px bg-border/60" />
+
+                  <Link
+                    href="/painel/conta"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <UserRound size={15} className="text-muted-foreground" />
+                    Meu perfil
+                  </Link>
+                  <Link
+                    href="/painel/configuracoes"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Settings size={15} className="text-muted-foreground" />
+                    Configurações
+                  </Link>
+                  <Link
+                    href="/painel/indique"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Gift size={15} className="text-primary" />
+                    Indique e ganhe
+                  </Link>
+                  <Link
+                    href="/painel/depoimento"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Heart size={15} className="text-muted-foreground" />
+                    Deixar um depoimento
+                  </Link>
+                  <Link
+                    href="/painel/comissoes"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Wallet size={15} className="text-muted-foreground" />
+                    Saque de comissões
+                  </Link>
+                  <Link
+                    href="/painel/afiliado"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <ShieldCheck size={15} className="text-muted-foreground" />
+                    Painel do Afiliado
+                  </Link>
+
+                  <div className="my-1 h-px bg-border/60" />
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-rose-500 transition-colors hover:bg-rose-500/10 cursor-pointer"
+                  >
+                    <LogOut size={15} />
+                    Sair
+                  </button>
                 </div>
               )}
             </div>
@@ -343,156 +538,494 @@ export function AppShell({
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 sm:px-6 sm:pt-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
         {children}
       </main>
 
-      {/* Floating Bottom Dock (Exact Zaalys Navigation) */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center px-4">
-        <nav
-          aria-label="Navegação principal"
-          className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-white/20 bg-popover/80 p-1.5 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.45)] backdrop-blur-2xl ring-1 ring-black/[0.04] sm:gap-1 dark:border-white/10 dark:ring-white/[0.05]"
-        >
-          {DOCK_ITEMS.map((item) => {
-            const active = item.exact
-              ? pathname === item.href
-              : item.aliases.some((a) => pathname === a || pathname.startsWith(`${a}/`));
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className="group relative"
-              >
-                <div
-                  className={cn(
-                    "relative flex h-11 items-center gap-2 rounded-full px-2.5 transition-[transform,color,background-color,border-color] duration-150 ease-out active:scale-[0.94] sm:px-3.5",
-                    active
-                      ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05]",
-                  )}
-                >
-                  <Icon size={20} />
-                  {active && (
-                    <span className="relative z-10 hidden whitespace-nowrap pr-1 text-sm font-semibold sm:block">
-                      {item.label}
-                    </span>
-                  )}
-                  <span className="sr-only">{item.label}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Creator Access Modal */}
+      {/* Acesso Creator 3-Step Modal (matching 3jz1kpdvh_75d.js) */}
       {creatorOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm">
-          <div className="apple-card w-full max-w-md p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
-                  Acesso Creator
-                </span>
-                <h2 className="mt-2 font-display text-xl font-bold tracking-tight">
-                  Indique e ganhe R$ 50,00
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-xs"
+          onClick={() => setCreatorOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-md overflow-hidden rounded-3xl border border-black/[0.08] bg-card p-6 text-card-foreground shadow-2xl dark:border-white/[0.1]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setCreatorOpen(false)}
+              className="absolute right-4 top-4 grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            {creatorStep === "offer" && (
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
+                  <Sparkles size={13} />
+                  Programa Acesso Creator
+                </div>
+                <h2 className="font-display text-2xl font-extrabold tracking-tight">
+                  Libere convites VIP e receba comissão por cada venda
                 </h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Seu amigo recebe R$ 30,00 de desconto no acesso vitalício pelo seu link de convite.
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Gere um link exclusivo com limite de vagas para a sua audiência.
+                  Quem entra pelo seu link recebe desconto imediato no Vitalício e
+                  você recebe <strong>R$ 50,00 via Pix</strong> por cada acesso
+                  confirmado.
                 </p>
+                <ul className="space-y-2 rounded-2xl border border-border/60 bg-muted/30 p-3.5 text-xs text-muted-foreground">
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="shrink-0 text-primary" />
+                    <span>Desconto de R$ 30,00 aplicado automaticamente no checkout</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="shrink-0 text-primary" />
+                    <span>Acompanhamento em tempo real no Painel do Afiliado</span>
+                  </li>
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => setCreatorStep("configure")}
+                  className="h-11 w-full rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-xs transition-transform active:scale-[0.98] cursor-pointer"
+                >
+                  Configurar meu convite
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setCreatorOpen(false)}
-                className="rounded-lg p-1 text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="mt-5 rounded-2xl border border-border bg-background/60 p-3.5 text-xs">
-              <p className="font-semibold text-foreground">Link pronto</p>
-              <p className="mt-1 text-muted-foreground">
-                Link de convite oculto — use o botão copiar para enviar no WhatsApp ou Instagram.
-              </p>
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setCreatorOpen(false)}
-                className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                Fechar
-              </button>
-              <RaisedButton size="sm" onClick={handleCopyInvite}>
-                {copiedInvite ? "Link copiado!" : "Copiar link de convite"}
-              </RaisedButton>
-            </div>
+            )}
+
+            {creatorStep === "configure" && (
+              <div className="space-y-4">
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                  Passo 2 de 2
+                </span>
+                <h2 className="font-display text-xl font-extrabold tracking-tight">
+                  Quantos acessos liberar neste link?
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Defina o limite de usos para gerar escassez nos seus stories ou
+                  na bio.
+                </p>
+                <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Limite do link
+                    </span>
+                    <span className="font-display text-2xl font-extrabold text-primary tabular-nums">
+                      {creatorUses} {creatorUses === 1 ? "vaga" : "vagas"}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={10}
+                    value={creatorUses}
+                    onChange={(e) => setCreatorUses(Number(e.target.value))}
+                    className="mt-3 w-full accent-primary cursor-pointer"
+                  />
+                  <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
+                    <span>1 vaga</span>
+                    <span>5 vagas</span>
+                    <span>10 vagas</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCreatorStep("offer")}
+                    className="h-11 flex-1 rounded-2xl border border-border bg-background text-xs font-semibold hover:bg-muted cursor-pointer"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreatorStep("link")}
+                    className="h-11 flex-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-xs transition-transform active:scale-[0.98] cursor-pointer"
+                  >
+                    Gerar link Creator
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {creatorStep === "link" && (
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
+                  <Check size={13} />
+                  Convite ativo · {creatorUses}{" "}
+                  {creatorUses === 1 ? "vaga" : "vagas"}
+                </div>
+                <h2 className="font-display text-xl font-extrabold tracking-tight">
+                  Seu link Creator está pronto
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Compartilhe nos stories ou envie no direct. Assim que alguém
+                  entrar, você vê no painel de comissões.
+                </p>
+                <div className="flex items-center gap-2 rounded-2xl border border-border bg-background p-2 pl-3">
+                  <code className="min-w-0 flex-1 truncate font-mono text-xs">
+                    {creatorInviteLink}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(creatorInviteLink);
+                      setCreatorCopied(true);
+                      setTimeout(() => setCreatorCopied(false), 1500);
+                    }}
+                    className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground cursor-pointer"
+                  >
+                    {creatorCopied ? <Check size={13} /> : <Copy size={13} />}
+                    {creatorCopied ? "Copiado" : "Copiar"}
+                  </button>
+                </div>
+                <div className="flex justify-between pt-1">
+                  <Link
+                    href="/painel/indique"
+                    onClick={() => setCreatorOpen(false)}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    Ver painel Indique e ganhe →
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setCreatorOpen(false)}
+                    className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Support Modal */}
+      {/* Support Modal (matching 3jz1kpdvh_75d.js) */}
       {supportOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm">
-          <div className="apple-card w-full max-w-md p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="font-display text-xl font-bold tracking-tight">
-                  Falar com o suporte
-                </h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Conte o que está acontecendo. A gente responde por e-mail em {userEmail}.
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-xs"
+          onClick={() => setSupportOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-md overflow-hidden rounded-3xl border border-black/[0.08] bg-card p-6 text-card-foreground shadow-2xl dark:border-white/[0.1]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setSupportOpen(false)}
+              className="absolute right-4 top-4 grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            <h2 className="font-display text-xl font-extrabold tracking-tight">
+              Falar com o suporte
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Escolha o assunto e conte como podemos ajudar. Respondemos no seu
+              e-mail de cadastro.
+            </p>
+
+            {supportSent ? (
+              <div className="mt-5 space-y-4 rounded-2xl border border-primary/30 bg-primary/[0.06] p-4 text-sm">
+                <div className="flex items-center gap-2 font-semibold text-primary">
+                  <Check size={16} />
+                  Mensagem recebida!
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Nossa equipe já recebeu seu chamado sobre{" "}
+                  <strong>{supportTopic}</strong> e responderá em breve no e-mail{" "}
+                  <strong>{userEmail}</strong>.
                 </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSupportOpen(false)}
-                className="rounded-lg p-1 text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleSendSupport} className="mt-4 space-y-3">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Assunto
-                </label>
-                <input
-                  value={supportSubject}
-                  onChange={(e) => setSupportSubject(e.target.value)}
-                  placeholder="Ex.: Dúvida na extensão Zaalys Live"
-                  className="field text-sm"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Mensagem
-                </label>
-                <textarea
-                  rows={4}
-                  required
-                  value={supportMessage}
-                  onChange={(e) => setSupportMessage(e.target.value)}
-                  placeholder="Descreva o que aconteceu…"
-                  className="field text-sm"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setSupportOpen(false)}
-                  className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                  className="h-10 w-full rounded-xl bg-primary text-xs font-semibold text-primary-foreground cursor-pointer"
                 >
                   Fechar
                 </button>
-                <RaisedButton type="submit" size="sm">
-                  {supportSent ? "Mensagem enviada!" : "Enviar"}
-                </RaisedButton>
               </div>
-            </form>
+            ) : (
+              <form
+                className="mt-4 space-y-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!supportMessage.trim()) return;
+                  setSupportSent(true);
+                  setSupportMessage("");
+                }}
+              >
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Assunto
+                  </span>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {[
+                      "Dúvida sobre ferramenta",
+                      "Extensão / Live",
+                      "Pagamento ou plano",
+                      "Sugestão ou bug",
+                    ].map((topic) => (
+                      <button
+                        key={topic}
+                        type="button"
+                        onClick={() => setSupportTopic(topic)}
+                        className={`rounded-xl border px-3 py-2 text-left text-xs font-medium transition-colors cursor-pointer ${
+                          supportTopic === topic
+                            ? "border-primary bg-primary/12 text-foreground font-semibold"
+                            : "border-border/70 bg-background/60 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {topic}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="support-msg"
+                    className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    Mensagem
+                  </label>
+                  <textarea
+                    id="support-msg"
+                    required
+                    rows={4}
+                    value={supportMessage}
+                    onChange={(e) => setSupportMessage(e.target.value)}
+                    placeholder="Conte o que aconteceu ou qual é a sua dúvida..."
+                    className="mt-1.5 w-full rounded-2xl border border-border bg-background/70 p-3 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <span className="text-[11px] text-muted-foreground">
+                    Ou escreva para{" "}
+                    <a
+                      href="mailto:suporte@zaalys.com"
+                      className="underline hover:text-foreground"
+                    >
+                      suporte@zaalys.com
+                    </a>
+                  </span>
+                  <button
+                    type="submit"
+                    className="h-10 rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground shadow-xs transition-transform active:scale-95 cursor-pointer"
+                  >
+                    Enviar
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* Floating "Zaal" 3D Mascot Assistant Widget (matching Screenshot 1 & 3jz1kpdvh_75d.js) */}
+      {!zaalDrawerOpen && (
+        <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
+          {!zaalBubbleDismissed && (
+            <div className="mb-1 flex max-w-[300px] flex-col items-end gap-1.5">
+              {/* Top Greeting Bubble */}
+              <div className="relative flex items-start gap-2.5 rounded-2xl border border-[#2E2B27] bg-[#1E1C19] px-3.5 py-2.5 pr-7 text-xs leading-relaxed text-[#F3F1EF] shadow-[0_14px_34px_-8px_rgba(0,0,0,0.55)]">
+                <img
+                  src="/zaal/zaal-chat.png"
+                  alt="Zaal"
+                  className="mt-0.5 size-7 shrink-0 rounded-full object-cover ring-1 ring-[#B9F83A]/40"
+                />
+                <div>
+                  <p>
+                    Oi! Sou o <strong className="text-[#B9F83A]">Zaal</strong> 👋
+                  </p>
+                  <p className="text-[#C9C4BD]">
+                    Ficou com alguma dúvida? Toque numa pergunta:
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Fechar dicas do Zaal"
+                  onClick={() => setZaalBubbleDismissed(true)}
+                  className="absolute right-2 top-2 grid size-5 place-items-center rounded-full text-[#9E9890] transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              {/* 3 Quick-Question Pills */}
+              {currentQuestions.map((qa) => (
+                <button
+                  key={qa.q}
+                  type="button"
+                  onClick={() => askZaal(qa)}
+                  className="rounded-full border border-[#2E2B27] bg-[#25221F] px-3.5 py-1.5 text-right text-xs font-medium text-[#F3F1EF] shadow-md transition-all duration-150 hover:border-[#B9F83A]/55 hover:bg-[#2E2B27] active:scale-[0.97] cursor-pointer"
+                >
+                  {qa.q}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Mascot FAB Button */}
+          <button
+            type="button"
+            aria-label="Abrir assistente Zaal"
+            onClick={() => setZaalDrawerOpen(true)}
+            onMouseEnter={() => setZaalHovered(true)}
+            onMouseLeave={() => setZaalHovered(false)}
+            className="group relative size-14 overflow-hidden rounded-2xl border-2 border-[#B9F83A]/70 bg-[#181614] shadow-[0_12px_32px_-6px_rgba(0,0,0,0.65)] transition-transform duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            <img
+              src={zaalHovered ? "/zaal/zaal-fab-hover.png" : "/zaal/zaal-fab.png"}
+              alt="Assistente Zaal"
+              className="size-full object-cover"
+            />
+            <span className="absolute bottom-1 right-1 size-2.5 rounded-full bg-[#B9F83A] ring-2 ring-[#181614]" />
+          </button>
+        </div>
+      )}
+
+      {/* Zaal Interactive Chat Drawer (400px right sheet) */}
+      {zaalDrawerOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[1px]"
+          onClick={() => setZaalDrawerOpen(false)}
+        >
+          <aside
+            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[400px] flex-col border-l border-[#2E2B27] bg-[#221F18] text-[#F3F1EF] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drawer Header */}
+            <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#2E2B27] bg-[#110F0D] px-4">
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-[#B9F83A]" />
+                <span className="font-display text-sm font-bold text-white">
+                  Zaal
+                </span>
+                <span className="text-xs text-[#A7A29C]">
+                  · Assistente da Zaalys
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label="Recomeçar conversa"
+                  onClick={() => {
+                    setZaalVideo("/zaal/zaal-waving.mp4");
+                    setZaalMessages([
+                      {
+                        role: "zaal",
+                        text: `Oi, ${displayName.split(" ")[0]}! Sou o **Zaal** 👋\nEscolha uma dúvida abaixo ou escreva sua pergunta sobre a Zaalys.`,
+                      },
+                    ]);
+                  }}
+                  className="grid size-8 place-items-center rounded-lg text-[#A7A29C] hover:bg-white/10 hover:text-white cursor-pointer"
+                >
+                  <RotateCcw size={14} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Fechar Zaal"
+                  onClick={() => setZaalDrawerOpen(false)}
+                  className="grid size-8 place-items-center rounded-lg text-[#A7A29C] hover:bg-white/10 hover:text-white cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* 3D Mascot Video Stage */}
+            <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden border-b border-[#2E2B27] bg-[#141210]">
+              <video
+                key={zaalVideo}
+                src={zaalVideo}
+                poster="/zaal/zaal-placeholder.png"
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="size-full object-cover"
+              />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#221F18] to-transparent" />
+            </div>
+
+            {/* Messages & Quick Prompts */}
+            <div className="flex-1 space-y-3 overflow-y-auto p-4 text-xs leading-relaxed">
+              {zaalMessages.map((m, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${
+                    m.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`max-w-[85%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 ${
+                      m.role === "user"
+                        ? "bg-[#B9F83A] font-medium text-[#141A06]"
+                        : "border border-[#2E2B27] bg-[#1A1814] text-[#F3F1EF]"
+                    }`}
+                  >
+                    {m.text.split("**").map((part, i) =>
+                      i % 2 === 1 ? (
+                        <strong
+                          key={i}
+                          className={
+                            m.role === "user" ? "font-bold" : "text-[#B9F83A]"
+                          }
+                        >
+                          {part}
+                        </strong>
+                      ) : (
+                        <span key={i}>{part}</span>
+                      )
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              <div className="pt-2">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#A7A29C]">
+                  Perguntas frequentes
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {currentQuestions.map((qa) => (
+                    <button
+                      key={qa.q}
+                      type="button"
+                      onClick={() => askZaal(qa)}
+                      className="rounded-full border border-[#2E2B27] bg-[#28241E] px-3 py-1.5 text-left text-xs text-[#F3F1EF] transition-colors hover:border-[#B9F83A]/50 hover:bg-[#322D25] cursor-pointer"
+                    >
+                      {qa.q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Input Form */}
+            <form
+              onSubmit={handleZaalSubmit}
+              className="flex items-center gap-2 border-t border-[#2E2B27] bg-[#181612] p-3"
+            >
+              <input
+                type="text"
+                value={zaalInput}
+                onChange={(e) => setZaalInput(e.target.value)}
+                placeholder="Pergunte qualquer coisa ao Zaal..."
+                className="h-10 min-w-0 flex-1 rounded-xl border border-[#2E2B27] bg-[#221F18] px-3 text-xs text-white placeholder:text-[#8E8880] outline-none focus:border-[#B9F83A]"
+              />
+              <button
+                type="submit"
+                aria-label="Enviar pergunta"
+                className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#B9F83A] text-[#141A06] transition-transform active:scale-95 cursor-pointer"
+              >
+                <Send size={15} />
+              </button>
+            </form>
+          </aside>
         </div>
       )}
     </div>

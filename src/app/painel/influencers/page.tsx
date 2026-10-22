@@ -15,10 +15,13 @@ import {
 
 const FORMATS = [
   { key: "todos", label: "Todos" },
-  { key: "hands", label: "Só as mãos" },
-  { key: "ugc", label: "UGC Creator" },
-  { key: "demo", label: "Demonstração" },
-  { key: "review", label: "Review Viral" },
+  { key: "presenter", label: "Apresentando" },
+  { key: "application", label: "Aplicação" },
+  { key: "hands-demo", label: "Demonstração" },
+  { key: "unboxing", label: "Unboxing" },
+  { key: "try-on", label: "Provando" },
+  { key: "pov", label: "POV" },
+  { key: "pet", label: "Pet" },
 ];
 
 function TemplatesInner() {
