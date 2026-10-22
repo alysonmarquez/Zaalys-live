@@ -1,0 +1,82 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  /* Tema escuro: azul-noite, violeta e vermelho de "no ar" */
+  --color-paper: #0c0e22;
+  --color-card: #161937;
+  --color-night: #07081a;
+  --color-ink: #eef0ff;
+  --color-muted: #9aa0c3;
+  --color-line: #2a2e55;
+  --color-violet: #7c5cff;
+  --color-violet-soft: #241d52;
+  --color-onair: #ff4d68;
+  --color-on: #2fd3a0;
+  --color-warn: #ffb547;
+
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-violet);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-violet text-white hover:bg-[#6a47ff];
+}
+@utility btn-ghost {
+  @apply btn border border-line bg-card text-ink hover:border-ink;
+}
+@utility field {
+  @apply w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-[15px] outline-none focus:border-violet;
+}
+@utility label {
+  @apply mb-1.5 block text-sm font-semibold text-ink;
+}
+@utility panel {
+  @apply rounded-2xl border border-line bg-card;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.onair-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
