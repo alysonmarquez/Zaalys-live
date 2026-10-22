@@ -14,12 +14,12 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
-  const supabase = createClient();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
+    const supabase = createClient();
     const { error } =
       mode === "entrar"
         ? await supabase.auth.signInWithPassword({ email, password })
@@ -38,6 +38,7 @@ function LoginForm() {
   async function magicLink() {
     if (!email) return setMessage({ kind: "error", text: "Digite o e-mail para receber o link." });
     setLoading(true);
+    const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
