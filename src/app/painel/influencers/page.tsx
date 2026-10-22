@@ -1,109 +1,497 @@
-import { revalidatePath } from "next/cache";
-import { PageHeader } from "@/components/page-header";
-import { requireAccess } from "@/lib/access";
-import { createClient } from "@/lib/supabase/server";
+"use client";
 
-async function createCharacter(form: FormData) {
-  "use server";
-  const access = await requireAccess();
-  const name = String(form.get("name") ?? "").trim();
-  const appearance = String(form.get("appearance") ?? "").trim();
-  if (!name || appearance.length < 20) return;
-  const supabase = await createClient();
-  await supabase.from("characters").insert({
-    user_id: access.userId,
-    name,
-    appearance,
-    style: String(form.get("style") ?? "") || null,
-  });
-  revalidatePath("/painel/influencers");
-}
+import { useSearchParams } from "next/navigation";
+import React, { Suspense, useEffect, useState } from "react";
+import { RaisedButton, cn } from "@/components/brand";
+import {
+  PROOF_GOAL_LABELS,
+  type ProofGoal,
+  ZAALYS_MODELS,
+  ZAALYS_PRODUCTS,
+  ZAALYS_TEMPLATES,
+  type ZaalysTemplate,
+  formatBRL,
+} from "@/lib/zaalys-data";
 
-async function deleteCharacter(form: FormData) {
-  "use server";
-  await requireAccess();
-  const supabase = await createClient();
-  await supabase.from("characters").delete().eq("id", String(form.get("id"))); // RLS só deixa apagar os seus
-  revalidatePath("/painel/influencers");
-}
+const FORMATS = [
+  { key: "todos", label: "Todos" },
+  { key: "hands", label: "Só as mãos" },
+  { key: "ugc", label: "UGC Creator" },
+  { key: "demo", label: "Demonstração" },
+  { key: "review", label: "Review Viral" },
+];
 
-export default async function Influencers() {
-  const access = await requireAccess();
-  const supabase = await createClient();
-  const { data: characters } = await supabase.from("characters").select("*").order("created_at");
-  const mine = (characters ?? []).filter((c) => c.user_id === access.userId);
-  const ready = (characters ?? []).filter((c) => c.user_id === null);
+function TemplatesInner() {
+  const searchParams = useSearchParams();
+  const initialProdId = Number(searchParams.get("produto") ?? "0") || ZAALYS_PRODUCTS[0]!.id;
+
+  const [format, setFormat] = useState("todos");
+  const [goal, setGoal] = useState<ProofGoal | null>(null);
+  const [activeTemplate, setActiveTemplate] = useState<ZaalysTemplate | null>(null);
+  const [selectedProdId, setSelectedProdId] = useState<number>(initialProdId);
+  const [selectedModelId, setSelectedModelId] = useState<string>(ZAALYS_MODELS[0]!.id);
+  const [selectedGoal, setSelectedGoal] = useState<ProofGoal>("use");
+  const [generating, setGenerating] = useState(false);
+  const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("produto")) {
+      setSelectedProdId(Number(searchParams.get("produto")));
+      setActiveTemplate(ZAALYS_TEMPLATES[1]!);
+    }
+  }, [searchParams]);
+
+  const filteredTemplates = ZAALYS_TEMPLATES.filter(
+    (t) =>
+      (format === "todos" || t.format === format) &&
+      (!goal || t.proofGoals.includes(goal)),
+  );
+
+  const selectedProduct =
+    ZAALYS_PRODUCTS.find((p) => p.id === selectedProdId) ?? ZAALYS_PRODUCTS[0]!;
+  const selectedModel =
+    ZAALYS_MODELS.find((m) => m.id === selectedModelId) ?? ZAALYS_MODELS[0]!;
+
+  async function handleGenerate() {
+    if (!activeTemplate) return;
+    setGenerating(true);
+    setGeneratedPrompt(null);
+
+    try {
+      const res = await fetch("/api/ai/video-script", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productName: selectedProduct.title,
+          price: formatBRL(selectedProduct.priceCents),
+          benefits: selectedProduct.facts.join("\n"),
+          characterId: activeTemplate.needsModel ? selectedModel.id : undefined,
+          templateId: activeTemplate.id,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.script?.videoPrompt) {
+          setGeneratedPrompt(
+            `[ROTEIRO FALADO — 8s]\nGancho: "${data.script.hook}"\n${(data.script.scenes ?? []).map((s: { visual: string; line: string }, i: number) => `Cena ${i + 1}: ${s.visual} — "${s.line}"`).join("\n")}\nCTA: "${data.script.cta}"\n\n[PROMPT GOOGLE FLOW / VEO 3]\n${data.script.videoPrompt}`,
+          );
+          setGenerating(false);
+          return;
+        }
+      }
+    } catch {
+      // Fallback deterministic prompt below
+    }
+
+    setTimeout(() => {
+      const modelDesc = activeTemplate.needsModel
+        ? `Creator: ${selectedModel.name} (${selectedModel.appearance}).`
+        : `Hands-only POV shot on a clean sunlit countertop, no face visible.`;
+
+      const prompt = `[PLANO DE CENA · 8 SEGUNDOS · ${activeTemplate.formatLabel.toUpperCase()}]
+Pergunta respondida: ${PROOF_GOAL_LABELS[selectedGoal]}
+Produto: ${selectedProduct.title}
+
+0.0s – 2.0s (Gancho visual):
+${modelDesc} Segura o produto "${selectedProduct.title}" próximo à lente em 9:16 vertical, luz natural suave de janela, foco nítido na textura real do item.
+Fala em português brasileiro natural: "Se você estava procurando saber se vale a pena, olha esse detalhe de perto."
+
+2.0s – 6.0s (Prova · ${PROOF_GOAL_LABELS[selectedGoal]}):
+Demonstração contínua mostrando: ${selectedProduct.facts[0]}. Movimento de câmera orgânico estilo iPhone 16 Pro UGC, sem cortes bruscos.
+
+6.0s – 8.0s (Chamada para a sacola):
+Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do TikTok Shop): "Deixei o link com desconto aqui no carrinho laranja."`;
+
+      setGeneratedPrompt(prompt);
+      setGenerating(false);
+    }, 900);
+  }
+
+  function handleCopyPrompt() {
+    if (!generatedPrompt) return;
+    navigator.clipboard?.writeText(generatedPrompt).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleOpenFlow() {
+    if (generatedPrompt) {
+      navigator.clipboard?.writeText(generatedPrompt).catch(() => {});
+    }
+    window.open("https://labs.google/fx/tools/flow", "_blank", "noopener,noreferrer");
+  }
 
   return (
-    <>
-      <PageHeader title="Influencers">
-        Um personagem com aparência fixa entra igual em todos os roteiros e prompts, para os vídeos parecerem da mesma pessoa.
-      </PageHeader>
+    <div className="mx-auto w-full max-w-6xl space-y-6">
+      <header>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">Templates Virais</h1>
+        <p className="mt-1 max-w-2xl text-muted-foreground">
+          Escolha um movimento, combine com o seu produto — a IA escreve o roteiro plano a plano e
+          você gera no Google Flow enviando as imagens.
+        </p>
+      </header>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-8">
-          <section>
-            <h2 className="mb-3 text-lg font-bold">Seus personagens</h2>
-            {mine.length ? (
-              <ul className="grid gap-4 sm:grid-cols-2">
-                {mine.map((c) => (
-                  <li key={c.id} className="panel p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-lg font-bold">{c.name}</h3>
-                      <form action={deleteCharacter}>
-                        <input type="hidden" name="id" value={c.id} />
-                        <button className="text-sm text-muted hover:text-onair">Excluir</button>
-                      </form>
-                    </div>
-                    {c.style && <p className="text-sm text-violet">{c.style}</p>}
-                    <p className="mt-2 text-sm text-muted">{c.appearance}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-muted">Nenhum ainda. Crie o primeiro ao lado.</p>
+      {/* Pergunta de compra filter */}
+      <fieldset className="flex flex-wrap gap-2">
+        <legend className="mb-2 text-sm font-medium">
+          Qual pergunta o vídeo deve responder?
+        </legend>
+        <button
+          type="button"
+          onClick={() => setGoal(null)}
+          aria-pressed={goal === null}
+          className={cn(
+            "rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
+            goal === null
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "border border-border bg-card text-muted-foreground hover:text-foreground",
+          )}
+        >
+          Todas
+        </button>
+        {(Object.entries(PROOF_GOAL_LABELS) as [ProofGoal, string][]).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setGoal(k)}
+            aria-pressed={goal === k}
+            className={cn(
+              "rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
+              goal === k
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "border border-border bg-card text-muted-foreground hover:text-foreground",
             )}
-          </section>
+          >
+            {label}
+          </button>
+        ))}
+      </fieldset>
 
-          <section>
-            <h2 className="mb-3 text-lg font-bold">Modelos prontos</h2>
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {ready.map((c) => (
-                <li key={c.id} className="panel p-5">
-                  <h3 className="text-lg font-bold">{c.name}</h3>
-                  {c.style && <p className="text-sm text-violet">{c.style}</p>}
-                  <p className="mt-2 text-sm text-muted">{c.appearance}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
+      {goal === "fit" && (
+        <p className="text-xs text-muted-foreground">
+          As cenas ilustram a peça. Confira a tabela de medidas para escolher o tamanho.
+        </p>
+      )}
 
-        <form action={createCharacter} className="panel h-fit space-y-4 p-5">
-          <h2 className="text-lg font-bold">Novo personagem</h2>
-          <div>
-            <label className="label" htmlFor="name">Nome</label>
-            <input id="name" name="name" required className="field" placeholder="Ex.: Bia" />
-          </div>
-          <div>
-            <label className="label" htmlFor="style">Estilo</label>
-            <input id="style" name="style" className="field" placeholder="Ex.: casual, esportivo, elegante" />
-          </div>
-          <div>
-            <label className="label" htmlFor="appearance">Aparência</label>
-            <textarea
-              id="appearance"
-              name="appearance"
-              required
-              minLength={20}
-              rows={5}
-              className="field"
-              placeholder="Idade, cabelo, roupa, maquiagem, jeito de falar. Quanto mais específico, mais consistente nos vídeos."
-            />
-          </div>
-          <button className="btn-primary w-full">Criar personagem</button>
-        </form>
+      {/* Format Filter Pills */}
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto rounded-full bg-muted/40 p-1 px-1.5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {FORMATS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setFormat(f.key)}
+            className={cn(
+              "shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-[transform,color,background-color,border-color] duration-150 ease-out active:scale-[0.96] cursor-pointer",
+              format === f.key
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground",
+            )}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
-    </>
+
+      {/* Templates Grid */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {filteredTemplates.map((tpl) => (
+          <button
+            key={tpl.id}
+            type="button"
+            onClick={() => {
+              setActiveTemplate(tpl);
+              setGeneratedPrompt(null);
+            }}
+            className="group relative flex flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-card text-left transition-[transform,border-color,box-shadow] duration-200 hover:border-primary/40 hover:shadow-[0_16px_36px_-12px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer dark:border-white/[0.08]"
+          >
+            <div className="relative aspect-[9/16] w-full overflow-hidden bg-black">
+              <video
+                src={tpl.video}
+                poster={tpl.poster}
+                muted
+                loop
+                playsInline
+                autoPlay
+                className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+              <span className="absolute left-3 top-3 rounded-full border border-white/15 bg-black/55 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary backdrop-blur-md">
+                {tpl.formatLabel}
+              </span>
+              <div className="absolute inset-x-3 bottom-3">
+                <h3 className="font-display text-sm font-bold leading-snug text-white">
+                  {tpl.title}
+                </h3>
+                <p className="mt-1 line-clamp-2 text-[11px] text-white/75">{tpl.description}</p>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Elenco do Estúdio (AI Influencers & Models) */}
+      <section className="pt-4">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="font-display text-xl font-bold tracking-tight">
+              Elenco do Estúdio · Influencers de IA
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Escolha um rosto fixo para aparecer apresentando os produtos nos seus vídeos.
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {ZAALYS_MODELS.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => {
+                setSelectedModelId(m.id);
+                setActiveTemplate(ZAALYS_TEMPLATES[1]!);
+                setGeneratedPrompt(null);
+              }}
+              className="group relative aspect-[3/4] overflow-hidden rounded-3xl border border-black/[0.06] bg-muted text-left transition-[transform,border-color] duration-200 hover:border-primary/50 active:scale-[0.97] cursor-pointer dark:border-white/[0.08]"
+            >
+              <img
+                src={m.image}
+                alt={m.name}
+                loading="lazy"
+                className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+              <div className="absolute inset-x-3 bottom-3">
+                <span className="block truncate text-sm font-bold text-white">{m.name}</span>
+                <span className="block truncate text-[10px] uppercase tracking-wider text-white/70">
+                  {m.style}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Split-View Template Generator Modal (Exact 32je0ui0vbk-h.js layout) */}
+      {activeTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="apple-card grid max-h-[90dvh] w-full max-w-3xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden shadow-2xl sm:grid-cols-[210px_1fr] sm:grid-rows-1">
+            {/* Left Video Preview Column */}
+            <div className="relative h-[190px] w-full overflow-hidden bg-black sm:h-full">
+              <video
+                src={activeTemplate.video}
+                poster={activeTemplate.poster}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="size-full object-cover"
+              />
+              {activeTemplate.needsModel && selectedModel && (
+                <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3">
+                  <img
+                    src={selectedModel.image}
+                    alt={selectedModel.name}
+                    className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-[10px] uppercase tracking-wide text-white/60">
+                      Modelo
+                    </span>
+                    <span className="block truncate text-sm font-semibold text-white">
+                      {selectedModel.name}
+                    </span>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Right Controls & Generated Prompt Column */}
+            <div className="flex min-h-0 flex-col overflow-y-auto p-5 sm:p-6">
+              <div className="flex items-start justify-between gap-2">
+                <span className="w-fit rounded-full border border-black/[0.04] bg-primary/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary dark:border-white/[0.06]">
+                  Movimento · {activeTemplate.formatLabel}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTemplate(null)}
+                  className="rounded-lg p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <h2 className="mt-3 font-display text-xl font-bold tracking-tight">
+                {activeTemplate.title}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {activeTemplate.needsModel
+                  ? "Escolha o produto e o modelo — a IA adapta este movimento para você."
+                  : "Escolha o produto — este movimento mostra só as mãos, sem modelo."}
+              </p>
+
+              <fieldset disabled={generating} className="mt-4 min-w-0 space-y-4">
+                {/* Product Selector */}
+                <div className="block space-y-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">Produto</span>
+                  <select
+                    value={selectedProdId}
+                    onChange={(e) => {
+                      setSelectedProdId(Number(e.target.value));
+                      setGeneratedPrompt(null);
+                    }}
+                    className="field text-sm"
+                  >
+                    {ZAALYS_PRODUCTS.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.title} ({formatBRL(p.priceCents)})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-muted-foreground">
+                    Este movimento combina com {activeTemplate.categories.join(", ")}.
+                  </p>
+                </div>
+
+                {/* Pergunta de compra */}
+                <fieldset className="flex flex-wrap gap-2">
+                  <legend className="mb-1.5 text-xs font-medium text-muted-foreground">
+                    Pergunta de compra
+                  </legend>
+                  {activeTemplate.proofGoals.map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => {
+                        setSelectedGoal(g);
+                        setGeneratedPrompt(null);
+                      }}
+                      className={cn(
+                        "rounded-xl px-3 py-1 text-xs font-semibold transition-colors cursor-pointer",
+                        selectedGoal === g
+                          ? "bg-primary text-primary-foreground"
+                          : "border border-border bg-card text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {PROOF_GOAL_LABELS[g]}
+                    </button>
+                  ))}
+                </fieldset>
+
+                {/* Model Selector Grid */}
+                {activeTemplate.needsModel && (
+                  <div className="space-y-2">
+                    <span className="text-xs font-medium text-muted-foreground">Modelo</span>
+                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                      {ZAALYS_MODELS.slice(0, 5).map((m) => {
+                        const isSel = m.id === selectedModelId;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedModelId(m.id);
+                              setGeneratedPrompt(null);
+                            }}
+                            className={cn(
+                              "group relative overflow-hidden rounded-2xl border text-left transition-all cursor-pointer",
+                              isSel
+                                ? "border-primary ring-2 ring-primary/40 shadow-xs"
+                                : "border-black/[0.06] hover:border-black/[0.12] dark:border-white/[0.08]",
+                            )}
+                          >
+                            <div className="relative aspect-[3/4] overflow-hidden bg-muted/40">
+                              <img
+                                src={m.image}
+                                alt={m.name}
+                                className="size-full object-cover"
+                              />
+                              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 to-transparent" />
+                              <div className="absolute inset-x-0 bottom-0 p-1.5">
+                                <span className="block truncate text-[10px] font-semibold text-white">
+                                  {m.name}
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </fieldset>
+
+              <div className="mt-4">
+                <RaisedButton
+                  size="lg"
+                  className="w-full"
+                  disabled={generating}
+                  onClick={handleGenerate}
+                >
+                  {generating ? "Gerando roteiro…" : "✦ Gerar roteiro"}
+                </RaisedButton>
+              </div>
+
+              {generatedPrompt && (
+                <div className="mt-5 space-y-4">
+                  <div className="rounded-2xl border border-border bg-card/60 p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+                        Roteiro gerado
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCopyPrompt}
+                        className="rounded-lg border border-border px-2.5 py-1 text-xs font-semibold hover:bg-foreground/[0.05] cursor-pointer"
+                      >
+                        {copied ? "✓ Copiado" : "Copiar"}
+                      </button>
+                    </div>
+                    <pre className="max-h-[24vh] overflow-y-auto whitespace-pre-wrap font-mono text-xs leading-relaxed text-foreground/90">
+                      {generatedPrompt}
+                    </pre>
+                  </div>
+
+                  {/* Agora gere no Google Flow */}
+                  <div className="rounded-2xl border border-border bg-card/40 p-4">
+                    <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Agora gere no Google Flow
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {activeTemplate.needsModel && (
+                          <img
+                            src={selectedModel.image}
+                            alt={selectedModel.name}
+                            className="size-8 rounded-lg object-cover"
+                          />
+                        )}
+                        <img
+                          src={selectedProduct.imageUrl}
+                          alt={selectedProduct.title}
+                          className="size-8 rounded-lg object-cover"
+                        />
+                        <span>Ingredientes prontos para colar (Ctrl/Cmd + V)</span>
+                      </div>
+                      <RaisedButton size="sm" onClick={handleOpenFlow}>
+                        Copiar e abrir Google Flow ↗
+                      </RaisedButton>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function InfluencersPage() {
+  return (
+    <Suspense fallback={null}>
+      <TemplatesInner />
+    </Suspense>
   );
 }

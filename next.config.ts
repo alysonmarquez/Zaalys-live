@@ -14,6 +14,22 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      { source: "/central", destination: "/painel" },
+      { source: "/dashboard", destination: "/painel?vista=dashboard" },
+      { source: "/products", destination: "/painel/catalogo" },
+      { source: "/venda", destination: "/painel/catalogo" },
+      { source: "/templates", destination: "/painel/influencers" },
+      { source: "/radar", destination: "/painel/radar" },
+      { source: "/trend-boost", destination: "/painel/roteiros" },
+      { source: "/ferramentas/raio-x", destination: "/painel/raio-x" },
+      { source: "/ferramentas/live", destination: "/painel/live" },
+      { source: "/settings", destination: "/painel/conta" },
+      { source: "/profile", destination: "/painel/conta?aba=perfil" },
+      { source: "/indique", destination: "/painel/conta?aba=indique" },
+    ];
+  },
 };
 
 export default nextConfig;

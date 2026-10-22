@@ -138,11 +138,11 @@
   }
 }
 
-@utility text-muted {
-  color: var(--muted-foreground);
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
-@utility bg-studio {
+.bg-studio {
   background:
     radial-gradient(
       60% 55% at 15% -10%,
@@ -152,7 +152,7 @@
     var(--background);
 }
 
-@utility apple-glass {
+.apple-glass {
   background: color-mix(in oklch, var(--card) 75%, transparent);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
@@ -162,7 +162,29 @@
     0 8px 32px -8px #00000059;
 }
 
-@utility apple-card {
+.apple-chrome {
+  background: color-mix(in oklch, var(--background) 78%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  backdrop-filter: blur(20px) saturate(190%);
+  border-bottom: 1px solid color-mix(in oklch, var(--foreground) 7%, transparent);
+  box-shadow: inset 0 -1px #ffffff0f;
+}
+
+.apple-press {
+  transition: transform 0.12s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.apple-press:active {
+  transform: scale(0.97);
+}
+
+.apple-press-sm {
+  transition: transform 0.1s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.apple-press-sm:active {
+  transform: scale(0.985);
+}
+
+.apple-card {
   border: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent);
   border-radius: 1.5rem;
   background-color: var(--card);
@@ -171,6 +193,169 @@
     box-shadow 0.25s,
     transform 0.25s;
   box-shadow: 0 4px 20px -4px #0000000d;
+}
+
+@keyframes shimmer-sweep {
+  0% {
+    transform: translate(-100%);
+  }
+  to {
+    transform: translate(100%);
+  }
+}
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: "";
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--foreground) 16%, transparent),
+    transparent
+  );
+  position: absolute;
+  inset: 0;
+  transform: translate(-100%);
+  animation: shimmer-sweep 1.6s var(--ease-in-out) infinite;
+  animation-delay: var(--shimmer-delay, 0s);
+}
+
+/* Zaalys Feature Demos (.zd*) */
+.zd {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.zd-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.zd-caption {
+  margin-top: 10px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.zd-row {
+  display: grid;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+}
+.zd-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.zd-num {
+  font-variant-numeric: tabular-nums;
+}
+.zd-dim {
+  color: var(--muted-foreground);
+}
+.zd-acc {
+  color: var(--primary);
+}
+.zd-xray .zd-stat {
+  opacity: 0;
+  transform: translateY(4px);
+  animation: zd-row-in 560ms var(--ease-out) forwards;
+}
+.zd-xray .zd-stat:nth-child(2) {
+  animation-delay: 60ms;
+}
+.zd-xray .zd-stat:nth-child(3) {
+  animation-delay: 120ms;
+}
+.zd-xray .zd-quote {
+  opacity: 0;
+  transform: translateY(4px);
+  animation: zd-loop 6.4s var(--ease-out) 700ms infinite;
+}
+.zd-xray .zd-mark {
+  opacity: 0;
+  transform: translateY(3px);
+  animation: zd-mark 6.4s var(--ease-out) 1.5s infinite;
+}
+.zd-live .zd-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: zd-pulse 2.4s ease-in-out infinite;
+}
+.zd-live .zd-msg {
+  opacity: 0;
+  transform: translateY(4px);
+  animation: zd-loop 5.6s var(--ease-out) infinite;
+}
+.zd-live .zd-msg:nth-of-type(2) {
+  animation-delay: 700ms;
+}
+.zd-live .zd-msg:nth-of-type(3) {
+  animation-delay: 1.8s;
+}
+
+@keyframes zd-row-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes zd-loop {
+  0%,
+  5% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  14%,
+  80% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90%,
+  100% {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+@keyframes zd-mark {
+  0%,
+  8% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  17%,
+  84% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  93%,
+  100% {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+@keyframes zd-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@utility text-muted {
+  color: var(--muted-foreground);
 }
 
 @utility btn {

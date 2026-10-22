@@ -1,65 +1,873 @@
-import Link from "next/link";
-import { EmptyState, PageHeader } from "@/components/page-header";
-import { getAccess } from "@/lib/access";
-import { createClient } from "@/lib/supabase/server";
+"use client";
 
-const SHORTCUTS = [
-  { href: "/painel/live", title: "Montar uma live", text: "Roteiro por produto e modo tela cheia." },
-  { href: "/painel/roteiros", title: "Criar roteiro de vídeo", text: "Gancho, cenas, falas e prompt pronto." },
-  { href: "/painel/catalogo", title: "Escolher produto", text: "Compare preço e comissão." },
-  { href: "/painel/conta", title: "Ligar a live infinita", text: "Pegue sua chave e instale a extensão." },
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { Suspense, useEffect, useState } from "react";
+import { RaisedButton, Segmented, cn } from "@/components/brand";
+import {
+  ZAALYS_CHANGES,
+  ZAALYS_PRODUCTS,
+  ZAALYS_TEMPLATES,
+  compactNumber,
+  formatBRL,
+} from "@/lib/zaalys-data";
+
+type PeriodKey = "today" | "week" | "d7" | "d15" | "month" | "d30";
+
+const PERIODS: { v: PeriodKey; l: string }[] = [
+  { v: "today", l: "Hoje" },
+  { v: "week", l: "Esta semana" },
+  { v: "d7", l: "7 dias" },
+  { v: "d15", l: "15 dias" },
+  { v: "month", l: "Este mês" },
+  { v: "d30", l: "30 dias" },
 ];
 
-export default async function PainelHome() {
-  const access = await getAccess();
-  const supabase = await createClient();
-  const { data: scripts } = await supabase
-    .from("scripts")
-    .select("id, title, kind, created_at")
-    .order("created_at", { ascending: false })
-    .limit(6);
+const SERIES_BY_PERIOD: Record<
+  PeriodKey,
+  {
+    gmvCents: number;
+    commissionCents: number;
+    orders: number;
+    ticketCents: number;
+    items: number;
+    views: number;
+    clicks: number;
+    commissionBaseCents: number;
+    series: { label: string; gmvCents: number; orders: number }[];
+  }
+> = {
+  today: {
+    gmvCents: 184290,
+    commissionCents: 36858,
+    orders: 21,
+    ticketCents: 8775,
+    items: 24,
+    views: 18400,
+    clicks: 940,
+    commissionBaseCents: 179100,
+    series: [
+      { label: "00h", gmvCents: 8990, orders: 1 },
+      { label: "04h", gmvCents: 14990, orders: 2 },
+      { label: "08h", gmvCents: 26970, orders: 3 },
+      { label: "12h", gmvCents: 41950, orders: 5 },
+      { label: "16h", gmvCents: 52430, orders: 6 },
+      { label: "20h", gmvCents: 38960, orders: 4 },
+    ],
+  },
+  week: {
+    gmvCents: 894500,
+    commissionCents: 178900,
+    orders: 98,
+    ticketCents: 9127,
+    items: 112,
+    views: 92400,
+    clicks: 4810,
+    commissionBaseCents: 868000,
+    series: [
+      { label: "Seg", gmvCents: 112000, orders: 12 },
+      { label: "Ter", gmvCents: 138400, orders: 15 },
+      { label: "Qua", gmvCents: 98900, orders: 11 },
+      { label: "Qui", gmvCents: 164200, orders: 18 },
+      { label: "Sex", gmvCents: 192000, orders: 21 },
+      { label: "Sáb", gmvCents: 189000, orders: 21 },
+    ],
+  },
+  d7: {
+    gmvCents: 1042800,
+    commissionCents: 208560,
+    orders: 114,
+    ticketCents: 9147,
+    items: 129,
+    views: 114200,
+    clicks: 5690,
+    commissionBaseCents: 1012000,
+    series: [
+      { label: "D-6", gmvCents: 118000, orders: 13 },
+      { label: "D-5", gmvCents: 142000, orders: 15 },
+      { label: "D-4", gmvCents: 129800, orders: 14 },
+      { label: "D-3", gmvCents: 158000, orders: 17 },
+      { label: "D-2", gmvCents: 144000, orders: 16 },
+      { label: "Ontem", gmvCents: 166710, orders: 18 },
+      { label: "Hoje", gmvCents: 184290, orders: 21 },
+    ],
+  },
+  d15: {
+    gmvCents: 2189400,
+    commissionCents: 437880,
+    orders: 238,
+    ticketCents: 9199,
+    items: 271,
+    views: 248000,
+    clicks: 12300,
+    commissionBaseCents: 2120000,
+    series: [
+      { label: "08/10", gmvCents: 280000, orders: 31 },
+      { label: "11/10", gmvCents: 345000, orders: 38 },
+      { label: "14/10", gmvCents: 392000, orders: 42 },
+      { label: "17/10", gmvCents: 368000, orders: 40 },
+      { label: "20/10", gmvCents: 412000, orders: 45 },
+      { label: "Hoje", gmvCents: 392400, orders: 42 },
+    ],
+  },
+  month: {
+    gmvCents: 3482000,
+    commissionCents: 696400,
+    orders: 382,
+    ticketCents: 9115,
+    items: 431,
+    views: 412000,
+    clicks: 19840,
+    commissionBaseCents: 3390000,
+    series: [
+      { label: "Sem 1", gmvCents: 740000, orders: 81 },
+      { label: "Sem 2", gmvCents: 862000, orders: 95 },
+      { label: "Sem 3", gmvCents: 985500, orders: 108 },
+      { label: "Sem 4", gmvCents: 894500, orders: 98 },
+    ],
+  },
+  d30: {
+    gmvCents: 4128900,
+    commissionCents: 825780,
+    orders: 451,
+    ticketCents: 9155,
+    items: 509,
+    views: 498000,
+    clicks: 24100,
+    commissionBaseCents: 4010000,
+    series: [
+      { label: "S1", gmvCents: 610000, orders: 66 },
+      { label: "S2", gmvCents: 720000, orders: 79 },
+      { label: "S3", gmvCents: 845000, orders: 92 },
+      { label: "S4", gmvCents: 911100, orders: 100 },
+      { label: "S5", gmvCents: 1042800, orders: 114 },
+    ],
+  },
+};
+
+function ArrowUpRight({ size = 20, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M7 7h10v10" />
+      <path d="M7 17 17 7" />
+    </svg>
+  );
+}
+
+function TemplatesPreviewStrip() {
+  const posters = [
+    ...ZAALYS_TEMPLATES.map((t) => t.poster),
+    "/media/models/bia-costa.jpg",
+    "/media/models/camila-souza.jpg",
+    "/media/models/duda-ferreira.jpg",
+    "/media/models/julia-santos.jpg",
+    "/media/models/lucas-mendes.jpg",
+  ];
 
   return (
-    <>
-      <PageHeader title="Início">
-        {access?.active
-          ? access.plan === "lifetime"
-            ? "Seu acesso é vitalício."
-            : `Plano mensal ativo até ${new Date(access.expiresAt!).toLocaleDateString("pt-BR")}.`
-          : "Você ainda não tem um plano ativo."}
-      </PageHeader>
+    <div className="flex gap-2 overflow-hidden px-5 opacity-45 saturate-[0.65] transition-[opacity,filter] duration-300 ease-out group-hover:opacity-100 group-hover:saturate-100">
+      {posters.map((src, i) => (
+        <div
+          key={`${src}-${i}`}
+          className="relative aspect-[9/16] w-[72px] shrink-0 overflow-hidden rounded-xl border border-white/10 bg-muted"
+        >
+          <img src={src} alt="" loading="lazy" className="size-full object-cover" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
-      {!access?.active && (
-        <div className="panel mb-8 flex flex-wrap items-center justify-between gap-4 border-violet bg-violet-soft p-5">
-          <p className="font-semibold">Comprou com outro e-mail? Entre com o e-mail da compra para liberar o acesso.</p>
-          <Link href="/#planos" className="btn-primary">Ver planos</Link>
+function RadarTickerPanel() {
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIdx((i) => (i + 1) % ZAALYS_CHANGES.length);
+    }, 3200);
+    return () => clearInterval(id);
+  }, []);
+
+  const item = ZAALYS_CHANGES[idx]!;
+  const isGood = item.tone === "good";
+  const isCommission = item.field === "commissionPct";
+  const label = isCommission
+    ? `Comissão ${item.from}% → ${item.to}%`
+    : `Preço ${formatBRL(item.from)} → ${formatBRL(item.to)}`;
+  const dirLabel = isCommission
+    ? item.to > item.from
+      ? "subiu"
+      : "caiu"
+    : item.to < item.from
+      ? "caiu"
+      : "subiu";
+
+  return (
+    <div className="px-5">
+      <div className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-background/75 p-2 backdrop-blur-sm">
+        <img
+          src={item.product.imageUrl}
+          alt=""
+          loading="lazy"
+          className="size-9 shrink-0 rounded-lg object-cover"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-medium">{item.product.title}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {label}{" "}
+            <span className={cn("font-semibold tabular-nums", isGood ? "text-primary" : "text-destructive")}>
+              {dirLabel}
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BentoCard({
+  href,
+  icon,
+  title,
+  desc,
+  className,
+  primary,
+  cover,
+  panel,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  className?: string;
+  primary?: boolean;
+  cover?: string;
+  panel?: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "group relative flex h-full min-h-44 flex-col justify-between overflow-hidden rounded-3xl border p-5 transition-[transform,box-shadow] duration-200 ease-out active:scale-[0.97] hover:shadow-[0_16px_36px_-12px_rgba(0,0,0,0.35)]",
+        primary
+          ? "border-primary/30 bg-[color-mix(in_oklch,var(--primary)_8%,var(--card))] hover:border-primary/50"
+          : "border-black/[0.06] bg-card hover:border-black/[0.12] dark:border-white/[0.08] dark:hover:border-white/[0.16]",
+        className,
+      )}
+    >
+      {cover && (
+        <>
+          <img
+            src={cover}
+            alt=""
+            loading="lazy"
+            className="pointer-events-none absolute inset-0 size-full object-cover opacity-85 transition-transform duration-500 ease-out group-hover:scale-105"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card from-30% via-card/70 via-60% to-card/20" />
+        </>
+      )}
+
+      {panel && (
+        <div className="pointer-events-none absolute inset-x-0 top-[4.25rem] z-[5] hidden md:block">
+          {panel}
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {SHORTCUTS.map((s) => (
-          <Link key={s.href} href={s.href} className="panel block p-5 hover:border-violet">
-            <h2 className="text-lg font-bold">{s.title}</h2>
-            <p className="mt-1 text-sm text-muted">{s.text}</p>
-          </Link>
+      <div className="relative z-10 flex h-full min-h-40 flex-col justify-between">
+        <span
+          className={cn(
+            "grid size-11 place-items-center rounded-2xl transition-transform duration-200 group-hover:scale-105",
+            primary ? "bg-primary text-primary-foreground shadow-xs" : "bg-muted/80 text-foreground",
+          )}
+        >
+          {icon}
+        </span>
+        <div>
+          <h3 className="font-display text-lg font-bold tracking-tight">{title}</h3>
+          <p className="mt-1 max-w-sm text-pretty text-sm text-muted-foreground">{desc}</p>
+        </div>
+      </div>
+
+      <ArrowUpRight
+        size={20}
+        className="absolute right-5 top-5 z-10 text-muted-foreground transition-[transform,color] duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground"
+      />
+    </Link>
+  );
+}
+
+function CentralView() {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+
+  function handleSearch() {
+    const q = query.trim();
+    router.push(q ? `/painel/catalogo?q=${encodeURIComponent(q)}` : "/painel/catalogo");
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Search Bar Card */}
+      <div className="overflow-hidden rounded-3xl border border-black/[0.06] bg-card/85 p-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-white/[0.08]">
+        <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:p-3">
+          <div className="relative flex-1">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder="Busque um produto, nicho ou ideia viral…"
+              className="h-11 w-full rounded-2xl border border-black/[0.04] bg-background/50 pl-11 pr-4 text-[15px] outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/40 dark:border-white/[0.06]"
+            />
+          </div>
+          <RaisedButton
+            size="default"
+            onClick={handleSearch}
+            className="shrink-0 rounded-2xl px-6 font-semibold"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />
+            </svg>
+            Minerar
+          </RaisedButton>
+        </div>
+      </div>
+
+      {/* Bento Grid (Exact Zaalys 3-col layout) */}
+      <div className="grid gap-3 md:auto-rows-[190px] md:grid-cols-3">
+        <BentoCard
+          href="/painel/catalogo"
+          primary
+          cover="/media/central-produtos.webp"
+          title="Produtos Virais"
+          desc="Produtos do TikTok Shop BR com preço, comissão e quanto cada venda paga."
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+              <path d="m3.3 7 8.7 5 8.7-5" />
+              <path d="M12 22V12" />
+            </svg>
+          }
+        />
+
+        <BentoCard
+          href="/painel/influencers"
+          className="md:col-span-2 md:row-span-2"
+          cover="/media/central-templates.webp"
+          panel={<TemplatesPreviewStrip />}
+          title="Templates Virais"
+          desc="Escolha o movimento, o modelo e o produto. O prompt sai pronto para o Flow."
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" />
+              <path d="m6.2 5.3 3.1 3.9" />
+              <path d="m12.4 3.4 3.1 4" />
+              <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+            </svg>
+          }
+        />
+
+        <BentoCard
+          href="/painel/radar"
+          className="md:row-span-2"
+          cover="/media/central-radar.webp"
+          panel={<RadarTickerPanel />}
+          title="Radar de mudanças"
+          desc="Quem subiu a comissão e quem cortou, desde a última leitura do catálogo."
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+              <path d="M7 16c.5-2 1.5-7 4-7 2 0 2 3 4 3 2.5 0 4.5-5 5-7" />
+            </svg>
+          }
+        />
+
+        <BentoCard
+          href="/painel/roteiros"
+          cover="/media/central-trend.webp"
+          title="Trend AI"
+          desc="Escolha o tom e a IA escreve o roteiro e o prompt do vídeo."
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+              <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+            </svg>
+          }
+        />
+
+        <BentoCard
+          href="/painel/raio-x"
+          cover="/media/central-raiox.webp"
+          title="Raio-X de Vídeo"
+          desc="Cole o link de um vídeo que já vende: os números, o gancho e a estrutura."
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2" />
+              <path d="M7 3v18" />
+              <path d="M3 12h18" />
+              <path d="M17 3v18" />
+            </svg>
+          }
+        />
+
+        <BentoCard
+          href="/painel/live"
+          className="md:col-span-2"
+          cover="/media/central-live.webp"
+          title="Assistente de Live"
+          desc="A live infinita roda sozinha: vídeos do produto, narração, comentários e produto fixado."
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+            </svg>
+          }
+        />
+
+        {/* Daily Catalog Pulse Card */}
+        <Link
+          href="/painel/radar"
+          className="group relative flex items-center gap-3.5 overflow-hidden rounded-3xl border border-black/[0.06] bg-card p-5 transition-[transform,border-color] duration-200 ease-out active:scale-[0.98] hover:border-black/[0.12] dark:border-white/[0.08] dark:hover:border-white/[0.16]"
+        >
+          <img
+            src="/media/central-catalogo.webp"
+            alt=""
+            loading="lazy"
+            className="pointer-events-none absolute inset-0 size-full object-cover opacity-85 transition-transform duration-500 ease-out group-hover:scale-105"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-card from-45% via-card/75 via-75% to-card/25" />
+          <span className="relative z-10 grid size-10 shrink-0 place-items-center rounded-full bg-primary/15">
+            <span className="absolute inline-flex size-2.5 animate-ping rounded-full bg-primary/60" />
+            <span className="relative inline-flex size-2.5 rounded-full bg-primary" />
+          </span>
+          <div className="relative z-10 min-w-0">
+            <div className="text-sm font-semibold tracking-tight">
+              {ZAALYS_CHANGES.length} mudanças em 7 dias
+            </div>
+            <p className="text-xs text-muted-foreground">
+              2 cortes de comissão ou altas de preço para conferir antes de gravar.
+            </p>
+          </div>
+          <ArrowUpRight
+            size={18}
+            className="relative z-10 ml-auto shrink-0 text-muted-foreground transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+          />
+        </Link>
+      </div>
+
+      {/* Referral Banner */}
+      <Link
+        href="/painel/conta?aba=indique"
+        className="group flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] px-4 py-3 text-sm transition-transform active:scale-[0.99]"
+      >
+        <span>
+          <strong className="font-semibold">Indique e ganhe {formatBRL(5000)}</strong>
+          <span className="text-muted-foreground">
+            {" "}
+            · seu amigo ganha {formatBRL(3000)} de desconto no vitalício
+          </span>
+        </span>
+        <span className="inline-flex items-center gap-1 font-medium text-primary">
+          Pegar meu link <ArrowUpRight size={15} />
+        </span>
+      </Link>
+    </div>
+  );
+}
+
+function DashboardView() {
+  const [period, setPeriod] = useState<PeriodKey>("today");
+  const [chartType, setChartType] = useState<"area" | "bars">("area");
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const [liveSales, setLiveSales] = useState([
+    {
+      id: "ls-1",
+      title: ZAALYS_PRODUCTS[0]!.title,
+      imageUrl: ZAALYS_PRODUCTS[0]!.imageUrl,
+      amountCents: 8990,
+      commissionCents: 1978,
+    },
+    {
+      id: "ls-2",
+      title: ZAALYS_PRODUCTS[2]!.title,
+      imageUrl: ZAALYS_PRODUCTS[2]!.imageUrl,
+      amountCents: 11990,
+      commissionCents: 2398,
+    },
+    {
+      id: "ls-3",
+      title: ZAALYS_PRODUCTS[1]!.title,
+      imageUrl: ZAALYS_PRODUCTS[1]!.imageUrl,
+      amountCents: 6490,
+      commissionCents: 1168,
+    },
+  ]);
+
+  const data = SERIES_BY_PERIOD[period];
+  const series = data.series;
+  const maxVal = Math.max(1, ...series.map((s) => s.gmvCents));
+  const width = 760;
+  const xs = series.map((_, i) =>
+    series.length > 1 ? 24 + (i * (width - 48)) / (series.length - 1) : width / 2,
+  );
+  const ys = series.map((s) => 176 - (s.gmvCents / maxVal) * 156);
+  const linePath = xs.map((x, i) => `${i === 0 ? "M" : "L"}${x},${ys[i]}`).join(" ");
+  const areaPath = `${linePath} L${xs[xs.length - 1]},176 L${xs[0]},176 Z`;
+
+  const activePoint = hoverIdx !== null ? series[hoverIdx] : undefined;
+  const liveTotalCents = liveSales.reduce((acc, s) => acc + s.amountCents, 0);
+
+  function triggerLiveSale() {
+    const prod = ZAALYS_PRODUCTS[Math.floor(Math.random() * ZAALYS_PRODUCTS.length)]!;
+    setLiveSales((prev) => [
+      {
+        id: `ls-${Date.now()}`,
+        title: prod.title,
+        imageUrl: prod.imageUrl,
+        amountCents: prod.priceCents,
+        commissionCents: prod.earningCents,
+      },
+      ...prev.slice(0, 5),
+    ]);
+  }
+
+  const metrics = [
+    {
+      label: "GMV",
+      value: formatBRL(data.gmvCents + liveTotalCents),
+      sub: "Base + vendas ao vivo",
+      accent: true,
+    },
+    {
+      label: "Comissão estimada",
+      value: formatBRL(data.commissionCents),
+      sub: "Sobre as vendas",
+    },
+    {
+      label: "Pedidos confirmados",
+      value: compactNumber(data.orders + liveSales.length),
+      sub: "No período",
+    },
+    {
+      label: "Ticket médio",
+      value: formatBRL(data.ticketCents),
+      sub: "Faturamento / pedidos",
+    },
+    {
+      label: "Itens vendidos",
+      value: compactNumber(data.items + liveSales.length),
+      sub: "No período",
+    },
+    {
+      label: "Visualizações",
+      value: compactNumber(data.views),
+      sub: "Em tempo real",
+    },
+    {
+      label: "Cliques no produto",
+      value: compactNumber(data.clicks),
+      sub: "Em tempo real",
+    },
+    {
+      label: "Base de comissão",
+      value: formatBRL(data.commissionBaseCents),
+      sub: "Consistente com o volume",
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* Period Selector Pills */}
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto rounded-full bg-muted/40 p-1 px-1.5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {PERIODS.map((p) => (
+          <button
+            key={p.v}
+            type="button"
+            onClick={() => setPeriod(p.v)}
+            className={cn(
+              "relative shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-[transform,color,background-color,border-color] duration-150 ease-out active:scale-[0.96] cursor-pointer",
+              period === p.v
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground",
+            )}
+          >
+            {p.l}
+          </button>
         ))}
       </div>
 
-      <h2 className="mt-12 mb-4 text-xl font-bold">Últimos roteiros</h2>
-      {scripts?.length ? (
-        <ul className="panel divide-y divide-line">
-          {scripts.map((s) => (
-            <li key={s.id} className="flex items-center justify-between gap-4 px-5 py-3.5">
-              <span className="truncate font-medium">{s.title}</span>
-              <span className="shrink-0 text-sm text-muted">
-                {s.kind === "live" ? "Live" : "Vídeo"} · {new Date(s.created_at).toLocaleDateString("pt-BR")}
+      {/* 8 Metric Cards */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {metrics.map((m) => (
+          <div
+            key={m.label}
+            className="relative flex flex-col rounded-2xl border border-black/[0.05] bg-card/80 p-4 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.03)] dark:border-white/[0.08]"
+          >
+            <div className="pr-9 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {m.label}
+            </div>
+            <div
+              className={cn(
+                "tabular mt-auto whitespace-nowrap pt-1.5 text-[clamp(1.05rem,4.4vw,1.25rem)] font-bold tracking-tight",
+                m.accent && "text-primary",
+              )}
+            >
+              {m.value}
+            </div>
+            <div className="mt-0.5 text-xs text-muted-foreground">{m.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Evolução de Vendas SVG Chart */}
+      <div className="rounded-3xl border border-black/[0.06] bg-card/85 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-white/[0.08]">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-display text-base font-bold tracking-tight">Evolução de Vendas</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {activePoint
+                ? `${activePoint.label} · ${activePoint.orders} ${activePoint.orders === 1 ? "pedido" : "pedidos"}`
+                : "GMV por intervalo no período selecionado."}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="tabular text-sm font-bold text-primary">
+              {formatBRL(activePoint ? activePoint.gmvCents : data.gmvCents)}
+            </span>
+            <div className="flex gap-0.5 rounded-full bg-muted/50 p-0.5">
+              <button
+                type="button"
+                onClick={() => setChartType("area")}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors cursor-pointer",
+                  chartType === "area"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Área
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartType("bars")}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors cursor-pointer",
+                  chartType === "bars"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Barras
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative mt-4">
+          <svg
+            viewBox={`0 0 ${width} 200`}
+            className="block h-[200px] w-full touch-none"
+            onMouseLeave={() => setHoverIdx(null)}
+          >
+            <defs>
+              <linearGradient id="sales-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.28" />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {[0, 0.25, 0.5, 0.75, 1].map((g) => (
+              <line
+                key={g}
+                x1={0}
+                x2={width}
+                y1={16 + 160 * g}
+                y2={16 + 160 * g}
+                stroke="currentColor"
+                strokeWidth={1}
+                className="text-foreground/[0.06]"
+              />
+            ))}
+            {chartType === "area" ? (
+              <g>
+                <path d={areaPath} fill="url(#sales-fill)" />
+                <path
+                  d={linePath}
+                  fill="none"
+                  stroke="var(--primary)"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </g>
+            ) : (
+              series.map((s, i) => {
+                const h = Math.max(4, (s.gmvCents / maxVal) * 156);
+                const x = xs[i]! - 14;
+                return (
+                  <rect
+                    key={s.label}
+                    x={x}
+                    y={176 - h}
+                    width={28}
+                    height={h}
+                    rx={6}
+                    fill="var(--primary)"
+                    fillOpacity={hoverIdx === null || hoverIdx === i ? 0.85 : 0.4}
+                    onMouseEnter={() => setHoverIdx(i)}
+                  />
+                );
+              })
+            )}
+            {xs.map((x, i) => (
+              <g key={series[i]!.label} onMouseEnter={() => setHoverIdx(i)}>
+                <rect x={x - 30} y={0} width={60} height={180} fill="transparent" />
+                {hoverIdx === i && (
+                  <>
+                    <line
+                      x1={x}
+                      x2={x}
+                      y1={16}
+                      y2={176}
+                      stroke="currentColor"
+                      strokeDasharray="3 3"
+                      className="text-foreground/30"
+                    />
+                    <circle
+                      cx={x}
+                      cy={ys[i]}
+                      r={4.5}
+                      fill="var(--primary)"
+                      stroke="var(--card)"
+                      strokeWidth={2}
+                    />
+                  </>
+                )}
+                <text
+                  x={x}
+                  y={194}
+                  textAnchor="middle"
+                  className="fill-muted-foreground text-[11px]"
+                >
+                  {series[i]!.label}
+                </text>
+              </g>
+            ))}
+          </svg>
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Valores base definidos no painel administrativo, somados às vendas ao vivo.
+        </p>
+      </div>
+
+      {/* Vendas ao Vivo Card */}
+      <div className="rounded-3xl border border-black/[0.06] bg-card/85 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-white/[0.08]">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="relative flex size-2.5">
+              <span className="absolute inline-flex size-2.5 animate-ping rounded-full bg-primary/60" />
+              <span className="relative inline-flex size-2.5 rounded-full bg-primary" />
+            </span>
+            <span className="text-sm font-semibold">Vendas ao Vivo</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={triggerLiveSale}
+              className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/20 cursor-pointer"
+            >
+              + Simular venda ao vivo
+            </button>
+            <span className="tabular text-lg font-bold text-primary">
+              {formatBRL(liveTotalCents)}
+            </span>
+          </div>
+        </div>
+        <ul className="mt-3 space-y-2">
+          {liveSales.map((s) => (
+            <li key={s.id} className="flex items-center gap-2.5 text-sm">
+              <div className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-black/[0.06] bg-muted dark:border-white/[0.08]">
+                <img src={s.imageUrl} alt="" className="size-full object-cover" />
+              </div>
+              <span className="min-w-0 flex-1 truncate text-muted-foreground">{s.title}</span>
+              <span className="shrink-0 text-right">
+                <span className="tabular block font-medium leading-tight">
+                  {formatBRL(s.amountCents)}
+                </span>
+                <span className="tabular block text-[11px] leading-tight text-primary">
+                  +{formatBRL(s.commissionCents)}
+                </span>
               </span>
             </li>
           ))}
         </ul>
-      ) : (
-        <EmptyState>Os roteiros que você gerar aparecem aqui.</EmptyState>
-      )}
-    </>
+      </div>
+    </div>
+  );
+}
+
+function PainelHomeInner() {
+  const searchParams = useSearchParams();
+  const initialVista = searchParams.get("vista") === "dashboard" ? "dashboard" : "central";
+  const [vista, setVista] = useState<"central" | "dashboard">(initialVista);
+
+  useEffect(() => {
+    if (searchParams.get("vista") === "dashboard") setVista("dashboard");
+  }, [searchParams]);
+
+  return (
+    <div className="space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Olá, @criador</h1>
+          <p className="mt-1.5 text-muted-foreground">
+            {vista === "central"
+              ? "Minere um produto, escolha um movimento, gere o vídeo."
+              : "Acompanhe suas vendas e comissões."}
+          </p>
+        </div>
+
+        <Segmented
+          label="Central ou dashboard"
+          value={vista}
+          onChange={setVista}
+          options={[
+            { value: "central", label: "Central" },
+            { value: "dashboard", label: "Dashboard" },
+          ]}
+        />
+      </header>
+
+      {vista === "central" ? <CentralView /> : <DashboardView />}
+    </div>
+  );
+}
+
+export default function PainelHome() {
+  return (
+    <Suspense fallback={null}>
+      <PainelHomeInner />
+    </Suspense>
   );
 }

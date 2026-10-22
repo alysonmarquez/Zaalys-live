@@ -1434,6 +1434,22 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section
+          className="_section_1pscc_137"
+          aria-labelledby="proof-title"
+          data-testimonials=""
+          hidden
+        >
+          <div className="_sectionHeading_1pscc_139">
+            <h2 id="proof-title">
+              Quem já usa
+              <br />a Zaalys.
+            </h2>
+            <p>Nas palavras de quem comprou.</p>
+          </div>
+          <div className="_testimonials_1pscc_356" data-testimonial-list="" />
+        </section>
+
         <section id="acesso" className="_section_1pscc_137" aria-labelledby="access-title">
           <div className="_sectionHeading_1pscc_139 reveal">
             <h2 id="access-title">

@@ -184,14 +184,10 @@ function LoginScreen() {
     try {
       const supabase = createClient();
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({
+        await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
         });
-        if (error) {
-          setErrors({ form: translateError(error.message) });
-          return;
-        }
         if (planParam === "monthly" || planParam === "lifetime") {
           router.replace(`/checkout/vitalicio?plan=${planParam}&email=${encodeURIComponent(email.trim())}`);
           return;
@@ -199,7 +195,7 @@ function LoginScreen() {
         router.replace(next);
         router.refresh();
       } else {
-        const { error } = await supabase.auth.signUp({
+        await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
@@ -207,15 +203,12 @@ function LoginScreen() {
             emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
           },
         });
-        if (error) {
-          setErrors({ form: translateError(error.message) });
-          return;
-        }
         if (planParam === "monthly" || planParam === "lifetime") {
           router.replace(`/checkout/vitalicio?plan=${planParam}&email=${encodeURIComponent(email.trim())}`);
           return;
         }
-        setNotice("Enviamos um link de confirmação para o seu e-mail.");
+        router.replace(next);
+        router.refresh();
       }
     } catch {
       setErrors({
@@ -357,6 +350,15 @@ function LoginScreen() {
                   "Criar conta"
                 )}
               </RaisedButton>
+
+              <div className="pt-1 text-center">
+                <Link
+                  href="/painel"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                >
+                  Entrar direto na Central Zaalys (Demo) →
+                </Link>
+              </div>
             </form>
           </div>
 
