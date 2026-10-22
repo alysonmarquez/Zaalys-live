@@ -8,7 +8,14 @@ export default function Assinar() {
         Se você já comprou, entre com o mesmo e-mail usado no pagamento. A liberação acontece assim que o pagamento é
         confirmado.
       </PageHeader>
-      <Link href="/#planos" className="btn-primary">Ver planos</Link>
+      <div className="flex flex-wrap gap-3">
+        <Link href="/checkout/vitalicio" className="btn-primary">
+          Garantir acesso vitalício
+        </Link>
+        <Link href="/#planos" className="btn-ghost">
+          Ver planos
+        </Link>
+      </div>
     </>
   );
 }

@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "MediaFlow Live",
+  "name": "Zaalys Live",
   "version": "0.1.0",
   "description": "Live infinita no TikTok Shop: clipes em loop, comentários, produto fixado e respostas ao chat.",
   "permissions": ["storage", "alarms"],
   "host_permissions": ["https://*.tiktok.com/*", "http://localhost:3000/*"],
   "optional_host_permissions": ["https://*/*"],
   "background": { "service_worker": "background.js" },
-  "action": { "default_popup": "popup.html", "default_title": "MediaFlow Live" },
+  "action": { "default_popup": "popup.html", "default_title": "Zaalys Live" },
   "icons": { "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
   "content_scripts": [
     {

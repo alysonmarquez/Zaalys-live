@@ -1,71 +1,195 @@
-@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap");
 @import "tailwindcss";
 
-@theme {
-  /* Tema escuro: azul-noite, violeta e vermelho de "no ar" */
-  --color-paper: #0c0e22;
-  --color-card: #161937;
-  --color-night: #07081a;
-  --color-ink: #eef0ff;
-  --color-muted: #9aa0c3;
-  --color-line: #2a2e55;
-  --color-violet: #7c5cff;
-  --color-violet-soft: #241d52;
-  --color-onair: #ff4d68;
-  --color-on: #2fd3a0;
-  --color-warn: #ffb547;
+:root,
+.dark {
+  color-scheme: dark;
+  --radius: 0.9rem;
+  --background: #110f0d;
+  --foreground: #f3f1ef;
+  --card: #1b1916;
+  --card-foreground: #f3f1ef;
+  --popover: #25221f;
+  --popover-foreground: #f3f1ef;
+  --primary: #ade74e;
+  --primary-foreground: #0f1a01;
+  --secondary: #25221f;
+  --secondary-foreground: #f3f1ef;
+  --muted: #25221f;
+  --muted-foreground: #a8a49f;
+  --accent: #2e2b27;
+  --accent-foreground: #f3f1ef;
+  --destructive: #e94554;
+  --success: #7ed86a;
+  --warning: #f7b83d;
+  --border: #ffffff17;
+  --input: #ffffff1f;
+  --ring: #ade74e;
 
-  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display-face: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  --font-sans-face: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-mono-face: "Geist Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+@supports (color: oklch(0% 0 0)) {
+  :root,
+  .dark {
+    --background: oklch(17% 0.006 75);
+    --foreground: oklch(96% 0.004 75);
+    --card: oklch(21.5% 0.006 75);
+    --card-foreground: oklch(96% 0.004 75);
+    --popover: oklch(25.5% 0.007 75);
+    --popover-foreground: oklch(96% 0.004 75);
+    --primary: oklch(86% 0.19 128);
+    --primary-foreground: oklch(20% 0.05 128);
+    --secondary: oklch(25.5% 0.007 75);
+    --secondary-foreground: oklch(96% 0.004 75);
+    --muted: oklch(25.5% 0.007 75);
+    --muted-foreground: oklch(77.5% 0.008 75);
+    --accent: oklch(29% 0.008 75);
+    --accent-foreground: oklch(96% 0.004 75);
+    --border: oklch(100% 0 0 / 0.09);
+    --input: oklch(100% 0 0 / 0.12);
+    --ring: oklch(86% 0.19 128);
+  }
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Aliases compatíveis com o painel interno no tema Zaalys */
+  --color-paper: #110f0d;
+  --color-night: #0b0a08;
+  --color-ink: #f3f1ef;
+  --color-line: #ffffff17;
+  --color-violet: #ade74e;
+  --color-violet-soft: #222d10;
+  --color-onair: #e94554;
+  --color-on: #7ed86a;
+  --color-warn: #f7b83d;
+
+  --font-display: var(--font-display-face);
+  --font-sans: var(--font-sans-face);
+  --font-mono: var(--font-mono-face);
 }
 
 @layer base {
+  * {
+    border-color: var(--border);
+    outline-color: var(--ring);
+  }
   html {
     color-scheme: dark;
-    background: var(--color-paper);
-    color: var(--color-ink);
-    font-family: var(--font-sans);
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans-face);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans-face);
   }
   h1,
+  .apple-large-title {
+    font-family: var(--font-display-face);
+    letter-spacing: -0.028em;
+    font-optical-sizing: auto;
+    line-height: 1.12;
+  }
   h2,
-  h3 {
-    font-family: var(--font-display);
-    letter-spacing: -0.02em;
-    line-height: 1.08;
+  h3,
+  .font-display {
+    font-family: var(--font-display-face);
+    letter-spacing: -0.022em;
+    font-optical-sizing: auto;
+    line-height: 1.2;
   }
-  :focus-visible {
-    outline: 3px solid var(--color-violet);
-    outline-offset: 2px;
-    border-radius: 6px;
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 30%, transparent);
+    color: var(--foreground);
   }
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation: none !important;
-      transition: none !important;
-    }
+  ::placeholder {
+    color: var(--muted-foreground);
   }
 }
 
+@utility text-muted {
+  color: var(--muted-foreground);
+}
+
+@utility bg-studio {
+  background:
+    radial-gradient(
+      60% 55% at 15% -10%,
+      color-mix(in oklch, var(--primary) 10%, transparent),
+      transparent 70%
+    ),
+    var(--background);
+}
+
+@utility apple-glass {
+  background: color-mix(in oklch, var(--card) 75%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent);
+  box-shadow:
+    inset 0 1px #ffffff24,
+    0 8px 32px -8px #00000059;
+}
+
+@utility apple-card {
+  border: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent);
+  border-radius: 1.5rem;
+  background-color: var(--card);
+  transition:
+    border-color 0.25s,
+    box-shadow 0.25s,
+    transform 0.25s;
+  box-shadow: 0 4px 20px -4px #0000000d;
+}
+
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all cursor-pointer disabled:opacity-50;
 }
 @utility btn-primary {
-  @apply btn bg-violet text-white hover:bg-[#6a47ff];
+  @apply btn bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97];
 }
 @utility btn-ghost {
-  @apply btn border border-line bg-card text-ink hover:border-ink;
+  @apply btn border border-border bg-card text-foreground hover:border-foreground/30 active:scale-[0.97];
 }
 @utility field {
-  @apply w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-[15px] outline-none focus:border-violet;
+  @apply w-full rounded-xl border border-white/[0.08] bg-input/20 px-3.5 py-2.5 text-[15px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-ring/40;
 }
 @utility label {
-  @apply mb-1.5 block text-sm font-semibold text-ink;
+  @apply mb-1.5 block text-sm font-medium text-foreground/90;
 }
 @utility panel {
-  @apply rounded-2xl border border-line bg-card;
+  @apply rounded-2xl border border-border bg-card;
 }
 
 @keyframes pulse-dot {

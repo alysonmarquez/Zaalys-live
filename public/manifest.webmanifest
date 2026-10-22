@@ -1,12 +1,12 @@
 {
-  "name": "MediaFlow",
-  "short_name": "MediaFlow",
+  "name": "Zaalys",
+  "short_name": "Zaalys",
+  "description": "Estúdio de criação com IA para TikTok Shop.",
   "start_url": "/painel",
   "display": "standalone",
-  "background_color": "#0c0e22",
-  "theme_color": "#5a31f4",
+  "background_color": "#110f0d",
+  "theme_color": "#ade74e",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/favicon/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
   ]
 }

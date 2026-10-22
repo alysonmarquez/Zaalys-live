@@ -94,7 +94,7 @@ export function AccountTools({ initialKey, activatedAt, vapidKey }: { initialKey
         <ol className="mt-4 list-decimal space-y-2 pl-5">
           {STEPS.map((s) => <li key={s}>{s}</li>)}
         </ol>
-        <a href="/mediaflow-extensao.zip" className="btn-primary mt-5" download>Baixar extensão</a>
+        <a href="/zaalys-extensao.zip" className="btn-primary mt-5" download>Baixar extensão Zaalys Live</a>
       </section>
     </div>
   );

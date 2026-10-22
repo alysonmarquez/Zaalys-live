@@ -4,27 +4,29 @@
     <meta charset="utf-8" />
     <style>
       * { box-sizing: border-box; font-family: system-ui, sans-serif; }
-      body { width: 320px; margin: 0; padding: 18px; color: #eef0ff; background: #0c0e22; }
-      h1 { font-size: 18px; margin: 0 0 4px; }
-      p { font-size: 13px; color: #9aa0c3; margin: 0 0 14px; }
-      label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
-      input { width: 100%; border: 1px solid #2a2e55; border-radius: 10px; padding: 9px 11px; font-size: 14px; background: #161937; color: #eef0ff; }
-      button { width: 100%; margin-top: 14px; border: 0; border-radius: 999px; padding: 10px; font-weight: 700; background: #7c5cff; color: #fff; cursor: pointer; }
+      body { width: 320px; margin: 0; padding: 18px; color: #f5f3ef; background: #110f0d; }
+      h1 { font-size: 18px; margin: 0 0 4px; color: #f5f3ef; display: flex; align-items: center; gap: 6px; }
+      h1 span.mark { color: #ade74e; font-weight: 900; }
+      p { font-size: 13px; color: #a8a49f; margin: 0 0 14px; }
+      label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; color: #f5f3ef; }
+      input { width: 100%; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 9px 11px; font-size: 14px; background: #1b1916; color: #f5f3ef; }
+      input:focus { outline: none; border-color: #ade74e; }
+      button { width: 100%; margin-top: 14px; border: 0; border-radius: 999px; padding: 10px; font-weight: 700; background: #ade74e; color: #0f1a01; cursor: pointer; }
       button:disabled { opacity: .5; }
       .status { font-size: 13px; font-weight: 700; margin-top: 12px; }
-      .ok { color: #2fd3a0; } .err { color: #ff4d68; }
-      details { margin-top: 12px; font-size: 13px; }
+      .ok { color: #ade74e; } .err { color: #ef4444; }
+      details { margin-top: 12px; font-size: 13px; color: #a8a49f; }
     </style>
   </head>
   <body>
-    <h1>MediaFlow Live</h1>
+    <h1><span class="mark">Z</span> Zaalys Live</h1>
     <p>Ative com a chave que aparece no painel, em Extensão e alertas.</p>
     <label for="key">Sua chave</label>
     <input id="key" autocomplete="off" spellcheck="false" placeholder="24 letras e números" />
     <details>
       <summary>Endereço do painel</summary>
       <label for="api">URL</label>
-      <input id="api" placeholder="https://app.seudominio.com" />
+      <input id="api" placeholder="https://www.zaalys.com" />
     </details>
     <button id="activate">Ativar neste computador</button>
     <div id="status" class="status"></div>

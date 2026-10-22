@@ -1,4 +1,4 @@
-// MediaFlow Live — câmera virtual (roda no contexto da página).
+// Zaalys Live — câmera virtual (roda no contexto da página).
 // Quando ligada, a página do TikTok que pedir a câmera recebe um stream
 // com os clipes do produto em loop e o áudio dos clipes ou da narração.
 (() => {
@@ -76,7 +76,7 @@
     window.postMessage({ source: "mediaflow-cam", type, detail }, location.origin);
   }
 
-  // Substitui o pedido de câmera/microfone enquanto a câmera virtual estiver ligada.
+  // Substitui o pedido de câmera/microfone enquanto a câmera estiver ligada.
   const md = navigator.mediaDevices;
   if (md && md.getUserMedia) {
     const original = md.getUserMedia.bind(md);
@@ -96,8 +96,8 @@
         if (!state.enabled) return list;
         // Garante que a página veja uma câmera e um microfone disponíveis.
         return [
-          { deviceId: "mediaflow-cam", kind: "videoinput", label: "MediaFlow (clipes)", groupId: "mediaflow", toJSON() { return this; } },
-          { deviceId: "mediaflow-mic", kind: "audioinput", label: "MediaFlow (narração)", groupId: "mediaflow", toJSON() { return this; } },
+          { deviceId: "mediaflow-cam", kind: "videoinput", label: "Zaalys Live (clipes)", groupId: "zaalys", toJSON() { return this; } },
+          { deviceId: "mediaflow-mic", kind: "audioinput", label: "Zaalys Live (narração)", groupId: "zaalys", toJSON() { return this; } },
           ...list.filter((d) => d.kind === "audiooutput"),
         ];
       };

@@ -1,4 +1,4 @@
-// MediaFlow Live — painel e automação na página de LIVE do TikTok Shop (mundo isolado).
+// Zaalys Live — painel e automação na página de LIVE do TikTok Shop (mundo isolado).
 (() => {
   if (window.__mediaflowPanel) return;
   window.__mediaflowPanel = true;
@@ -42,7 +42,7 @@
 
   window.addEventListener("message", (e) => {
     if (e.source !== window || e.data?.source !== "mediaflow-cam") return;
-    if (e.data.type === "cam-requested") log("A página pegou a câmera do MediaFlow.");
+    if (e.data.type === "cam-requested") log("A página pegou a câmera da Zaalys.");
     if (e.data.type === "cam-ended" && running) { log("A transmissão de vídeo parou.", true); event("drop", { reason: "track ended" }); }
     if (e.data.type === "preview" && ui) ui.preview.src = e.data.detail.dataUrl;
   });
@@ -184,7 +184,7 @@
     ];
     pinProduct();
     setStatus("Ligada");
-    log("Câmera do MediaFlow pronta. Agora inicie a live na página: escolha a câmera e o microfone do MediaFlow, se pedir.");
+    log("Câmera da Zaalys pronta. Agora inicie a live na página: escolha a câmera e o microfone da Zaalys, se pedir.");
   }
 
   function stop(reason = "manual") {
@@ -213,29 +213,29 @@
       <style>
         :host{all:initial}
         *{box-sizing:border-box;font-family:system-ui,sans-serif}
-        .fab{width:52px;height:52px;border-radius:50%;border:0;background:#7c5cff;color:#fff;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.6)}
-        .panel{display:none;position:absolute;right:0;bottom:64px;width:380px;max-height:80vh;overflow:auto;background:#161937;color:#eef0ff;border-radius:16px;border:1px solid #2a2e55;box-shadow:0 24px 60px -20px rgba(0,0,0,.7);padding:16px}
+        .fab{width:52px;height:52px;border-radius:50%;border:0;background:#ade74e;color:#0f1a01;font-weight:900;font-size:18px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+        .panel{display:none;position:absolute;right:0;bottom:64px;width:380px;max-height:80vh;overflow:auto;background:#1b1916;color:#f5f3ef;border-radius:16px;border:1px solid rgba(255,255,255,.12);box-shadow:0 24px 60px -20px rgba(0,0,0,.7);padding:16px}
         .panel.open{display:block}
         h2{font-size:18px;margin:0}
         .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
         .status{font-size:13px;font-weight:700}
-        .on{color:#2fd3a0}.off{color:#9aa0c3}
-        fieldset{border:1px solid #2a2e55;border-radius:12px;padding:10px;margin:10px 0}
+        .on{color:#ade74e}.off{color:#a8a49f}
+        fieldset{border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;margin:10px 0}
         legend{font-size:13px;font-weight:700;padding:0 4px}
-        input,textarea{width:100%;border:1px solid #2a2e55;border-radius:8px;padding:7px 9px;font-size:13px;margin:3px 0;background:#0c0e22;color:#eef0ff}
+        input,textarea{width:100%;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:7px 9px;font-size:13px;margin:3px 0;background:#110f0d;color:#f5f3ef}
         input[type=file]{border:0;padding:3px 0}
         input[type=checkbox]{width:auto;margin:0 6px 0 0}
-        label{font-size:12px;color:#9aa0c3;display:block;margin-top:6px}
-        label.check{display:flex;align-items:center;color:#eef0ff;font-size:13px}
+        label{font-size:12px;color:#a8a49f;display:block;margin-top:6px}
+        label.check{display:flex;align-items:center;color:#f5f3ef;font-size:13px}
         .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
         button.btn{border:0;border-radius:999px;padding:9px 14px;font-weight:700;font-size:13px;cursor:pointer}
-        .primary{background:#7c5cff;color:#fff}.ghost{background:#2a2e55;color:#eef0ff}.danger{background:#ff4d68;color:#fff}
-        .log{background:#0c0e22;border-radius:10px;padding:8px;font-size:12px;max-height:140px;overflow:auto;margin-top:10px}
-        .log p{margin:2px 0}.err{color:#ff4d68}
+        .primary{background:#ade74e;color:#0f1a01}.ghost{background:#25221f;color:#f5f3ef}.danger{background:#ef4444;color:#fff}
+        .log{background:#110f0d;border-radius:10px;padding:8px;font-size:12px;max-height:140px;overflow:auto;margin-top:10px}
+        .log p{margin:2px 0}.err{color:#ef4444}
         img.preview{width:72px;height:128px;object-fit:cover;border-radius:8px;background:#000}
       </style>
-      <button class="fab" title="MediaFlow Live">MF</button>
-      <div class="panel" role="dialog" aria-label="MediaFlow Live">
+      <button class="fab" title="Zaalys Live">Z</button>
+      <div class="panel" role="dialog" aria-label="Zaalys Live">
         <div class="row"><h2>Live infinita</h2><span class="status off">Parada</span></div>
         <div class="products"></div>
         <button class="btn ghost add">Adicionar produto</button>
@@ -325,7 +325,7 @@
   }
 
   function log(text, error = false) {
-    if (!ui) return console.log("[MediaFlow]", text);
+    if (!ui) return console.log("[Zaalys Live]", text);
     const p = document.createElement("p");
     p.textContent = `${new Date().toLocaleTimeString("pt-BR")} ${text}`;
     if (error) p.className = "err";
