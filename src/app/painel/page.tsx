@@ -831,16 +831,33 @@ function PainelHomeInner() {
   const searchParams = useSearchParams();
   const initialVista = searchParams.get("vista") === "dashboard" ? "dashboard" : "central";
   const [vista, setVista] = useState<"central" | "dashboard">(initialVista);
+  const [handle, setHandle] = useState("criador");
 
   useEffect(() => {
     if (searchParams.get("vista") === "dashboard") setVista("dashboard");
   }, [searchParams]);
 
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("zaalys_current_user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.handle) {
+          setHandle(parsed.handle);
+        } else if (parsed?.email) {
+          setHandle(parsed.email.split("@")[0] || "criador");
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Olá, @criador</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Olá, @{handle}</h1>
           <p className="mt-1.5 text-muted-foreground">
             {vista === "central"
               ? "Minere um produto, escolha um movimento, gere o vídeo."

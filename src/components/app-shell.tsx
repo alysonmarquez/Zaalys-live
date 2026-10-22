@@ -138,8 +138,30 @@ export function AppShell({
   const [supportSubject, setSupportSubject] = useState("");
   const [supportMessage, setSupportMessage] = useState("");
   const [supportSent, setSupportSent] = useState(false);
+  const [localUser, setLocalUser] = useState<{ name?: string; email?: string } | null>(null);
 
-  const initials = (userName || userEmail || "CZ")
+  React.useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("zaalys_current_user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.email) {
+          setLocalUser({ name: parsed.name, email: parsed.email });
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [pathname]);
+
+  const activeName =
+    localUser?.name ||
+    (userName !== "Criador Zaalys" ? userName : localUser?.name || userName);
+  const activeEmail =
+    localUser?.email ||
+    (userEmail !== "criador@zaalys.com" ? userEmail : localUser?.email || userEmail);
+
+  const initials = (activeName || activeEmail || "CZ")
     .split(/[\s@._-]+/)
     .filter(Boolean)
     .slice(0, 2)
@@ -148,12 +170,16 @@ export function AppShell({
 
   async function handleSignOut() {
     try {
+      window.localStorage.removeItem("zaalys_current_user");
+      document.cookie = "zaalys_session=; path=/; max-age=0; samesite=lax";
+      await fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
       const supabase = createClient();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut().catch(() => {});
     } catch {
       // ignore
     }
     router.push("/login");
+    router.refresh();
   }
 
   function handleCopyInvite() {
@@ -265,14 +291,14 @@ export function AppShell({
                 <span className="grid size-6 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
                   {initials || "CZ"}
                 </span>
-                <span className="hidden max-w-[110px] truncate sm:inline">{userName}</span>
+                <span className="hidden max-w-[110px] truncate sm:inline">{activeName}</span>
               </button>
 
               {menuOpen && (
                 <div className="apple-glass absolute right-0 mt-2 w-60 rounded-2xl p-2 text-sm shadow-2xl">
                   <div className="border-b border-border px-3 py-2">
-                    <p className="truncate font-semibold text-foreground">{userName}</p>
-                    <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
+                    <p className="truncate font-semibold text-foreground">{activeName}</p>
+                    <p className="truncate text-xs text-muted-foreground">{activeEmail}</p>
                     <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
                       Vitalício · Ativo
                     </span>

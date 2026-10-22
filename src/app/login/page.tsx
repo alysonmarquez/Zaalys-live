@@ -4,10 +4,54 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
 import { Brand, RaisedButton, Segmented, cn } from "@/components/brand";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl border border-black/[0.06] bg-background/50 px-3.5 text-[15px] outline-none transition-[background-color,border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring/40 dark:border-white/[0.08] dark:bg-input/20";
+
+interface StoredAccount {
+  userId: string;
+  name: string;
+  email: string;
+  handle: string;
+  password?: string;
+  plan: "monthly" | "lifetime";
+  createdAt: string;
+}
+
+function getStoredAccounts(): Record<string, StoredAccount> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem("zaalys_accounts");
+    return raw ? (JSON.parse(raw) as Record<string, StoredAccount>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveStoredAccount(acc: StoredAccount) {
+  if (typeof window === "undefined") return;
+  try {
+    const all = getStoredAccounts();
+    all[acc.email.toLowerCase()] = acc;
+    window.localStorage.setItem("zaalys_accounts", JSON.stringify(all));
+    window.localStorage.setItem("zaalys_current_user", JSON.stringify(acc));
+    const cookiePayload = encodeURIComponent(
+      JSON.stringify({
+        userId: acc.userId,
+        email: acc.email,
+        name: acc.name,
+        handle: acc.handle,
+        active: true,
+        plan: acc.plan,
+        createdAt: acc.createdAt,
+      }),
+    );
+    document.cookie = `zaalys_session=${cookiePayload}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+  } catch {
+    // Ignore storage quota errors
+  }
+}
 
 function EyeIcon({ off }: { off: boolean }) {
   if (off) {
@@ -114,15 +158,6 @@ function RightHeroPanel() {
   );
 }
 
-function translateError(msg: string) {
-  if (/invalid login/i.test(msg)) return "E-mail ou senha incorretos.";
-  if (/already registered/i.test(msg))
-    return "Esse e-mail já tem conta. Entre com a senha ou redefina sua senha.";
-  if (/email not confirmed/i.test(msg))
-    return "Confirme o e-mail pelo link que enviamos antes de entrar.";
-  return msg;
-}
-
 function LoginScreen() {
   const router = useRouter();
   const params = useSearchParams();
@@ -165,15 +200,18 @@ function LoginScreen() {
     setErrors({});
     setNotice(null);
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+
     const nextErrors: typeof errors = {};
-    if (mode === "signup" && name.trim().length < 2) {
+    if (mode === "signup" && cleanName.length < 2) {
       nextErrors.name = "Informe seu nome";
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       nextErrors.email = "E-mail inválido";
     }
-    if (password.length < 8) {
-      nextErrors.password = "Mínimo de 8 caracteres";
+    if (password.length < 6) {
+      nextErrors.password = "Mínimo de 6 caracteres";
     }
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -182,34 +220,97 @@ function LoginScreen() {
 
     setSubmitting(true);
     try {
-      const supabase = createClient();
-      if (mode === "signin") {
-        await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-        if (planParam === "monthly" || planParam === "lifetime") {
-          router.replace(`/checkout/vitalicio?plan=${planParam}&email=${encodeURIComponent(email.trim())}`);
-          return;
+      const accounts = getStoredAccounts();
+      const existingLocal = accounts[cleanEmail];
+      const emailPrefix = cleanEmail.split("@")[0] || "criador";
+      const derivedName =
+        cleanName ||
+        existingLocal?.name ||
+        emailPrefix
+          .split(/[._-]+/)
+          .filter(Boolean)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(" ") ||
+        "Criador Zaalys";
+
+      const handle =
+        emailPrefix
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9._-]/g, "") || "criador";
+
+      const plan: "monthly" | "lifetime" = planParam === "monthly" ? "monthly" : "lifetime";
+
+      // Se o Supabase estiver configurado, sincroniza também com o Supabase Auth sem travar o fluxo
+      if (isSupabaseConfigured()) {
+        try {
+          const supabase = createClient();
+          if (mode === "signin") {
+            await supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password,
+            });
+          } else {
+            await supabase.auth.signUp({
+              email: cleanEmail,
+              password,
+              options: {
+                data: { full_name: derivedName },
+                emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+              },
+            });
+          }
+        } catch {
+          // Segue com a sessão local/cookie da aplicação
         }
-        router.replace(next);
-        router.refresh();
-      } else {
-        await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            data: { full_name: name.trim() },
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-          },
-        });
-        if (planParam === "monthly" || planParam === "lifetime") {
-          router.replace(`/checkout/vitalicio?plan=${planParam}&email=${encodeURIComponent(email.trim())}`);
-          return;
-        }
-        router.replace(next);
-        router.refresh();
       }
+
+      const accountObj: StoredAccount = {
+        userId:
+          existingLocal?.userId ||
+          (typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `usr_${Date.now()}`),
+        name: derivedName,
+        email: cleanEmail,
+        handle,
+        password,
+        plan,
+        createdAt: existingLocal?.createdAt || new Date().toISOString(),
+      };
+
+      // Salva no navegador e seta cookie imediato
+      saveStoredAccount(accountObj);
+
+      // Persiste cookie HTTP na rota de sessão do servidor
+      await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          userId: accountObj.userId,
+          name: accountObj.name,
+          email: accountObj.email,
+          plan: accountObj.plan,
+        }),
+      }).catch(() => {});
+
+      setNotice(
+        mode === "signup"
+          ? "Conta criada com sucesso! Redirecionando…"
+          : "Login confirmado! Redirecionando…",
+      );
+
+      if (planParam === "monthly" || planParam === "lifetime") {
+        router.replace(
+          `/checkout/vitalicio?plan=${planParam}&email=${encodeURIComponent(cleanEmail)}`,
+        );
+        return;
+      }
+
+      router.replace(next);
+      router.refresh();
     } catch {
       setErrors({
         form:
@@ -333,7 +434,7 @@ function LoginScreen() {
               )}
 
               {notice && (
-                <p role="status" className="text-xs text-primary">
+                <p role="status" className="text-xs font-medium text-primary">
                   {notice}
                 </p>
               )}

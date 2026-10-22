@@ -22,11 +22,29 @@ function ContaInner() {
   const [pixKey, setPixKey] = useState("");
   const [pixSaved, setPixSaved] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
+  const [profileName, setProfileName] = useState("Criador Zaalys");
+  const [profileEmail, setProfileEmail] = useState("criador@zaalys.com");
+  const [profileHandle, setProfileHandle] = useState("criador");
+  const [profileSaved, setProfileSaved] = useState(false);
 
   useEffect(() => {
     const a = searchParams.get("aba");
     if (a === "indique" || a === "perfil" || a === "preferencias") setTab(a);
   }, [searchParams]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("zaalys_current_user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.name) setProfileName(parsed.name);
+        if (parsed?.email) setProfileEmail(parsed.email);
+        if (parsed?.handle) setProfileHandle(parsed.handle);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   function regenerateKey() {
     const seg = () => Math.random().toString(16).substring(2, 6).toUpperCase();
@@ -166,16 +184,38 @@ function ContaInner() {
         <div className="grid gap-6 lg:grid-cols-2">
           <section className="apple-card space-y-4 p-5 sm:p-6">
             <h2 className="font-display text-lg font-bold">Dados da conta</h2>
-            <div className="space-y-3 text-sm">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                try {
+                  const raw = window.localStorage.getItem("zaalys_current_user");
+                  const parsed = raw ? JSON.parse(raw) : {};
+                  const updated = { ...parsed, name: profileName, email: profileEmail };
+                  window.localStorage.setItem("zaalys_current_user", JSON.stringify(updated));
+                } catch {
+                  // ignore
+                }
+                setProfileSaved(true);
+                setTimeout(() => setProfileSaved(false), 2000);
+              }}
+              className="space-y-3 text-sm"
+            >
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">Nome</label>
-                <input defaultValue="Criador Zaalys" className="field text-sm" />
+                <input
+                  value={profileName}
+                  onChange={(e) => setProfileName(e.target.value)}
+                  className="field text-sm"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">E-mail</label>
-                <input defaultValue="criador@zaalys.com" readOnly className="field text-sm opacity-75" />
+                <input value={profileEmail} readOnly className="field text-sm opacity-75" />
               </div>
-            </div>
+              <RaisedButton type="submit" size="sm">
+                {profileSaved ? "✓ Alterações salvas!" : "Salvar alterações"}
+              </RaisedButton>
+            </form>
           </section>
 
           <section className="apple-card space-y-4 p-5 sm:p-6">
@@ -202,14 +242,14 @@ function ContaInner() {
               {formatBRL(3000)} de desconto no plano Vitalício.
             </p>
             <div className="rounded-2xl border border-border bg-background/60 p-3.5 font-mono text-xs text-primary">
-              https://www.zaalys.com/checkout/vitalicio?invite=criador
+              https://www.zaalys.com/checkout/vitalicio?invite={profileHandle}
             </div>
             <div className="flex flex-wrap gap-2">
               <RaisedButton
                 size="sm"
                 onClick={() => {
                   navigator.clipboard
-                    ?.writeText("https://www.zaalys.com/checkout/vitalicio?invite=criador")
+                    ?.writeText(`https://www.zaalys.com/checkout/vitalicio?invite=${profileHandle}`)
                     .catch(() => {});
                   setCopiedInvite(true);
                   setTimeout(() => setCopiedInvite(false), 2000);

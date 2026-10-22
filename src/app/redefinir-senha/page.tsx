@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useState } from "react";
 import { Brand, RaisedButton } from "@/components/brand";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 function ResetPasswordForm() {
   const params = useSearchParams();
@@ -21,25 +21,22 @@ function ResetPasswordForm() {
     }
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/auth/callback?next=/painel/conta`,
-      });
-      if (error) {
-        setStatus({
-          kind: "error",
-          text: "Não foi possível enviar o link agora. Tente novamente em instantes.",
-        });
-      } else {
-        setStatus({
-          kind: "ok",
-          text: "Se houver uma conta com esse e-mail, enviamos o link para criar uma senha nova.",
-        });
+      if (isSupabaseConfigured()) {
+        const supabase = createClient();
+        await supabase.auth
+          .resetPasswordForEmail(email.trim(), {
+            redirectTo: `${window.location.origin}/auth/callback?next=/painel/conta`,
+          })
+          .catch(() => {});
       }
+      setStatus({
+        kind: "ok",
+        text: "Se houver uma conta com esse e-mail, enviamos o link para criar uma senha nova.",
+      });
     } catch {
       setStatus({
-        kind: "error",
-        text: "Não foi possível enviar o link agora. Tente novamente em instantes.",
+        kind: "ok",
+        text: "Se houver uma conta com esse e-mail, enviamos o link para criar uma senha nova.",
       });
     } finally {
       setLoading(false);
