@@ -1,16 +1,14 @@
 import { AppShell } from "@/components/app-shell";
-import { getAccess } from "@/lib/access";
+import { requireAccess } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
-  const access = await getAccess();
+  // Sem login → /login; sem plano ativo → checkout. Em modo demonstração entra direto.
+  const access = await requireAccess();
 
   return (
-    <AppShell
-      userEmail={access.email}
-      userName={access.name || access.handle || "Criador"}
-    >
+    <AppShell userEmail={access.email} userName={access.name || access.handle || "Criador"} demo={access.demo}>
       {children}
     </AppShell>
   );

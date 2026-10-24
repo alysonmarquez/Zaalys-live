@@ -877,19 +877,12 @@ function PainelHomeInner() {
   }, [searchParams]);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("zaalys_current_user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.handle) {
-          setHandle(parsed.handle);
-        } else if (parsed?.email) {
-          setHandle(parsed.email.split("@")[0] || "criador");
-        }
-      }
-    } catch {
-      // ignore
-    }
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then(({ user }) => {
+        if (user?.handle) setHandle(user.handle);
+      })
+      .catch(() => {});
   }, []);
 
   return (

@@ -56,59 +56,55 @@ function TemplatesInner() {
   const selectedModel =
     ZAALYS_MODELS.find((m) => m.id === selectedModelId) ?? ZAALYS_MODELS[0]!;
 
+  const [generateError, setGenerateError] = useState<string | null>(null);
+
   async function handleGenerate() {
     if (!activeTemplate) return;
     setGenerating(true);
     setGeneratedPrompt(null);
+    setGenerateError(null);
 
     try {
       const res = await fetch("/api/ai/video-script", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productName: selectedProduct.title,
-          price: formatBRL(selectedProduct.priceCents),
-          benefits: selectedProduct.facts.join("\n"),
-          characterId: activeTemplate.needsModel ? selectedModel.id : undefined,
-          templateId: activeTemplate.id,
+          product: {
+            name: selectedProduct.title,
+            price: formatBRL(selectedProduct.priceCents),
+            details: selectedProduct.facts.join("; "),
+          },
+          character: activeTemplate.needsModel
+            ? { name: selectedModel.name, appearance: selectedModel.appearance }
+            : { name: "Só as mãos", appearance: "Plano POV só com as mãos, sem rosto, bancada clara com luz natural" },
+          template: {
+            scene: `${activeTemplate.title} (${activeTemplate.formatLabel}): ${activeTemplate.description}`,
+            camera_motion: "vertical 9:16, câmera orgânica estilo celular",
+          },
+          angle: `responder: ${PROOF_GOAL_LABELS[selectedGoal]}`,
+          durationSeconds: 8,
         }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.script?.videoPrompt) {
-          setGeneratedPrompt(
-            `[ROTEIRO FALADO — 8s]\nGancho: "${data.script.hook}"\n${(data.script.scenes ?? []).map((s: { visual: string; line: string }, i: number) => `Cena ${i + 1}: ${s.visual} — "${s.line}"`).join("\n")}\nCTA: "${data.script.cta}"\n\n[PROMPT GOOGLE FLOW / VEO 3]\n${data.script.videoPrompt}`,
-          );
-          setGenerating(false);
-          return;
-        }
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.script?.videoPrompt) {
+        throw new Error(data?.error || "Não foi possível gerar o roteiro agora.");
       }
-    } catch {
-      // Fallback deterministic prompt below
-    }
-
-    setTimeout(() => {
-      const modelDesc = activeTemplate.needsModel
-        ? `Creator: ${selectedModel.name} (${selectedModel.appearance}).`
-        : `Hands-only POV shot on a clean sunlit countertop, no face visible.`;
-
-      const prompt = `[PLANO DE CENA · 8 SEGUNDOS · ${activeTemplate.formatLabel.toUpperCase()}]
-Pergunta respondida: ${PROOF_GOAL_LABELS[selectedGoal]}
-Produto: ${selectedProduct.title}
-
-0.0s – 2.0s (Gancho visual):
-${modelDesc} Segura o produto "${selectedProduct.title}" próximo à lente em 9:16 vertical, luz natural suave de janela, foco nítido na textura real do item.
-Fala em português brasileiro natural: "Se você estava procurando saber se vale a pena, olha esse detalhe de perto."
-
-2.0s – 6.0s (Prova · ${PROOF_GOAL_LABELS[selectedGoal]}):
-Demonstração contínua mostrando: ${selectedProduct.facts[0]}. Movimento de câmera orgânico estilo iPhone 16 Pro UGC, sem cortes bruscos.
-
-6.0s – 8.0s (Chamada para a sacola):
-Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do TikTok Shop): "Deixei o link com desconto aqui no carrinho laranja."`;
-
-      setGeneratedPrompt(prompt);
+      const sc = data.script as {
+        hook: string;
+        scenes: { shot: string; action: string; speech: string; seconds: number }[];
+        cta: string;
+        videoPrompt: string;
+      };
+      setGeneratedPrompt(
+        `[ROTEIRO FALADO — 8s]\nGancho: "${sc.hook}"\n${sc.scenes
+          .map((c, i) => `Cena ${i + 1} (${c.seconds}s): ${c.shot}, ${c.action} — "${c.speech}"`)
+          .join("\n")}\nCTA: "${sc.cta}"\n\n[PROMPT GOOGLE FLOW / VEO 3]\n${sc.videoPrompt}`,
+      );
+    } catch (err) {
+      setGenerateError((err as Error).message);
+    } finally {
       setGenerating(false);
-    }, 900);
+    }
   }
 
   function handleCopyPrompt() {
@@ -434,6 +430,12 @@ Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do
                   {generating ? "Gerando roteiro…" : "✦ Gerar roteiro"}
                 </RaisedButton>
               </div>
+
+              {generateError && (
+                <p role="alert" className="mt-3 text-xs font-medium text-destructive">
+                  {generateError}
+                </p>
+              )}
 
               {generatedPrompt && (
                 <div className="mt-5 space-y-4">

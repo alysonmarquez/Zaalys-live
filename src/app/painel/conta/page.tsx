@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, LogOut, Check } from "lucide-react";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl border border-black/[0.06] bg-background/50 px-3.5 text-[15px] outline-none transition-[background-color,border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring/40 dark:border-white/[0.08] dark:bg-input/20";
@@ -55,34 +56,29 @@ export default function ProfilePage() {
   const [passMsg, setPassMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("zaalys_current_user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.name) setName(parsed.name);
-        if (parsed?.handle) setHandle(parsed.handle);
-        if (parsed?.email) setEmail(parsed.email);
-      }
-    } catch {}
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then(({ user }) => {
+        if (user?.name) setName(user.name);
+        if (user?.handle) setHandle(user.handle);
+        if (user?.email) setEmail(user.email);
+      })
+      .catch(() => {});
   }, []);
 
-  function handleSaveProfile() {
-    try {
-      const raw = window.localStorage.getItem("zaalys_current_user");
-      const parsed = raw ? JSON.parse(raw) : {};
-      const updated = {
-        ...parsed,
-        name: name.trim() || "Criador Zaalys",
-        handle: handle.trim().toLowerCase() || "criador",
-        email,
-      };
-      window.localStorage.setItem("zaalys_current_user", JSON.stringify(updated));
-    } catch {}
+  async function handleSaveProfile() {
+    if (isSupabaseConfigured()) {
+      const { error } = await createClient().auth.updateUser({
+        data: { full_name: name.trim() || "Criador Zaalys", handle: handle.trim().toLowerCase() || "criador" },
+      });
+      if (error) return;
+    }
     setSavedProfile(true);
     setTimeout(() => setSavedProfile(false), 2000);
+    router.refresh();
   }
 
-  function handleUpdatePassword() {
+  async function handleUpdatePassword() {
     if (newPass.length < 8) {
       setPassMsg("A nova senha precisa de ao menos 8 caracteres.");
       return;
@@ -90,6 +86,20 @@ export default function ProfilePage() {
     if (newPass !== confirmPass) {
       setPassMsg("As senhas não coincidem.");
       return;
+    }
+    if (isSupabaseConfigured()) {
+      const supabase = createClient();
+      // Confere a senha atual antes de trocar.
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password: currPass });
+      if (authError) {
+        setPassMsg("A senha atual está incorreta.");
+        return;
+      }
+      const { error } = await supabase.auth.updateUser({ password: newPass });
+      if (error) {
+        setPassMsg("Não foi possível trocar a senha agora. Tente de novo.");
+        return;
+      }
     }
     setCurrPass("");
     setNewPass("");

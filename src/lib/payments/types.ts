@@ -3,6 +3,8 @@ export type Plan = "monthly" | "lifetime";
 export type CheckoutInput = {
   plan: Plan;
   email: string;
+  /** Desconto de cupom já validado no servidor (centavos). */
+  discountCents?: number;
   /** Para onde o gateway devolve a pessoa depois do pagamento. */
   returnUrl: string;
   /** URL pública do nosso webhook. */

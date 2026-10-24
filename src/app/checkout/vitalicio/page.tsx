@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { Brand, BrandLoader, RaisedButton, Segmented } from "@/components/brand";
+import { LIFETIME_CENTS, MONTHLY_CENTS, formatBRL, installmentQuote } from "@/lib/pricing";
 
 const FEATURE_DEMOS_CSS = `
 .zd {
@@ -69,27 +70,6 @@ const FEATURE_DEMOS_CSS = `
 const INPUT_CLASS =
   "h-10.5 w-full rounded-xl border border-black/[0.06] bg-background/50 px-3 text-base outline-none transition-[background-color,border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:border-white/[0.08] dark:bg-input/20";
 
-function formatBRL(cents: number) {
-  const digits = cents % 100 === 0 ? 0 : 2;
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(cents / 100);
-}
-
-function installmentQuote(cents: number, count: number) {
-  if (count <= 1) return { count: 1, cents, totalCents: cents, feeCents: 0 };
-  const factor = 0.04 / (1 - Math.pow(1.04, -count));
-  const totalCents = Math.ceil(cents * count * factor - 1e-6);
-  return {
-    count,
-    cents: Math.round(cents * factor),
-    totalCents,
-    feeCents: totalCents - cents,
-  };
-}
 
 function digitsOnly(val: string) {
   return val.replace(/\D+/g, "");
@@ -280,11 +260,6 @@ function CheckoutContent() {
   const [neighborhood, setNeighborhood] = useState("");
   const [complement, setComplement] = useState("");
 
-  // Card fields
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardOwner, setCardOwner] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvv, setCardCvv] = useState("");
   const [installments, setInstallments] = useState(12);
 
   // Coupon
@@ -302,13 +277,7 @@ function CheckoutContent() {
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
-  const [activeOrder, setActiveOrder] = useState<{
-    orderId: string;
-    method: "pix" | "card" | "boleto";
-    pixCode?: string;
-    boletoLine?: string;
-  } | null>(null);
-  const [copiedPix, setCopiedPix] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   useEffect(() => {
     if (planParam === "monthly" && method === "boleto") {
@@ -316,7 +285,7 @@ function CheckoutContent() {
     }
   }, [planParam, method]);
 
-  const baseCents = planParam === "monthly" ? 34000 : 59400;
+  const baseCents = planParam === "monthly" ? MONTHLY_CENTS : LIFETIME_CENTS;
   const discountCents = appliedCoupon && planParam === "lifetime" ? appliedCoupon.discountCents : 0;
   const amountCents = Math.max(100, baseCents - discountCents);
 
@@ -366,16 +335,32 @@ function CheckoutContent() {
     }
   }
 
-  function handleApplyCoupon() {
-    const code = couponInput.trim().toUpperCase();
+  async function validateCoupon(raw: string) {
+    const code = raw.trim().toUpperCase();
     if (!code) return;
     setCouponError(null);
-    if (code.length < 3) {
-      setCouponError("Cupom inválido ou expirado.");
-      return;
+    try {
+      const res = await fetch(`/api/checkout/coupon?code=${encodeURIComponent(code)}`);
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.valid) {
+        setAppliedCoupon({ code: data.code, discountCents: data.discountCents });
+        return;
+      }
+    } catch {
+      // segue para a mensagem de erro
     }
-    setAppliedCoupon({ code, discountCents: 3000 });
+    setAppliedCoupon(null);
+    setCouponError("Cupom inválido ou expirado.");
   }
+
+  function handleApplyCoupon() {
+    void validateCoupon(couponInput);
+  }
+
+  useEffect(() => {
+    if (initialCoupon) void validateCoupon(initialCoupon);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -386,36 +371,31 @@ function CheckoutContent() {
     }
     setDocError(null);
     setSubmitting(true);
+    setCheckoutError(null);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planParam, email: email.trim() }),
+        body: JSON.stringify({
+          plan: planParam,
+          email: email.trim(),
+          coupon: appliedCoupon?.code,
+        }),
       });
       const data = await res.json().catch(() => null);
-      if (res.ok && data?.url && !data.url.includes("localhost")) {
+      if (res.ok && data?.url) {
+        // Pix, boleto e cartão são pagos na página segura do Mercado Pago.
         window.location.href = data.url;
         return;
       }
+      setCheckoutError(
+        "Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com suporte@zaalys.com.",
+      );
     } catch {
-      // Fall back to in-page payment confirmation flow
+      setCheckoutError("Sem conexão com o servidor. Confira sua internet e tente de novo.");
     } finally {
       setSubmitting(false);
     }
-
-    const orderId = `ord_${Math.random().toString(36).slice(2, 12)}`;
-    setActiveOrder({
-      orderId,
-      method,
-      pixCode:
-        method === "pix"
-          ? `00020126580014br.gov.bcb.pix0136ee91c84d-9b82-4682-a119-zaalys5204000053039865406${(amountCents / 100).toFixed(2)}5802BR5906ZAALYS6009SAO PAULO62140510${orderId}6304ABCD`
-          : undefined,
-      boletoLine:
-        method === "boleto"
-          ? "34191.79001 01043.510047 91020.150008 8 98760000059400"
-          : undefined,
-    });
   }
 
   const buttonText =
@@ -508,85 +488,7 @@ function CheckoutContent() {
         </aside>
 
         <div className="min-w-0 lg:order-1">
-          {activeOrder ? (
-            <section className="rounded-2xl border border-border/60 bg-card/70 p-6">
-              {activeOrder.method === "pix" && activeOrder.pixCode && (
-                <>
-                  <h2 className="text-base font-semibold tracking-tight">Pague com Pix</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Escaneie o QR Code ou use o código copia e cola. A liberação é automática.
-                  </p>
-                  <div className="mt-5 flex flex-col">
-                    <div className="mt-2 flex justify-center">
-                      <BrandLoader
-                        label="Aguardando pagamento Pix"
-                        className="grid size-44 place-items-center rounded-xl border border-border/60 bg-background/50"
-                        markClassName="size-12"
-                      />
-                    </div>
-                    <div className="mt-5">
-                      <RaisedButton
-                        type="button"
-                        className="h-12 w-full gap-2 text-[15px] font-semibold"
-                        onClick={async () => {
-                          if (!activeOrder.pixCode) return;
-                          await navigator.clipboard.writeText(activeOrder.pixCode);
-                          setCopiedPix(true);
-                          setTimeout(() => setCopiedPix(false), 2000);
-                        }}
-                      >
-                        {copiedPix ? "Código copiado" : "Copiar código Pix"}
-                      </RaisedButton>
-                      <ol className="mt-4 space-y-1.5 text-sm text-muted-foreground">
-                        <li>1. Copie o código acima.</li>
-                        <li>2. No app do seu banco, abra Pix e escolha “Pix Copia e Cola”.</li>
-                        <li>3. Cole, confira o valor e confirme. O código vale por 30 minutos.</li>
-                      </ol>
-                      <p className="mt-4 break-all rounded-xl border border-border/60 bg-background/60 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
-                        {activeOrder.pixCode}
-                      </p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {activeOrder.method === "boleto" && activeOrder.boletoLine && (
-                <>
-                  <h2 className="text-base font-semibold tracking-tight">Boleto gerado</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    A compensação leva até 3 dias úteis. O acesso é liberado automaticamente.
-                  </p>
-                  <p className="mt-4 break-all rounded-xl border border-border/60 bg-background/60 p-3 font-mono text-xs">
-                    {activeOrder.boletoLine}
-                  </p>
-                </>
-              )}
-
-              {activeOrder.method === "card" && (
-                <>
-                  <h2 className="text-base font-semibold tracking-tight">Processando o cartão</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Estamos confirmando com a operadora. Não feche esta página.
-                  </p>
-                </>
-              )}
-
-              <div className="mt-6 flex items-center justify-between border-t border-border/60 pt-4 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-2">
-                  <span className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  Aguardando confirmação do pagamento…
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setActiveOrder(null)}
-                  className="text-xs underline underline-offset-4 hover:text-foreground"
-                >
-                  Alterar dados
-                </button>
-              </div>
-            </section>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5" data-clarity-mask="true">
+          <form onSubmit={handleSubmit} className="space-y-5" data-clarity-mask="true">
               <div className="rounded-2xl border border-border/60 bg-card/70 p-5">
                 <Segmented
                   label="Forma de pagamento"
@@ -795,65 +697,11 @@ function CheckoutContent() {
 
               {method === "card" && (
                 <div className="rounded-2xl border border-border/60 bg-card/70 p-5">
-                  <h3 className="text-sm font-semibold tracking-tight">Dados do cartão</h3>
+                  <h3 className="text-sm font-semibold tracking-tight">Parcelamento no cartão</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Você digita o cartão na página segura do Mercado Pago, no próximo passo. A Zaalys não recebe nem guarda os dados do cartão.
+                  </p>
                   <div className="mt-4 grid gap-4 sm:grid-cols-6">
-                    <div className="sm:col-span-6">
-                      <FieldBlock label="Número do cartão">
-                        <input
-                          required
-                          inputMode="numeric"
-                          autoComplete="cc-number"
-                          placeholder="0000 0000 0000 0000"
-                          value={cardNumber}
-                          onChange={(e) => {
-                            const d = digitsOnly(e.target.value).slice(0, 19);
-                            setCardNumber(d.match(/.{1,4}/g)?.join(" ") ?? "");
-                          }}
-                          className={INPUT_CLASS}
-                        />
-                      </FieldBlock>
-                    </div>
-                    <div className="sm:col-span-6">
-                      <FieldBlock label="Nome impresso no cartão">
-                        <input
-                          required
-                          autoComplete="cc-name"
-                          value={cardOwner}
-                          onChange={(e) => setCardOwner(e.target.value.toUpperCase())}
-                          className={INPUT_CLASS}
-                        />
-                      </FieldBlock>
-                    </div>
-                    <div className="sm:col-span-3">
-                      <FieldBlock label="Validade" hint="Como está no cartão">
-                        <input
-                          required
-                          inputMode="numeric"
-                          placeholder="MM/AA"
-                          autoComplete="cc-exp"
-                          value={cardExpiry}
-                          onChange={(e) => {
-                            const d = digitsOnly(e.target.value).slice(0, 4);
-                            setCardExpiry(d.length <= 2 ? d : `${d.slice(0, 2)}/${d.slice(2)}`);
-                          }}
-                          className={INPUT_CLASS}
-                        />
-                      </FieldBlock>
-                    </div>
-                    <div className="sm:col-span-3">
-                      <FieldBlock label="CVV">
-                        <input
-                          required
-                          inputMode="numeric"
-                          autoComplete="cc-csc"
-                          maxLength={4}
-                          placeholder="000"
-                          value={cardCvv}
-                          onChange={(e) => setCardCvv(digitsOnly(e.target.value).slice(0, 4))}
-                          className={INPUT_CLASS}
-                        />
-                      </FieldBlock>
-                    </div>
                     <div className="min-w-0 sm:col-span-6">
                       <FieldBlock label="Parcelas">
                         <select
@@ -984,8 +832,14 @@ function CheckoutContent() {
                   className="h-13 w-full gap-2 rounded-2xl before:rounded-2xl text-[15px] font-semibold"
                 >
                   <ShieldCheckIcon size={17} />
-                  {submitting ? "Gerando cobrança…" : buttonText}
+                  {submitting ? "Abrindo pagamento seguro…" : buttonText}
                 </RaisedButton>
+
+                {checkoutError && (
+                  <p role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-center text-sm">
+                    {checkoutError}
+                  </p>
+                )}
 
                 {method === "pix" && (
                   <p className="text-center text-xs text-muted-foreground">
@@ -1135,7 +989,6 @@ function CheckoutContent() {
                 </p>
               </section>
             </form>
-          )}
         </div>
       </div>
     </main>

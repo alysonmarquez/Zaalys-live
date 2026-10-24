@@ -71,6 +71,8 @@ export function videoScriptPrompt(input: {
   character?: { name: string; appearance: string };
   template?: { scene: string; camera_motion: string };
   durationSeconds: number;
+  tone?: string;
+  angle?: string;
 }) {
   return {
     system: `${VOICE} Você cria roteiros de vídeos verticais curtos para o TikTok Shop e o prompt para gerar o vídeo numa ferramenta de vídeo por IA (Flow, Veo).`,
@@ -80,6 +82,8 @@ Detalhes: ${input.product.details ?? "não informados"}
 Apresentador: ${input.character ? `${input.character.name}, ${input.character.appearance}` : "livre"}
 Cena: ${input.template ? `${input.template.scene}. Câmera: ${input.template.camera_motion}` : "livre, adequada ao produto"}
 Duração total: ${input.durationSeconds} segundos
+Tom: ${input.tone ?? "natural"}
+Ângulo do roteiro: ${input.angle ?? "livre"}
 
 Devolva um JSON com:
 - title: nome curto do vídeo
@@ -148,5 +152,48 @@ export function loopCommentsPrompt(input: { product: ProductInput; count: number
 Escreva ${input.count} comentários diferentes do anfitrião (até 120 caracteres cada), variando entre benefício, como usar, convite para o carrinho e convite para perguntar.
 Devolva JSON { comments: [...] }.`,
     maxTokens: 900,
+  };
+}
+
+// ---------- Remake de vídeo ----------
+
+export const VideoRemake = z.object({
+  versions: z
+    .array(
+      z.object({
+        angle: z.string(),
+        hook: z.string(),
+        beats: z.array(z.object({ time: z.string(), shot: z.string(), speech: z.string() })),
+        cta: z.string(),
+        videoPrompt: z.string(),
+      }),
+    )
+    .min(3)
+    .max(3),
+});
+export type VideoRemake = z.infer<typeof VideoRemake>;
+
+export function videoRemakePrompt(input: {
+  reference: { hook: string; structure: { stage: string; whatHappens: string }[] };
+  product: ProductInput;
+}) {
+  return {
+    system: `${VOICE} Você faz o "remake" de vídeos de venda: mantém o ritmo e a estrutura de um vídeo que já vende, com falas e cenas novas para outro produto. Nunca copie as falas do vídeo de referência.`,
+    prompt: `Vídeo de referência:
+- Gancho: ${input.reference.hook}
+- Estrutura:
+${input.reference.structure.map((s) => `  • ${s.stage}: ${s.whatHappens}`).join("\n")}
+
+Produto novo: ${input.product.name}
+Preço: ${input.product.price ?? "não informado"}
+Detalhes: ${input.product.details ?? "não informados"}
+
+Devolva um JSON com "versions": exatamente 3 versões, cada uma com um ângulo diferente (ex.: dor + prova, curiosidade, custo-benefício):
+- angle: nome curto do ângulo
+- hook: fala dos primeiros 2 segundos
+- beats: as partes na mesma ordem e com os mesmos tempos da referência { time, shot (o que aparece), speech (fala em PT-BR) }
+- cta: chamada final para o carrinho
+- videoPrompt: prompt único para gerar o vídeo vertical 9:16 no Flow/Veo, com a fala entre aspas simples e "Preserve a aparência do produto de referência."`,
+    maxTokens: 3000,
   };
 }

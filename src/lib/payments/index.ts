@@ -1,3 +1,4 @@
+import { LIFETIME_CENTS, MAX_INSTALLMENTS, MONTHLY_CENTS } from "@/lib/pricing";
 import { MercadoPagoProvider } from "./mercadopago";
 import type { PaymentProvider } from "./types";
 
@@ -15,9 +16,9 @@ export function getPayments(name = process.env.PAYMENT_PROVIDER ?? "mercadopago"
 }
 
 export const PRICES = {
-  monthlyCents: Number(process.env.PRICE_MONTHLY_CENTS ?? 54000),
-  lifetimeCents: Number(process.env.PRICE_LIFETIME_CENTS ?? 79400),
-  installments: Number(process.env.LIFETIME_MAX_INSTALLMENTS ?? 12),
+  monthlyCents: MONTHLY_CENTS,
+  lifetimeCents: LIFETIME_CENTS,
+  installments: MAX_INSTALLMENTS,
 };
 
 export const brl = (cents: number) =>

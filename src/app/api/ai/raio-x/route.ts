@@ -40,6 +40,7 @@ export async function POST(req: Request) {
       }),
     );
 
+    if (access.demo) return json({ transcript, analysis });
     const supabase = await createClient();
     const { data: saved } = await supabase
       .from("video_analyses")

@@ -9,14 +9,23 @@ import {
   compactNumber,
   formatBRL,
 } from "@/lib/zaalys-data";
+import type { VideoAnalysis, VideoRemake } from "@/lib/ai/prompts";
+
+/** Vídeo da galeria de exemplos ou analisado de verdade pela IA (sem números de venda). */
+type RaioXVideo = FastMossVideo & { analysisId?: string; analyzed?: boolean };
 
 export default function RaioXPage() {
   const [pastedUrl, setPastedUrl] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [sort, setSort] = useState<"sales" | "views">("sales");
-  const [selectedVideo, setSelectedVideo] = useState<FastMossVideo | null>(null);
-  const [savedVideos, setSavedVideos] = useState<FastMossVideo[]>([FASTMOSS_VIDEOS[0]!]);
+  const [selectedVideo, setSelectedVideo] = useState<RaioXVideo | null>(null);
+  const [savedVideos, setSavedVideos] = useState<RaioXVideo[]>([]);
+  const [transcript, setTranscript] = useState("");
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [recreateError, setRecreateError] = useState<string | null>(null);
   const [targetProductId, setTargetProductId] = useState<number>(ZAALYS_PRODUCTS[0]!.id);
   const [recreatedVersions, setRecreatedVersions] = useState<string[] | null>(null);
   const [recreating, setRecreating] = useState(false);
@@ -40,63 +49,108 @@ export default function RaioXPage() {
       .sort((a, b) => (sort === "sales" ? b.sales - a.sales : b.views - a.views));
   }, [search, category, sort]);
 
-  function handleAnalyzeLink(e: React.FormEvent) {
+  async function handleAnalyzeLink(e: React.FormEvent) {
     e.preventDefault();
-    if (!pastedUrl.trim()) return;
-    const custom: FastMossVideo = {
-      id: `custom-${Date.now()}`,
-      title: `Vídeo analisado (${pastedUrl.trim().slice(0, 38)}…)`,
-      creator: "tiktok_creator",
-      category: "TikTok Shop BR",
-      thumbnail: "/media/central-raiox.webp",
-      source: "TikTok",
-      sourceUrl: pastedUrl.trim(),
-      tiktokUrl: pastedUrl.trim(),
-      views: 68400,
-      sales: 119,
-      hook: "Não compre antes de ver esse detalhe funcionando ao vivo na prática.",
-      structure: [
-        {
-          stage: "Gancho (0–2s)",
-          time: "0:00–0:02",
-          whatHappens: "Mostra o resultado final imediatamente nos primeiros 2 segundos sem introdução.",
-        },
-        {
-          stage: "Prova (2–6s)",
-          time: "0:02–0:06",
-          whatHappens: "Demonstra o diferencial físico do produto em uso real resolvendo a principal objeção.",
-        },
-        {
-          stage: "Chamada (6–8s)",
-          time: "0:06–0:08",
-          whatHappens: "Aponta para a sacola laranja destacando estoque limitado e preço promocional.",
-        },
-      ],
-      takeaways: [
-        "Ritmo direto de 8 segundos sem cumprimentos iniciais.",
-        "Prova visual na mão antes de falar qualquer benefício técnico.",
-      ],
-    };
-    setSavedVideos((prev) => [custom, ...prev]);
-    setSelectedVideo(custom);
-    setRecreatedVersions(null);
-    setPastedUrl("");
+    setAnalyzeError(null);
+    if (!transcript.trim() && !mediaFile) {
+      setAnalyzeError(
+        "O TikTok não deixa baixar o vídeo pelo link. Cole a fala do vídeo ou envie o áudio/vídeo baixado.",
+      );
+      return;
+    }
+    setAnalyzing(true);
+    try {
+      const form = new FormData();
+      form.set("url", pastedUrl.trim());
+      form.set("transcript", transcript.trim());
+      if (mediaFile) form.set("file", mediaFile);
+      const res = await fetch("/api/ai/raio-x", { method: "POST", body: form });
+      const data = (await res.json().catch(() => null)) as
+        | { id?: string; analysis?: VideoAnalysis; error?: string }
+        | null;
+      if (!res.ok || !data?.analysis) throw new Error(data?.error || "Não foi possível analisar.");
+      const a = data.analysis;
+      const url = pastedUrl.trim();
+      const analyzed: RaioXVideo = {
+        id: data.id ?? `raiox-${Date.now()}`,
+        analysisId: data.id,
+        analyzed: true,
+        title: url ? `Raio-X: ${url.replace(/^https?:\/\//, "").slice(0, 40)}` : `Raio-X: ${a.hookType}`,
+        creator: url.match(/@([\w.]+)/)?.[1] ?? "seu vídeo",
+        category: a.hookType,
+        thumbnail: "/media/central-raiox.webp",
+        source: "TikTok",
+        sourceUrl: url,
+        tiktokUrl: url,
+        views: 0,
+        sales: 0,
+        hook: a.hook,
+        structure: a.structure.map((part) => ({
+          stage: part.part,
+          time: "",
+          whatHappens: `${part.purpose} — “${part.excerpt}”`,
+        })),
+        takeaways: [...a.arguments, `Chamada final: ${a.cta}`],
+      };
+      setSavedVideos((prev) => [analyzed, ...prev]);
+      setSelectedVideo(analyzed);
+      setRecreatedVersions(null);
+      setPastedUrl("");
+      setTranscript("");
+      setMediaFile(null);
+    } catch (err) {
+      setAnalyzeError((err as Error).message);
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
-  function handleRecreate() {
+  async function handleRecreate() {
     if (!selectedVideo) return;
     setRecreating(true);
     setRecreatedVersions(null);
+    setRecreateError(null);
     const prod = ZAALYS_PRODUCTS.find((p) => p.id === targetProductId) ?? ZAALYS_PRODUCTS[0]!;
-
-    setTimeout(() => {
-      setRecreatedVersions([
-        `Versão 1 (Foco na Dor + Prova Rápida):\n• 0–2s (Gancho): "Se você ia comprar sem olhar esse detalhe, para agora e vê isso aqui."\n• 2–6s (Prova): Mostra ${prod.title} em close: ${prod.facts[0]}.\n• 6–8s (CTA): "Deixei o link oficial por ${formatBRL(prod.priceCents)} aqui no carrinho laranja."`,
-        `Versão 2 (Teste de Risco / Curiosidade):\n• 0–2s (Gancho): "Testei na prática pra ver se valia o hype do TikTok Shop…"\n• 2–6s (Prova): Demonstra ${prod.facts[1] ?? prod.facts[0]} sem corte.\n• 6–8s (CTA): "Tá com frete e cupom na sacolinha aqui embaixo."`,
-        `Versão 3 (Comparação de Custo-Benefício):\n• 0–2s (Gancho): "Por ${formatBRL(prod.priceCents)}, isso aqui entregou mais que o dobro do preço."\n• 2–6s (Prova): Mostra acabamento e uso real de ${prod.title}.\n• 6–8s (CTA): "Corre no link do carrinho antes que acabe o lote."`,
-      ]);
+    try {
+      const res = await fetch("/api/ai/remake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          analysisId: selectedVideo.analysisId,
+          reference: {
+            hook: selectedVideo.hook,
+            structure: selectedVideo.structure.map((s) => ({
+              stage: [s.stage, s.time].filter(Boolean).join(" "),
+              whatHappens: s.whatHappens,
+            })),
+          },
+          product: {
+            name: prod.title,
+            price: formatBRL(prod.priceCents),
+            details: prod.facts.join("; "),
+          },
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as (VideoRemake & { error?: string }) | null;
+      if (!res.ok || !data?.versions) throw new Error(data?.error || "Não foi possível recriar agora.");
+      setRecreatedVersions(
+        data.versions.map((v, i) =>
+          [
+            `Versão ${i + 1} (${v.angle}):`,
+            `• Gancho: "${v.hook}"`,
+            ...v.beats.map((b) => `• ${b.time} — ${b.shot}: "${b.speech}"`),
+            `• CTA: "${v.cta}"`,
+            "",
+            "Prompt para o Flow/Veo:",
+            v.videoPrompt,
+          ].join("\n"),
+        ),
+      );
+    } catch (err) {
+      setRecreateError((err as Error).message);
+    } finally {
       setRecreating(false);
-    }, 750);
+    }
   }
 
   return (
@@ -127,10 +181,33 @@ export default function RaioXPage() {
             placeholder="https://www.tiktok.com/@criador/video/..."
             className="field flex-1 text-sm"
           />
-          <RaisedButton type="submit" size="default" className="shrink-0">
-            Analisar no Raio-X
+          <RaisedButton type="submit" size="default" className="shrink-0" disabled={analyzing}>
+            {analyzing ? "Analisando…" : "Analisar no Raio-X"}
           </RaisedButton>
         </form>
+        <div className="mt-2.5 grid gap-2.5 sm:grid-cols-[1fr_auto] sm:items-start">
+          <textarea
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+            rows={3}
+            placeholder="Cole aqui a fala do vídeo (o que é dito), ou envie o arquivo ao lado."
+            className="field text-sm"
+          />
+          <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-border px-3 py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground">
+            {mediaFile ? mediaFile.name.slice(0, 28) : "Enviar áudio/vídeo (até 25 MB)"}
+            <input
+              type="file"
+              accept="audio/*,video/*"
+              className="sr-only"
+              onChange={(e) => setMediaFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+        </div>
+        {analyzeError && (
+          <p role="alert" className="mt-2 text-xs font-medium text-destructive">
+            {analyzeError}
+          </p>
+        )}
 
         {/* Meus Raio-X salvos */}
         <div className="mt-5 border-t border-border/70 pt-4">
@@ -154,7 +231,9 @@ export default function RaioXPage() {
                   className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-1.5 text-xs font-medium hover:border-primary/40 cursor-pointer"
                 >
                   <span className="max-w-[220px] truncate">{sv.title}</span>
-                  <span className="tabular text-primary">{sv.sales} vendas</span>
+                  <span className="tabular text-primary">
+                    {sv.analyzed ? "analisado" : `${sv.sales} vendas`}
+                  </span>
                 </button>
               ))}
             </div>
@@ -175,7 +254,8 @@ export default function RaioXPage() {
               </span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Vídeos reais que mais converteram vendas no TikTok Shop Brasil.
+              Exemplos de vídeos que converteram no TikTok Shop Brasil. Abra um para estudar a
+              estrutura e fazer o remake para o seu produto.
             </p>
           </div>
 
@@ -280,12 +360,19 @@ export default function RaioXPage() {
 
               <div className="relative z-10">
                 <span className="rounded-full bg-primary/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
-                  {selectedVideo.source} · BR
+                  {selectedVideo.analyzed ? "Raio-X" : `${selectedVideo.source} · BR`}
                 </span>
                 <p className="mt-2 text-xs text-white/80">@{selectedVideo.creator}</p>
               </div>
 
               <div className="relative z-10 space-y-2">
+                {selectedVideo.analyzed ? (
+                  <p className="text-xs text-white/80">
+                    Análise feita pela IA a partir da fala do vídeo. Vendas e views não são lidas do
+                    TikTok.
+                  </p>
+                ) : (
+                <>
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-white/60">
                     Vendas atribuídas
@@ -302,6 +389,8 @@ export default function RaioXPage() {
                     {selectedVideo.views.toLocaleString("pt-BR")} views
                   </p>
                 </div>
+                </>
+                )}
                 <a
                   href={selectedVideo.tiktokUrl}
                   target="_blank"
@@ -401,6 +490,11 @@ export default function RaioXPage() {
                     {recreating ? "Recriando…" : "✦ Recriar 3 versões"}
                   </RaisedButton>
                 </div>
+                {recreateError && (
+                  <p role="alert" className="text-xs font-medium text-destructive">
+                    {recreateError}
+                  </p>
+                )}
 
                 {recreatedVersions && (
                   <div className="space-y-2.5 pt-2">

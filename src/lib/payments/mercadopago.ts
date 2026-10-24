@@ -1,3 +1,4 @@
+import { LIFETIME_CENTS, MAX_INSTALLMENTS, MONTHLY_CENTS } from "@/lib/pricing";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { CheckoutInput, PaymentEvent, PaymentProvider, Plan } from "./types";
 
@@ -62,11 +63,11 @@ export class MercadoPagoProvider implements PaymentProvider {
   }
 
   async createCheckout(input: CheckoutInput) {
-    const name = process.env.NEXT_PUBLIC_APP_NAME ?? "MediaFlow";
+    const name = process.env.NEXT_PUBLIC_APP_NAME ?? "Zaalys";
 
     if (input.plan === "lifetime") {
       // Checkout Pro: Pix, boleto e cartão parcelado.
-      const cents = Number(process.env.PRICE_LIFETIME_CENTS ?? 79400);
+      const cents = Math.max(100, LIFETIME_CENTS - (input.discountCents ?? 0));
       const pref = await this.mp<{ init_point: string }>("/checkout/preferences", {
         method: "POST",
         body: JSON.stringify({
@@ -74,7 +75,7 @@ export class MercadoPagoProvider implements PaymentProvider {
             { title: `${name} — acesso vitalício`, quantity: 1, unit_price: cents / 100, currency_id: "BRL" },
           ],
           payer: { email: input.email },
-          payment_methods: { installments: Number(process.env.LIFETIME_MAX_INSTALLMENTS ?? 12) },
+          payment_methods: { installments: MAX_INSTALLMENTS },
           external_reference: ref("lifetime", input.email),
           notification_url: input.webhookUrl,
           back_urls: { success: input.returnUrl, pending: input.returnUrl, failure: input.returnUrl },
@@ -85,7 +86,7 @@ export class MercadoPagoProvider implements PaymentProvider {
     }
 
     // Assinatura mensal (preapproval). Observação: recorrência no MP é só no cartão.
-    const cents = Number(process.env.PRICE_MONTHLY_CENTS ?? 54000);
+    const cents = MONTHLY_CENTS;
     const sub = await this.mp<{ init_point: string }>("/preapproval", {
       method: "POST",
       body: JSON.stringify({

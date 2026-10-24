@@ -456,9 +456,18 @@ export default function HomePage() {
       rawCoupon && /^[A-Za-z0-9-]{3,40}$/.test(rawCoupon) ? rawCoupon.toUpperCase() : null;
     const couponBanner = root.querySelector<HTMLElement>("[data-coupon-banner]");
     if (coupon && couponBanner) {
-      const codeEl = couponBanner.querySelector("[data-coupon-code]");
-      if (codeEl) codeEl.textContent = coupon;
-      couponBanner.hidden = false;
+      // Só mostra o banner se o servidor confirmar o cupom.
+      fetch(`/api/checkout/coupon?code=${encodeURIComponent(coupon)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: { valid?: boolean; discountCents?: number } | null) => {
+          if (!data?.valid || !data.discountCents) return;
+          const codeEl = couponBanner.querySelector("[data-coupon-code]");
+          if (codeEl) codeEl.textContent = coupon;
+          const valueEl = couponBanner.querySelector("[data-coupon-value]");
+          if (valueEl) valueEl.textContent = `${formatBrl(data.discountCents)} de desconto`;
+          couponBanner.hidden = false;
+        })
+        .catch(() => {});
     }
 
     const radarForm = root.querySelector<HTMLFormElement>("[data-radar-form]");
@@ -591,8 +600,8 @@ export default function HomePage() {
       </header>
 
       <p className="_couponBanner_1pscc_113" data-coupon-banner="" hidden role="status">
-        Cupom <strong data-coupon-code=""></strong>: R$ 30 de desconto no acesso vitalício. O
-        desconto aparece no pagamento.
+        Cupom <strong data-coupon-code=""></strong>: <span data-coupon-value="">desconto</span> no
+        acesso vitalício. O desconto aparece no pagamento.
       </p>
 
       <main id="conteudo">
@@ -615,7 +624,7 @@ export default function HomePage() {
               Acesso vitalício{" "}
               <span>
                 <span data-price="lifetime-count">12</span>x de{" "}
-                <span data-price="lifetime-instalment">R$ 63,29</span>
+                <span data-price="lifetime-instalment">R$ 84,60</span>
               </span>{" "}
               <ArrowUpRight size={17} />
             </a>
@@ -625,7 +634,7 @@ export default function HomePage() {
             >
               Plano mensal{" "}
               <span>
-                <span data-price="monthly">R$ 340</span>/mês
+                <span data-price="monthly">R$ 540</span>/mês
               </span>
             </a>
           </div>
@@ -1471,7 +1480,7 @@ export default function HomePage() {
               </header>
               <div className="_price_1pscc_341">
                 <strong>
-                  <span data-price-whole="monthly">R$ 340</span>
+                  <span data-price-whole="monthly">R$ 540</span>
                   <span className="_priceCents_1pscc_345" data-price-fraction="monthly" />
                   <span className="_priceUnit_1pscc_343">/mês</span>
                 </strong>
@@ -1513,16 +1522,16 @@ export default function HomePage() {
                   <span className="_priceUnit_1pscc_343">
                     <span data-price="lifetime-count">12</span>x de
                   </span>{" "}
-                  <span data-price-whole="lifetime-instalment">R$ 63</span>
+                  <span data-price-whole="lifetime-instalment">R$ 84</span>
                   <span
                     className="_priceCents_1pscc_345"
                     data-price-fraction="lifetime-instalment"
                   >
-                    ,29
+                    ,60
                   </span>
                 </strong>
                 <span className="_priceCash_1pscc_346">
-                  ou <span data-price="lifetime">R$ 594</span> à vista
+                  ou <span data-price="lifetime">R$ 794</span> à vista
                 </span>
               </div>
               <a
@@ -1702,7 +1711,7 @@ export default function HomePage() {
               Acesso vitalício{" "}
               <span>
                 <span data-price="lifetime-count">12</span>x de{" "}
-                <span data-price="lifetime-instalment">R$ 63,29</span>
+                <span data-price="lifetime-instalment">R$ 84,60</span>
               </span>{" "}
               <ArrowUpRight size={17} />
             </a>
@@ -1712,7 +1721,7 @@ export default function HomePage() {
             >
               Plano mensal{" "}
               <span>
-                <span data-price="monthly">R$ 340</span>/mês
+                <span data-price="monthly">R$ 540</span>/mês
               </span>
             </a>
           </div>
@@ -1728,10 +1737,10 @@ export default function HomePage() {
         <div>
           <strong>
             Vitalício <span data-price="lifetime-count">12</span>x de{" "}
-            <span data-price="lifetime-instalment">R$ 63,29</span>
+            <span data-price="lifetime-instalment">R$ 84,60</span>
           </strong>
           <span>
-            ou <span data-price="monthly">R$ 340</span>/mês · 7 dias de garantia
+            ou <span data-price="monthly">R$ 540</span>/mês · sem fidelidade
           </span>
         </div>
         <a href="#acesso" className="_primary_1pscc_28">

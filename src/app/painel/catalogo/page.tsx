@@ -29,6 +29,9 @@ function CatalogoInner() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [newLink, setNewLink] = useState("");
   const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPrice, setNewPrice] = useState("");
+  const [newCommission, setNewCommission] = useState("");
 
   const allProducts = useMemo(
     () => [...customProducts, ...ZAALYS_PRODUCTS],
@@ -61,42 +64,41 @@ function CatalogoInner() {
       });
   }, [allProducts, category, search, sort]);
 
+  // O link do TikTok não pode ser lido daqui: a pessoa informa nome, preço e comissão
+  // que aparecem no app. Nada é inventado; vendas e views ficam zeradas.
   function handleAddProduct(e: React.FormEvent) {
     e.preventDefault();
-    if (!newLink.trim()) return;
+    const priceCents = Math.round(Number(newPrice.replace(/\./g, "").replace(",", ".")) * 100);
+    const commissionPct = Number(newCommission.replace(",", "."));
+    if (!newName.trim() || !(priceCents > 0) || !(commissionPct > 0 && commissionPct <= 100)) return;
     setAdding(true);
-    setTimeout(() => {
-      const created: ZaalysProduct = {
-        id: Date.now(),
-        title: `Produto TikTok Shop (${newLink.trim().slice(0, 32)}…)`,
-        category: "Beleza e cuidados",
-        categoryKey: "beleza",
-        priceCents: 7990,
-        commissionPct: 20,
-        earningCents: 1598,
-        salesCount: 1240,
-        viewsCount: 280000,
-        rating: 4.9,
-        highCommission: true,
-        trending: true,
-        imageUrl: "/media/central-produtos.webp",
-        affiliateUrl: newLink.trim().startsWith("http") ? newLink.trim() : "https://www.tiktok.com/",
-        proofGoal: "use",
-        reasons: [
-          "Produto importado pelo link do TikTok Shop e analisado pela Zaalys.",
-          "Pronto para gerar vídeo nos Templates Virais ou rodar na Live Infinita.",
-        ],
-        facts: [
-          "Link verificado no catálogo TikTok Shop BR",
-          "Comissão estimada de 20% por venda",
-        ],
-      };
-      setCustomProducts((prev) => [created, ...prev]);
-      setSelectedProduct(created);
-      setNewLink("");
-      setAdding(false);
-      setAddModalOpen(false);
-    }, 650);
+    const created: ZaalysProduct = {
+      id: Date.now(),
+      title: newName.trim(),
+      category: "Meus produtos",
+      categoryKey: "meus",
+      priceCents,
+      commissionPct,
+      earningCents: Math.round((priceCents * commissionPct) / 100),
+      salesCount: 0,
+      viewsCount: 0,
+      rating: 0,
+      highCommission: commissionPct >= 15,
+      trending: false,
+      imageUrl: "/media/central-produtos.webp",
+      affiliateUrl: newLink.trim().startsWith("http") ? newLink.trim() : "https://www.tiktok.com/",
+      proofGoal: "use",
+      reasons: ["Adicionado por você, com o preço e a comissão que aparecem no TikTok Shop."],
+      facts: [`Preço informado: ${formatBRL(priceCents)}`, `Comissão informada: ${commissionPct}%`],
+    };
+    setCustomProducts((prev) => [created, ...prev]);
+    setSelectedProduct(created);
+    setNewLink("");
+    setNewName("");
+    setNewPrice("");
+    setNewCommission("");
+    setAdding(false);
+    setAddModalOpen(false);
   }
 
   return (
@@ -411,7 +413,7 @@ function CatalogoInner() {
               <div>
                 <h2 className="font-display text-xl font-bold">Adicionar um produto</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  No app do TikTok: abra o produto, toque em Compartilhar e em Copiar link.
+                  Copie do app do TikTok Shop o nome, o preço e a comissão do produto.
                 </p>
               </div>
               <button
@@ -428,9 +430,34 @@ function CatalogoInner() {
                 inputMode="url"
                 value={newLink}
                 onChange={(e) => setNewLink(e.target.value)}
-                placeholder="https://vt.tiktok.com/..."
+                placeholder="https://vt.tiktok.com/... (opcional)"
                 className="field text-sm"
               />
+              <input
+                required
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Nome do produto"
+                className="field text-sm"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  required
+                  inputMode="decimal"
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
+                  placeholder="Preço (ex.: 89,90)"
+                  className="field text-sm"
+                />
+                <input
+                  required
+                  inputMode="decimal"
+                  value={newCommission}
+                  onChange={(e) => setNewCommission(e.target.value)}
+                  placeholder="Comissão % (ex.: 15)"
+                  className="field text-sm"
+                />
+              </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -439,8 +466,8 @@ function CatalogoInner() {
                 >
                   Fechar
                 </button>
-                <RaisedButton type="submit" size="sm" disabled={adding || !newLink.trim()}>
-                  {adding ? "Buscando…" : "Adicionar"}
+                <RaisedButton type="submit" size="sm" disabled={adding || !newName.trim()}>
+                  {adding ? "Adicionando…" : "Adicionar"}
                 </RaisedButton>
               </div>
             </form>

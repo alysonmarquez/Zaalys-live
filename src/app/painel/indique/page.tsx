@@ -42,15 +42,12 @@ export default function IndiquePage() {
   const [pixSaved, setPixSaved] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("zaalys_current_user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.handle) {
-          setHandle(parsed.handle.toUpperCase().replace(/[^A-Z0-9]/g, "") + "30");
-        }
-      }
-    } catch {}
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then(({ user }) => {
+        if (user?.handle) setHandle(user.handle.toUpperCase().replace(/[^A-Z0-9]/g, "") + "30");
+      })
+      .catch(() => {});
   }, []);
 
   const shareUrl = `https://zaalys.com/convite/${handle}`;

@@ -17,6 +17,7 @@ export async function POST(req: Request) {
   try {
     const body = Body.parse(await req.json());
     const script = await generateObject(LiveScript, liveScriptPrompt(body));
+    if (access.demo) return json({ script });
     const supabase = await createClient();
     const { data: saved } = await supabase
       .from("scripts")

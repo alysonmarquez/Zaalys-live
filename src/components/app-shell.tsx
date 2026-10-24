@@ -29,6 +29,8 @@ import { ZAALYS_NOTIFICATIONS, formatBRL } from "@/lib/zaalys-data";
 type AppShellProps = {
   userEmail: string;
   userName?: string;
+  /** Painel em modo demonstração (sem Supabase, fora de produção). */
+  demo?: boolean;
   children: React.ReactNode;
 };
 
@@ -143,7 +145,7 @@ export function BrandLogo() {
   );
 }
 
-export function AppShell({ userEmail, userName, children }: AppShellProps) {
+export function AppShell({ userEmail, userName, demo, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -193,6 +195,28 @@ export function AppShell({ userEmail, userName, children }: AppShellProps) {
   const [supportTopic, setSupportTopic] = useState("Dúvida sobre ferramenta");
   const [supportMessage, setSupportMessage] = useState("");
   const [supportSent, setSupportSent] = useState(false);
+  const [supportSending, setSupportSending] = useState(false);
+  const [supportError, setSupportError] = useState<string | null>(null);
+
+  async function submitSupport() {
+    if (!supportMessage.trim() || supportSending) return;
+    setSupportSending(true);
+    setSupportError(null);
+    try {
+      const res = await fetch("/api/support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: supportTopic, message: supportMessage.trim(), page: pathname }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      setSupportSent(true);
+      setSupportMessage("");
+    } catch {
+      setSupportError("Não conseguimos enviar agora. Escreva para suporte@zaalys.com.");
+    } finally {
+      setSupportSending(false);
+    }
+  }
 
   const [notifications, setNotifications] = useState(ZAALYS_NOTIFICATIONS);
   const unreadCount = notifications.filter((n) => n.unread).length;
@@ -283,6 +307,11 @@ export function AppShell({ userEmail, userName, children }: AppShellProps) {
 
   return (
     <div className="min-h-svh bg-studio text-foreground flex flex-col">
+      {demo && (
+        <div role="status" className="bg-primary/15 px-4 py-1.5 text-center text-[11px] font-semibold text-foreground">
+          Modo demonstração: sem banco configurado, dados de exemplo. Configure o Supabase para usar contas reais.
+        </div>
+      )}
       {/* Top Navbar matching 3jz1kpdvh_75d.js */}
       <header className="sticky top-0 z-30 border-b border-black/[0.06] bg-background/85 backdrop-blur-xl dark:border-white/[0.08]">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:px-6">
@@ -752,9 +781,7 @@ export function AppShell({ userEmail, userName, children }: AppShellProps) {
                 className="mt-4 space-y-4"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (!supportMessage.trim()) return;
-                  setSupportSent(true);
-                  setSupportMessage("");
+                  void submitSupport();
                 }}
               >
                 <div>
@@ -802,6 +829,12 @@ export function AppShell({ userEmail, userName, children }: AppShellProps) {
                   />
                 </div>
 
+                {supportError && (
+                  <p role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 p-2.5 text-xs">
+                    {supportError}
+                  </p>
+                )}
+
                 <div className="flex items-center justify-between gap-3 pt-1">
                   <span className="text-[11px] text-muted-foreground">
                     Ou escreva para{" "}
@@ -814,9 +847,10 @@ export function AppShell({ userEmail, userName, children }: AppShellProps) {
                   </span>
                   <button
                     type="submit"
-                    className="h-10 rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground shadow-xs transition-transform active:scale-95 cursor-pointer"
+                    disabled={supportSending}
+                    className="h-10 rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground shadow-xs transition-transform active:scale-95 cursor-pointer disabled:opacity-60"
                   >
-                    Enviar
+                    {supportSending ? "Enviando…" : "Enviar"}
                   </button>
                 </div>
               </form>

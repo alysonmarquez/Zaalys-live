@@ -1,5 +1,5 @@
-// MediaFlow Live — service worker.
-// Faz as chamadas à API do MediaFlow (evita CORS no content script) e guarda a ativação.
+// Zaalys Live — service worker.
+// Faz as chamadas à API do Zaalys (evita CORS no content script) e guarda a ativação.
 
 const DEFAULT_API = "http://localhost:3000";
 

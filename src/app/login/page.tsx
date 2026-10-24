@@ -9,50 +9,6 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 const INPUT_CLASS =
   "h-11 w-full rounded-xl border border-black/[0.06] bg-background/50 px-3.5 text-[15px] outline-none transition-[background-color,border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring/40 dark:border-white/[0.08] dark:bg-input/20";
 
-interface StoredAccount {
-  userId: string;
-  name: string;
-  email: string;
-  handle: string;
-  password?: string;
-  plan: "monthly" | "lifetime";
-  createdAt: string;
-}
-
-function getStoredAccounts(): Record<string, StoredAccount> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem("zaalys_accounts");
-    return raw ? (JSON.parse(raw) as Record<string, StoredAccount>) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveStoredAccount(acc: StoredAccount) {
-  if (typeof window === "undefined") return;
-  try {
-    const all = getStoredAccounts();
-    all[acc.email.toLowerCase()] = acc;
-    window.localStorage.setItem("zaalys_accounts", JSON.stringify(all));
-    window.localStorage.setItem("zaalys_current_user", JSON.stringify(acc));
-    const cookiePayload = encodeURIComponent(
-      JSON.stringify({
-        userId: acc.userId,
-        email: acc.email,
-        name: acc.name,
-        handle: acc.handle,
-        active: true,
-        plan: acc.plan,
-        createdAt: acc.createdAt,
-      }),
-    );
-    document.cookie = `zaalys_session=${cookiePayload}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
-  } catch {
-    // Ignore storage quota errors
-  }
-}
-
 function EyeIcon({ off }: { off: boolean }) {
   if (off) {
     return (
@@ -220,97 +176,63 @@ function LoginScreen() {
 
     setSubmitting(true);
     try {
-      const accounts = getStoredAccounts();
-      const existingLocal = accounts[cleanEmail];
-      const emailPrefix = cleanEmail.split("@")[0] || "criador";
-      const derivedName =
-        cleanName ||
-        existingLocal?.name ||
-        emailPrefix
-          .split(/[._-]+/)
-          .filter(Boolean)
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-          .join(" ") ||
-        "Criador Zaalys";
-
-      const handle =
-        emailPrefix
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9._-]/g, "") || "criador";
-
-      const plan: "monthly" | "lifetime" = planParam === "monthly" ? "monthly" : "lifetime";
-
-      // Se o Supabase estiver configurado, sincroniza também com o Supabase Auth sem travar o fluxo
-      if (isSupabaseConfigured()) {
-        try {
-          const supabase = createClient();
-          if (mode === "signin") {
-            await supabase.auth.signInWithPassword({
-              email: cleanEmail,
-              password,
-            });
-          } else {
-            await supabase.auth.signUp({
-              email: cleanEmail,
-              password,
-              options: {
-                data: { full_name: derivedName },
-                emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-              },
-            });
-          }
-        } catch {
-          // Segue com a sessão local/cookie da aplicação
+      const goNext = () => {
+        if (planParam === "monthly" || planParam === "lifetime") {
+          router.replace(
+            `/checkout/vitalicio?plan=${planParam}&email=${encodeURIComponent(cleanEmail)}`,
+          );
+          return;
         }
-      }
-
-      const accountObj: StoredAccount = {
-        userId:
-          existingLocal?.userId ||
-          (typeof crypto !== "undefined" && crypto.randomUUID
-            ? crypto.randomUUID()
-            : `usr_${Date.now()}`),
-        name: derivedName,
-        email: cleanEmail,
-        handle,
-        password,
-        plan,
-        createdAt: existingLocal?.createdAt || new Date().toISOString(),
+        router.replace(next);
+        router.refresh();
       };
 
-      // Salva no navegador e seta cookie imediato
-      saveStoredAccount(accountObj);
-
-      // Persiste cookie HTTP na rota de sessão do servidor
-      await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode,
-          userId: accountObj.userId,
-          name: accountObj.name,
-          email: accountObj.email,
-          plan: accountObj.plan,
-        }),
-      }).catch(() => {});
-
-      setNotice(
-        mode === "signup"
-          ? "Conta criada com sucesso! Redirecionando…"
-          : "Login confirmado! Redirecionando…",
-      );
-
-      if (planParam === "monthly" || planParam === "lifetime") {
-        router.replace(
-          `/checkout/vitalicio?plan=${planParam}&email=${encodeURIComponent(cleanEmail)}`,
-        );
+      // Sem banco configurado (só em desenvolvimento) o painel abre em modo demonstração.
+      if (!isSupabaseConfigured()) {
+        setNotice("Modo demonstração: abrindo o painel com dados de exemplo…");
+        goNext();
         return;
       }
 
-      router.replace(next);
-      router.refresh();
+      const supabase = createClient();
+      if (mode === "signin") {
+        const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+        if (error) {
+          setErrors({
+            form:
+              error.message.toLowerCase().includes("confirm")
+                ? "Confirme seu e-mail pelo link que enviamos antes de entrar."
+                : "E-mail ou senha incorretos.",
+          });
+          return;
+        }
+        setNotice("Login confirmado! Redirecionando…");
+        goNext();
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          data: { full_name: cleanName },
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        },
+      });
+      if (error) {
+        setErrors({
+          form: error.message.toLowerCase().includes("registered")
+            ? "Este e-mail já tem conta. Entre com sua senha."
+            : "Não foi possível criar a conta agora. Tente de novo em instantes.",
+        });
+        return;
+      }
+      if (!data.session) {
+        setNotice("Conta criada! Enviamos um link para o seu e-mail: confirme para entrar.");
+        return;
+      }
+      setNotice("Conta criada com sucesso! Redirecionando…");
+      goNext();
     } catch {
       setErrors({
         form:

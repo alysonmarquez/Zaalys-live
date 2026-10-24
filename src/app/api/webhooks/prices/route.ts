@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
+import { LIFETIME_CENTS, MAX_INSTALLMENTS, MONTHLY_CENTS, installmentQuote } from "@/lib/pricing";
 
 export async function GET() {
+  const q = installmentQuote(LIFETIME_CENTS, MAX_INSTALLMENTS);
   return NextResponse.json({
     plans: [
-      { id: "monthly", priceCents: 34000, installments: null },
+      { id: "monthly", priceCents: MONTHLY_CENTS, installments: null },
       {
         id: "lifetime",
-        priceCents: 59400,
-        installments: { count: 12, cents: 6329, totalCents: 75951, feeCents: 16551 },
+        priceCents: LIFETIME_CENTS,
+        installments: { count: q.count, cents: q.cents, totalCents: q.totalCents, feeCents: q.feeCents },
       },
     ],
   });

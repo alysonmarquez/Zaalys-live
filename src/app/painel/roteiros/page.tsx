@@ -53,40 +53,62 @@ function TrendAiInner() {
     selectedFormat?.characters.find((c) => c.id === selectedCharId) ??
     selectedFormat?.characters[0];
 
-  function handleGenerate() {
+  const [generateError, setGenerateError] = useState<string | null>(null);
+
+  async function handleGenerate() {
     if (!selectedFormat || !character) return;
     setGenerating(true);
     setScripts(null);
-
-    setTimeout(() => {
-      const toneLabel = TONES.find((t) => t.key === selectedTone)?.label ?? "Engraçado";
-      const list: GeneratedScriptOption[] = [
-        {
-          id: 1,
-          hook: `"Moça, com licença! Qual foi a compra mais inteligente que você fez esse mês sem gastar quase nada?"`,
-          body: `${character.name} olha pra câmera indignada(o) no tom ${toneLabel.toLowerCase()}: "Menino, foi esse ${product.title.slice(0, 48)}! Eu achava que era conversa, até usar no primeiro dia: ${product.facts[0].toLowerCase()}."`,
-          cta: `"Tá aqui no carrinho laranja por ${formatBRL(product.priceCents)}, mas não espalha senão acaba o estoque!"`,
-          englishPrompt: `Cinematic 9:16 vertical video, 8 seconds, Brazilian street interview / studio style. Subject: ${character.name} (${character.role}), natural warm lighting, handheld iPhone 16 Pro realism. Holding "${product.title}" clearly toward the lens, expressive ${toneLabel.toLowerCase()} reaction while speaking in Brazilian Portuguese: "${product.facts[0]}". Shallow depth of field, authentic TikTok viral pacing.`,
-        },
-        {
-          id: 2,
-          hook: `"Ninguém no TikTok te conta isso, mas eu vou falar antes que apaguem o corte…"`,
-          body: `${character.name} inclina pra frente segurando o produto: "O segredo é esse ${product.title.slice(0, 48)}. Enquanto todo mundo paga o dobro, ${product.facts[1]?.toLowerCase() ?? product.facts[0].toLowerCase()}."`,
-          cta: `"Clica na sacolinha aqui embaixo antes que volte pro preço antigo!"`,
-          englishPrompt: `Cinematic 9:16 vertical podcast / close-up shot, 8 seconds. Subject: ${character.name}, moody warm key light, studio microphone in foreground. Reveals "${product.title}" on the table, taps it emphatically, speaking animatedly in Brazilian Portuguese with ${toneLabel.toLowerCase()} energy. Ultra-realistic skin texture and natural hand gestures.`,
-        },
-        {
-          id: 3,
-          hook: `"POV: você jurou que não ia comprar mais nada no TikTok Shop hoje… até ver isso funcionando."`,
-          body: `${character.name} mostra o antes e o depois na prática: "${product.facts[0]} em segundos. Não tem como voltar atrás depois que testa."`,
-          cta: `"Deixei o link direto na sacola laranja aqui no canto!"`,
-          englishPrompt: `Dynamic 9:16 vertical UGC POV video, 8 seconds. Subject: ${character.name} in a bright Brazilian home setting, demonstrating "${product.title}" with a surprised and delighted ${toneLabel.toLowerCase()} expression, pointing down to the bottom-left TikTok Shop orange cart icon at the end.`,
-        },
-      ];
-      setScripts(list);
+    setGenerateError(null);
+    const toneLabel = TONES.find((t) => t.key === selectedTone)?.label ?? "Engraçado";
+    const angles = ["pergunta provocativa", "segredo revelado", "POV antes e depois"];
+    try {
+      const results = await Promise.all(
+        angles.map(async (angle) => {
+          const res = await fetch("/api/ai/video-script", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              product: {
+                name: product.title,
+                price: formatBRL(product.priceCents),
+                details: product.facts.join("; "),
+              },
+              character: { name: character.name, appearance: character.role },
+              template: {
+                scene: `${selectedFormat.title}: ${selectedFormat.desc}`,
+                camera_motion: "vertical 9:16, ritmo de vídeo viral",
+              },
+              tone: toneLabel,
+              angle,
+              durationSeconds: 8,
+            }),
+          });
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data?.script) throw new Error(data?.error || "Não foi possível gerar agora.");
+          return data.script as {
+            hook: string;
+            scenes: { shot: string; action: string; speech: string }[];
+            cta: string;
+            videoPrompt: string;
+          };
+        }),
+      );
+      setScripts(
+        results.map((sc, i) => ({
+          id: i + 1,
+          hook: `"${sc.hook}"`,
+          body: sc.scenes.map((c) => `${c.action} — "${c.speech}"`).join("\n"),
+          cta: `"${sc.cta}"`,
+          englishPrompt: sc.videoPrompt,
+        })),
+      );
       setPickedScriptIdx(0);
+    } catch (err) {
+      setGenerateError((err as Error).message);
+    } finally {
       setGenerating(false);
-    }, 950);
+    }
   }
 
   function handleCopyAndFlow(promptText: string) {
@@ -279,6 +301,11 @@ function TrendAiInner() {
                   ? "Preparando o conteúdo de alta conversão para o seu personagem."
                   : "Clique no botão ao lado para receber 3 opções de roteiro de 8 segundos + o prompt pronto para o Google Flow."}
               </p>
+              {generateError && (
+                <p role="alert" className="mt-3 text-xs font-medium text-destructive">
+                  {generateError}
+                </p>
+              )}
             </div>
           ) : (
             <>
@@ -318,7 +345,7 @@ function TrendAiInner() {
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Cena & Resposta (2–6s)
                     </span>
-                    <p className="mt-1 text-sm text-foreground/90">{activeScript.body}</p>
+                    <p className="mt-1 whitespace-pre-line text-sm text-foreground/90">{activeScript.body}</p>
                   </div>
 
                   <div>

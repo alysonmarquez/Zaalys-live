@@ -15,14 +15,13 @@ export default function DepoimentoPage() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("zaalys_current_user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.name) setDisplayName(parsed.name);
-        if (parsed?.handle) setHandle(`@${parsed.handle}`);
-      }
-    } catch {}
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then(({ user }) => {
+        if (user?.name) setDisplayName(user.name);
+        if (user?.handle) setHandle(`@${user.handle}`);
+      })
+      .catch(() => {});
   }, []);
 
   function handleSubmit(e: React.FormEvent) {
