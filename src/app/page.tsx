@@ -624,7 +624,7 @@ export default function HomePage() {
               Acesso vitalício{" "}
               <span>
                 <span data-price="lifetime-count">12</span>x de{" "}
-                <span data-price="lifetime-instalment">R$ 84,60</span>
+                <span data-price="lifetime-instalment">R$ 63,29</span>
               </span>{" "}
               <ArrowUpRight size={17} />
             </a>
@@ -634,7 +634,7 @@ export default function HomePage() {
             >
               Plano mensal{" "}
               <span>
-                <span data-price="monthly">R$ 540</span>/mês
+                <span data-price="monthly">R$ 340</span>/mês
               </span>
             </a>
           </div>
@@ -1480,7 +1480,7 @@ export default function HomePage() {
               </header>
               <div className="_price_1pscc_341">
                 <strong>
-                  <span data-price-whole="monthly">R$ 540</span>
+                  <span data-price-whole="monthly">R$ 340</span>
                   <span className="_priceCents_1pscc_345" data-price-fraction="monthly" />
                   <span className="_priceUnit_1pscc_343">/mês</span>
                 </strong>
@@ -1522,16 +1522,16 @@ export default function HomePage() {
                   <span className="_priceUnit_1pscc_343">
                     <span data-price="lifetime-count">12</span>x de
                   </span>{" "}
-                  <span data-price-whole="lifetime-instalment">R$ 84</span>
+                  <span data-price-whole="lifetime-instalment">R$ 63</span>
                   <span
                     className="_priceCents_1pscc_345"
                     data-price-fraction="lifetime-instalment"
                   >
-                    ,60
+                    ,29
                   </span>
                 </strong>
                 <span className="_priceCash_1pscc_346">
-                  ou <span data-price="lifetime">R$ 794</span> à vista
+                  ou <span data-price="lifetime">R$ 594</span> à vista
                 </span>
               </div>
               <a
@@ -1711,7 +1711,7 @@ export default function HomePage() {
               Acesso vitalício{" "}
               <span>
                 <span data-price="lifetime-count">12</span>x de{" "}
-                <span data-price="lifetime-instalment">R$ 84,60</span>
+                <span data-price="lifetime-instalment">R$ 63,29</span>
               </span>{" "}
               <ArrowUpRight size={17} />
             </a>
@@ -1721,7 +1721,7 @@ export default function HomePage() {
             >
               Plano mensal{" "}
               <span>
-                <span data-price="monthly">R$ 540</span>/mês
+                <span data-price="monthly">R$ 340</span>/mês
               </span>
             </a>
           </div>
@@ -1737,10 +1737,10 @@ export default function HomePage() {
         <div>
           <strong>
             Vitalício <span data-price="lifetime-count">12</span>x de{" "}
-            <span data-price="lifetime-instalment">R$ 84,60</span>
+            <span data-price="lifetime-instalment">R$ 63,29</span>
           </strong>
           <span>
-            ou <span data-price="monthly">R$ 540</span>/mês · sem fidelidade
+            ou <span data-price="monthly">R$ 340</span>/mês · sem fidelidade
           </span>
         </div>
         <a href="#acesso" className="_primary_1pscc_28">

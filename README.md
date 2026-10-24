@@ -39,8 +39,8 @@ O pagamento usa os links de checkout da Applyfy (`src/lib/checkout-links.ts`):
 
 | Uso | Vitalício | Mensal |
 |---|---|---|
-| Landing e checkout do site (valor cheio) | oferta `UCYM6OR` | oferta `95RF27C` |
-| Convites Acesso Creator / Indique (`/convite/...`) | oferta `KXSWOMU` | oferta `POL2VBI` |
+| Landing e checkout do site (valor cheio) | `KXSWOMU` — R$ 594 | `POL2VBI` — R$ 340 |
+| Convites Acesso Creator / Indique (`/convite/...`) | `UCYM6OR` — R$ 297 | `95RF27C` — R$ 170 |
 
 O formulário de `/checkout/vitalicio` leva para o link da Applyfy com o e-mail. Para liberar o acesso automaticamente, cadastre o postback de vendas na Applyfy apontando para `https://SEU-DOMINIO/api/webhooks/payment?token=APPLYFY_WEBHOOK_TOKEN`. O formato do postback ainda precisa ser confirmado: o adaptador (`src/lib/payments/applyfy.ts`) registra no log cada postback recebido para ajustar o mapeamento.
 
@@ -59,7 +59,7 @@ Fluxo: a pessoa informa o e-mail na landing → paga no Mercado Pago → o webho
 
 ### Preços e cupons
 
-Os preços ficam em `src/lib/pricing.ts`, lidos de `PRICE_*` (servidor) e `NEXT_PUBLIC_PRICE_*` (checkout no navegador); mantenha os dois iguais. Padrão: R$ 540/mês e R$ 794 no vitalício (12x de R$ 84,60). Cupons valem só no vitalício e são validados no servidor: `COUPON_CODES="CODIGO:3000,OUTRO:5000"` (desconto em centavos).
+Os preços ficam em `src/lib/pricing.ts`, lidos de `PRICE_*` (servidor) e `NEXT_PUBLIC_PRICE_*` (checkout no navegador); mantenha os dois iguais. Padrão: R$ 340/mês e R$ 594 no vitalício, iguais às ofertas cheias da Applyfy. Cupons valem só no vitalício e são validados no servidor: `COUPON_CODES="CODIGO:3000,OUTRO:5000"` (desconto em centavos).
 
 O checkout não processa cartão nem gera Pix/boleto na própria página: tudo é pago na página segura do Mercado Pago. Se o gateway falhar, a pessoa vê uma mensagem de erro.
 

@@ -1,6 +1,6 @@
 // Fonte única dos preços. Usado pela landing, pelo checkout e pela API.
 // No navegador valem os NEXT_PUBLIC_*; no servidor, PRICE_* tem prioridade.
-// Zaalys: R$ 540/mês | R$ 794 vitalício (12x de R$ 84,60 com acréscimo).
+// Iguais às ofertas cheias da Applyfy: R$ 340/mês | R$ 594 vitalício.
 
 const num = (...vals: (string | undefined)[]) => {
   for (const v of vals) {
@@ -11,9 +11,9 @@ const num = (...vals: (string | undefined)[]) => {
 };
 
 export const MONTHLY_CENTS =
-  num(process.env.PRICE_MONTHLY_CENTS, process.env.NEXT_PUBLIC_PRICE_MONTHLY_CENTS) ?? 54000;
+  num(process.env.PRICE_MONTHLY_CENTS, process.env.NEXT_PUBLIC_PRICE_MONTHLY_CENTS) ?? 34000;
 export const LIFETIME_CENTS =
-  num(process.env.PRICE_LIFETIME_CENTS, process.env.NEXT_PUBLIC_PRICE_LIFETIME_CENTS) ?? 79400;
+  num(process.env.PRICE_LIFETIME_CENTS, process.env.NEXT_PUBLIC_PRICE_LIFETIME_CENTS) ?? 59400;
 export const MAX_INSTALLMENTS =
   num(process.env.LIFETIME_MAX_INSTALLMENTS, process.env.NEXT_PUBLIC_LIFETIME_MAX_INSTALLMENTS) ?? 12;
 
