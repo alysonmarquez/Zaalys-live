@@ -1,7 +1,7 @@
 // Os 12 formatos do Trend AI do original (lidos em 24/10/2026), com os personagens de cada um.
-// Fotos e prévias ficam no servidor do original (/media/trend/<slug>/...).
+// Fotos e prévias copiadas do original para public/media/trend/<slug>/ e servidas pelo próprio projeto.
 
-const ORIGIN = process.env.NEXT_PUBLIC_TEMPLATE_MEDIA_ORIGIN || "https://www.zaalys.com";
+const ORIGIN = process.env.NEXT_PUBLIC_TEMPLATE_MEDIA_ORIGIN || "";
 
 export type TrendCharacter = { name: string; image: string };
 export type TrendFormat = {

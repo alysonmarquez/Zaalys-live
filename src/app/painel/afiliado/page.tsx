@@ -1,254 +1,200 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { ShieldCheck, ArrowUpRight } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Check, RotateCcw, Zap } from "lucide-react";
+import { cn } from "@/components/brand";
+import {
+  FIRE_SALE_EVENT,
+  METRIC_FIELDS,
+  PERIOD_LABELS,
+  loadLiveSales,
+  loadMetrics,
+  resetMetrics,
+  saveLiveSales,
+  saveMetrics,
+  type BaseMetrics,
+  type LiveSalesConfig,
+  type PeriodKey,
+} from "@/lib/demo-config";
+
+const INPUT_CLASS =
+  "h-10 w-full rounded-xl border border-black/[0.06] bg-background/50 px-3 text-sm tabular-nums outline-none transition-[border-color,box-shadow] focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring/40 dark:border-white/[0.08] dark:bg-input/20";
+
+const CARD = "rounded-3xl border border-black/[0.06] bg-card/85 p-5 shadow-2xs sm:p-6 dark:border-white/[0.08]";
+
+type Tab = "metricas" | "vendas";
+const TABS: { v: Tab; l: string }[] = [
+  { v: "metricas", l: "Métricas" },
+  { v: "vendas", l: "Vendas ao Vivo" },
+];
 
 export default function AfiliadoPage() {
-  const [tab, setTab] = useState<"comissoes" | "transacoes" | "indicados">(
-    "comissoes"
-  );
-
-  const comissoes = [
-    {
-      id: "cm-1",
-      buyer: "mar***@gmail.com",
-      plan: "Vitalício",
-      date: "20/10/2026",
-      commission: "R$ 50,00",
-      status: "A receber",
-      tone: "bg-amber-500/12 text-amber-600 dark:text-amber-400",
-    },
-    {
-      id: "cm-2",
-      buyer: "luc***@hotmail.com",
-      plan: "Vitalício",
-      date: "14/10/2026",
-      commission: "R$ 50,00",
-      status: "Na sua conta",
-      tone: "bg-primary/15 text-primary",
-    },
-    {
-      id: "cm-3",
-      buyer: "cam***@gmail.com",
-      plan: "Vitalício",
-      date: "08/10/2026",
-      commission: "R$ 50,00",
-      status: "Repassada",
-      tone: "bg-primary/10 text-muted-foreground",
-    },
-  ];
-
-  const transacoes = [
-    {
-      id: "tx-1",
-      buyer: "mar***@gmail.com",
-      amount: "R$ 729,56",
-      method: "Cartão 12x",
-      date: "20/10/2026",
-      status: "Pago",
-      tone: "bg-primary/15 text-primary",
-    },
-    {
-      id: "tx-2",
-      buyer: "joa***@gmail.com",
-      amount: "R$ 729,56",
-      method: "Pix",
-      date: "18/10/2026",
-      status: "Aguardando pagamento",
-      tone: "bg-amber-500/12 text-amber-600 dark:text-amber-400",
-    },
-    {
-      id: "tx-3",
-      buyer: "luc***@hotmail.com",
-      amount: "R$ 729,56",
-      method: "Pix",
-      date: "14/10/2026",
-      status: "Pago",
-      tone: "bg-primary/15 text-primary",
-    },
-  ];
-
-  const indicados = [
-    {
-      id: "ind-1",
-      name: "Mariana S.",
-      email: "mar***@gmail.com",
-      date: "20/10/2026",
-      status: "Ativo",
-      tone: "bg-primary/15 text-primary",
-    },
-    {
-      id: "ind-2",
-      name: "João R.",
-      email: "joa***@gmail.com",
-      date: "18/10/2026",
-      status: "Não pagou ainda",
-      tone: "bg-amber-500/12 text-amber-600 dark:text-amber-400",
-    },
-    {
-      id: "ind-3",
-      name: "Lucas M.",
-      email: "luc***@hotmail.com",
-      date: "14/10/2026",
-      status: "Ativo",
-      tone: "bg-primary/15 text-primary",
-    },
-  ];
+  const [tab, setTab] = useState<Tab>("metricas");
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-            <ShieldCheck size={14} />
-            Painel do Afiliado
-          </div>
-          <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight">
-            Atividades e Indicações
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            Acompanhe comissões, transações e criadores indicados pelo seu link.
-          </p>
-        </div>
-
-        <Link
-          href="/painel/indique"
-          className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs"
-        >
-          Pegar link de convite
-          <ArrowUpRight size={15} />
-        </Link>
+      <header>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">Painel do Afiliado</h1>
+        <p className="mt-1 text-muted-foreground">Configure os números e as vendas ao vivo do seu dashboard</p>
       </header>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: "Comissões geradas", value: "R$ 150,00", hint: "3 vendas pagas" },
-          { label: "A receber", value: "R$ 50,00", hint: "Liberado em 5 dias" },
-          { label: "Repassado no Pix", value: "R$ 100,00", hint: "Sem pendências" },
-          { label: "Indicados totais", value: "3", hint: "2 ativos · 1 pendente" },
-        ].map((m) => (
-          <div
-            key={m.label}
-            className="rounded-2xl border border-border/60 bg-card/70 p-4"
-          >
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {m.label}
-            </p>
-            <p className="mt-1 font-display text-xl font-extrabold tracking-tight">
-              {m.value}
-            </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">{m.hint}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div className="inline-flex rounded-full border border-black/[0.06] bg-muted/50 p-1 dark:border-white/[0.08]">
-        {(
-          [
-            { id: "comissoes", label: "Comissões" },
-            { id: "transacoes", label: "Transações" },
-            { id: "indicados", label: "Indicados" },
-          ] as const
-        ).map((t) => (
+      <div className="flex w-fit gap-1 rounded-full bg-muted/40 p-1">
+        {TABS.map((t) => (
           <button
-            key={t.id}
+            key={t.v}
             type="button"
-            onClick={() => setTab(t.id)}
-            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
-              tab === t.id
-                ? "bg-primary text-primary-foreground shadow-2xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            onClick={() => setTab(t.v)}
+            className={cn(
+              "rounded-full px-4 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
+              tab === t.v ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
+            )}
           >
-            {t.label}
+            {t.l}
           </button>
         ))}
       </div>
 
-      {/* Tab Content */}
-      <section className="rounded-3xl border border-black/[0.06] bg-card/85 p-5 shadow-2xs dark:border-white/[0.08]">
-        {tab === "comissoes" && (
-          <ul className="divide-y divide-border/60">
-            {comissoes.map((c) => (
-              <li
-                key={c.id}
-                className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
-              >
-                <div>
-                  <p className="font-semibold">{c.buyer}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Plano {c.plan} · {c.date}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.tone}`}
-                  >
-                    {c.status}
-                  </span>
-                  <span className="font-mono font-bold tabular-nums">
-                    {c.commission}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {tab === "transacoes" && (
-          <ul className="divide-y divide-border/60">
-            {transacoes.map((tx) => (
-              <li
-                key={tx.id}
-                className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
-              >
-                <div>
-                  <p className="font-semibold">{tx.buyer}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {tx.method} · {tx.date}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${tx.tone}`}
-                  >
-                    {tx.status}
-                  </span>
-                  <span className="font-mono font-bold tabular-nums">
-                    {tx.amount}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {tab === "indicados" && (
-          <ul className="divide-y divide-border/60">
-            {indicados.map((ind) => (
-              <li
-                key={ind.id}
-                className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
-              >
-                <div>
-                  <p className="font-semibold">{ind.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {ind.email} · Entrou em {ind.date}
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${ind.tone}`}
-                >
-                  {ind.status}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {tab === "metricas" ? <MetricasTab /> : <VendasTab />}
     </div>
+  );
+}
+
+function MetricasTab() {
+  const [all, setAll] = useState<Record<PeriodKey, BaseMetrics> | null>(null);
+  const [saved, setSaved] = useState<PeriodKey | null>(null);
+
+  useEffect(() => setAll(loadMetrics()), []);
+  if (!all) return null;
+
+  function update(p: PeriodKey, k: keyof BaseMetrics, v: string) {
+    const n = Number(v.replace(",", "."));
+    setAll((prev) => (prev ? { ...prev, [p]: { ...prev[p], [k]: Number.isFinite(n) && n >= 0 ? n : 0 } } : prev));
+  }
+
+  function save(p: PeriodKey) {
+    if (!all) return;
+    const current = loadMetrics();
+    saveMetrics({ ...current, [p]: all[p] });
+    setSaved(p);
+    setTimeout(() => setSaved(null), 1800);
+  }
+
+  return (
+    <section className={CARD}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Valores-base por período, usados só com as vendas ao vivo desligadas: ligadas, o dashboard segue o dia
+          simulado. O dashboard soma estes números às vendas ao vivo. O ticket médio informado é o piso: o painel
+          mostra o maior entre ele e o calculado, então sobe e nunca desce.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            resetMetrics();
+            setAll(loadMetrics());
+          }}
+          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-semibold hover:bg-muted cursor-pointer"
+        >
+          <RotateCcw size={14} /> Resetar
+        </button>
+      </div>
+
+      <div className="mt-5 space-y-6">
+        {PERIOD_LABELS.map((p) => (
+          <div key={p.v} className="rounded-2xl border border-border/60 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-display text-base font-bold">{p.l}</h3>
+              <button
+                type="button"
+                onClick={() => save(p.v)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs cursor-pointer"
+              >
+                {saved === p.v ? <Check size={14} /> : null}
+                {saved === p.v ? "Salvo" : "Salvar"}
+              </button>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {METRIC_FIELDS.map((f) => (
+                <label key={f.k} className="block space-y-1">
+                  <span className="text-xs font-medium text-muted-foreground">{f.l}</span>
+                  <input
+                    inputMode="decimal"
+                    value={String(all[p.v][f.k])}
+                    onChange={(e) => update(p.v, f.k, e.target.value)}
+                    className={INPUT_CLASS}
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function VendasTab() {
+  const [cfg, setCfg] = useState<LiveSalesConfig | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [fired, setFired] = useState(false);
+
+  useEffect(() => setCfg(loadLiveSales()), []);
+  if (!cfg) return null;
+
+  return (
+    <section className={CARD}>
+      <p className="max-w-2xl text-sm text-muted-foreground">
+        Controla o motor de &quot;Vendas ao Vivo&quot; — os pop-ups e o incremento em tempo real do dashboard. Quando
+        ligado, as vendas aparecem em sequência enquanto o painel estiver aberto. Cada pop-up é uma venda que entra no
+        dashboard, com título, preço e comissão de produtos do catálogo.
+      </p>
+
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">Modo de disparo</span>
+          <select
+            value={cfg.enabled ? "on" : "off"}
+            onChange={(e) => setCfg({ ...cfg, enabled: e.target.value === "on" })}
+            className={`${INPUT_CLASS} h-11 cursor-pointer`}
+          >
+            <option value="off">Desligado</option>
+            <option value="on">Ligado</option>
+          </select>
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">Fonte dos produtos</span>
+          <select value={cfg.source} onChange={() => {}} className={`${INPUT_CLASS} h-11 cursor-pointer`}>
+            <option value="all_random">Todos / Aleatório</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            saveLiveSales(cfg);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 1800);
+          }}
+          className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs cursor-pointer"
+        >
+          {saved ? <Check size={14} /> : null}
+          {saved ? "Configuração salva" : "Salvar configuração"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            window.dispatchEvent(new Event(FIRE_SALE_EVENT));
+            setFired(true);
+            setTimeout(() => setFired(false), 1800);
+          }}
+          className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-background px-4 text-xs font-semibold hover:bg-muted cursor-pointer"
+        >
+          <Zap size={14} />
+          {fired ? "Venda disparada" : "Disparar venda agora"}
+        </button>
+      </div>
+    </section>
   );
 }

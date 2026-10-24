@@ -1,170 +1,296 @@
 "use client";
 
-import React, { useState } from "react";
-import { Wallet, Check, ArrowUpRight } from "lucide-react";
+import React, { Suspense, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Check } from "lucide-react";
+import { cn } from "@/components/brand";
+import { formatBRL } from "@/lib/zaalys-data";
+import { useIsDemo } from "@/lib/use-demo";
+import { COMISSOES_DEMO, COMMISSION_RATE } from "@/lib/comissoes-demo";
 
 const INPUT_CLASS =
-  "h-11 w-full rounded-xl border border-black/[0.06] bg-background/50 px-3.5 text-[15px] outline-none transition-[background-color,border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring/40 dark:border-white/[0.08] dark:bg-input/20";
+  "h-11 w-full rounded-xl border border-black/[0.06] bg-background/50 px-3.5 text-[15px] outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring/40 dark:border-white/[0.08] dark:bg-input/20";
+const CARD = "rounded-3xl border border-black/[0.06] bg-card/85 p-5 shadow-2xs sm:p-6 dark:border-white/[0.08]";
+const PAGE = 25;
+
+type Aba = "comissoes" | "transacoes" | "indicados";
+const ABAS: { v: Aba; l: string }[] = [
+  { v: "comissoes", l: "Comissões" },
+  { v: "transacoes", l: "Transações" },
+  { v: "indicados", l: "Indicados" },
+];
+
+const EMPTY = {
+  comissoes: [],
+  transacoes: [],
+  indicados: [],
+  resumo: { recebidoApplyfyCents: 0, aReceberCents: 0, estornosCents: 0, repassadoCents: 0, vendas: 0 },
+} as unknown as typeof COMISSOES_DEMO;
+
+const TONE: Record<string, string> = {
+  "A receber": "bg-amber-500/12 text-amber-600 dark:text-amber-400",
+  Repassada: "bg-primary/15 text-primary",
+  Estornada: "bg-red-500/12 text-red-600 dark:text-red-400",
+  Pago: "bg-primary/15 text-primary",
+  "Aguardando pagamento": "bg-amber-500/12 text-amber-600 dark:text-amber-400",
+  "Recusado / expirado": "bg-muted text-muted-foreground",
+  Reembolsado: "bg-red-500/12 text-red-600 dark:text-red-400",
+  Ativo: "bg-primary/15 text-primary",
+  "Não pagou": "bg-amber-500/12 text-amber-600 dark:text-amber-400",
+  Bloqueado: "bg-red-500/12 text-red-600 dark:text-red-400",
+};
+
+function Badge({ s }: { s: string }) {
+  return <span className={cn("whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold", TONE[s])}>{s}</span>;
+}
 
 export default function ComissoesPage() {
-  const [pixType, setPixType] = useState("cpf");
-  const [pixKey, setPixKey] = useState("");
-  const [savedPix, setSavedPix] = useState(false);
-  const [requestedPayout, setRequestedPayout] = useState(false);
+  return (
+    <Suspense fallback={null}>
+      <ComissoesContent />
+    </Suspense>
+  );
+}
 
-  const payouts = [
-    {
-      id: "pay-1",
-      date: "15/10/2026",
-      desc: "Repasse de 2 indicações (Vitalício)",
-      amount: "R$ 100,00",
-      status: "Repassada",
-      tone: "bg-primary/15 text-primary",
-    },
-    {
-      id: "pay-2",
-      date: "08/10/2026",
-      desc: "Repasse de 1 indicação (Vitalício)",
-      amount: "R$ 50,00",
-      status: "Repassada",
-      tone: "bg-primary/15 text-primary",
-    },
+function ComissoesContent() {
+  const demo = useIsDemo();
+  const data = demo ? COMISSOES_DEMO : EMPTY;
+  const router = useRouter();
+  const pathname = usePathname() || "/comissoes";
+  const params = useSearchParams();
+  const aba = (ABAS.find((a) => a.v === params.get("aba"))?.v ?? "comissoes") as Aba;
+  const [page, setPage] = useState(0);
+  const [filtro, setFiltro] = useState<"todos" | "Não pagou" | "Ativo" | "Bloqueado">("todos");
+  const [applyfyOpen, setApplyfyOpen] = useState(false);
+  const [applyfyEmail, setApplyfyEmail] = useState("");
+  const [applyfySaved, setApplyfySaved] = useState(false);
+
+  const r = data.resumo;
+  const cards = [
+    ["Recebido via Applyfy", formatBRL(r.recebidoApplyfyCents), "Já na sua conta"],
+    ["A receber do admin", formatBRL(Math.max(0, r.aReceberCents - r.estornosCents)), `Menos ${formatBRL(r.estornosCents)} de estornos`],
+    ["Já repassado", formatBRL(r.repassadoCents), ""],
+    ["Vendas", String(r.vendas), `Comissão de ${Math.round(COMMISSION_RATE * 100)}%`],
   ];
 
+  function goto(v: Aba) {
+    setPage(0);
+    router.replace(v === "comissoes" ? pathname : `${pathname}?aba=${v}`, { scroll: false });
+  }
+
+  const indicados = filtro === "todos" ? data.indicados : data.indicados.filter((i) => i.situacao === filtro);
+  const rows = aba === "comissoes" ? data.comissoes : aba === "transacoes" ? data.transacoes : indicados;
+  const total = rows.length;
+  const from = page * PAGE;
+  const slice = rows.slice(from, from + PAGE);
+
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-4xl space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">
-          Saque de comissões
-        </h1>
-        <p className="mt-1 text-muted-foreground">
-          Acompanhe seu saldo disponível, chave Pix de recebimento e histórico
-          de repasses.
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">Saque de comissões</h1>
+        <p className="mt-1 max-w-2xl text-muted-foreground">
+          Vendas do plano vitalício são divididas pela Applyfy no momento do pagamento — sua parte cai direto na sua
+          conta, e o saque você faz por lá. Renovações do plano mensal são repassadas pelo administrador via Pix.
         </p>
       </header>
 
-      {/* Metrics */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-border/60 bg-card/70 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Disponível para saque
-          </p>
-          <p className="mt-1 font-display text-2xl font-extrabold tracking-tight text-primary">
-            R$ 50,00
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Liberado após garantia de 7 dias
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border/60 bg-card/70 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Em garantia (7 dias)
-          </p>
-          <p className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-            R$ 100,00
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            2 vendas aguardando prazo
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border/60 bg-card/70 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Total já recebido
-          </p>
-          <p className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-            R$ 150,00
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Pago via Pix automático
-          </p>
-        </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {cards.map(([label, value, sub]) => (
+          <div key={label} className="rounded-2xl border border-border/60 bg-card/70 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+            <p className="mt-1 font-display text-2xl font-extrabold tracking-tight tabular-nums">{value}</p>
+            {sub && <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>}
+          </div>
+        ))}
       </div>
 
-      {/* Solicitar saque / Chave Pix */}
-      <section className="rounded-3xl border border-black/[0.06] bg-card/85 p-5 shadow-2xs sm:p-6 dark:border-white/[0.08]">
+      <section className={CARD}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-display text-lg font-bold tracking-tight">
-              Chave Pix de recebimento
-            </h2>
+            <h2 className="font-display text-lg font-bold tracking-tight">Sua conta Applyfy</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              Os repasses aprovados caem diretamente na chave Pix cadastrada
-              abaixo.
+              {applyfySaved
+                ? `Conta vinculada: ${applyfyEmail}. As próximas vendas já saem divididas.`
+                : "Sem conta vinculada. Suas vendas ainda não são divididas."}
             </p>
           </div>
           <button
             type="button"
-            onClick={() => setRequestedPayout(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs transition-transform active:scale-95 cursor-pointer"
+            onClick={() => setApplyfyOpen((o) => !o)}
+            className="inline-flex h-10 items-center rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs cursor-pointer"
           >
-            <Wallet size={15} />
-            {requestedPayout ? "Saque solicitado!" : "Solicitar saque (R$ 50,00)"}
+            {applyfySaved ? "Alterar dados da Applyfy" : "Cadastrar dados da Applyfy"}
           </button>
         </div>
-
-        <form
-          className="mt-4 grid gap-3 sm:grid-cols-[10rem_1fr_auto]"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSavedPix(true);
-            setTimeout(() => setSavedPix(false), 2000);
-          }}
-        >
-          <select
-            value={pixType}
-            onChange={(e) => setPixType(e.target.value)}
-            className={`${INPUT_CLASS} cursor-pointer`}
+        {applyfyOpen && (
+          <form
+            className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setApplyfySaved(true);
+              setApplyfyOpen(false);
+            }}
           >
-            <option value="cpf">CPF</option>
-            <option value="cnpj">CNPJ</option>
-            <option value="email">E-mail</option>
-            <option value="phone">Telefone</option>
-            <option value="random">Chave aleatória</option>
-          </select>
-          <input
-            required
-            value={pixKey}
-            onChange={(e) => setPixKey(e.target.value)}
-            placeholder="Informe sua chave Pix"
-            className={INPUT_CLASS}
-          />
-          <button
-            type="submit"
-            className="h-11 rounded-xl border border-border bg-background px-5 text-xs font-semibold hover:bg-muted cursor-pointer"
-          >
-            {savedPix ? "Salvo!" : "Salvar chave"}
-          </button>
-        </form>
+            <input
+              required
+              type="email"
+              value={applyfyEmail}
+              onChange={(e) => setApplyfyEmail(e.target.value)}
+              placeholder="E-mail da sua conta Applyfy"
+              className={INPUT_CLASS}
+            />
+            <button type="submit" className="h-11 rounded-xl border border-border bg-background px-5 text-xs font-semibold hover:bg-muted cursor-pointer">
+              {applyfySaved ? <Check size={14} /> : "Salvar"}
+            </button>
+          </form>
+        )}
       </section>
 
-      {/* Histórico de repasses */}
-      <section className="rounded-3xl border border-black/[0.06] bg-card/85 p-5 shadow-2xs sm:p-6 dark:border-white/[0.08]">
-        <h2 className="font-display text-lg font-bold tracking-tight">
-          Histórico de repasses
-        </h2>
-        <ul className="mt-3 divide-y divide-border/60">
-          {payouts.map((p) => (
-            <li
-              key={p.id}
-              className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
-            >
-              <div>
-                <p className="font-medium">{p.desc}</p>
-                <p className="text-xs text-muted-foreground">{p.date}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${p.tone}`}
+      <div className="flex w-fit gap-1 rounded-full bg-muted/40 p-1">
+        {ABAS.map((a) => (
+          <button
+            key={a.v}
+            type="button"
+            onClick={() => goto(a.v)}
+            className={cn(
+              "rounded-full px-4 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
+              aba === a.v ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {a.l}
+          </button>
+        ))}
+      </div>
+
+      <section className={CARD}>
+        {aba === "comissoes" && (
+          <>
+            <h2 className="font-display text-lg font-bold tracking-tight">Comissões</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Uma linha por venda paga. Tentativas que não foram pagas aparecem em Transações.
+            </p>
+          </>
+        )}
+        {aba === "transacoes" && (
+          <>
+            <h2 className="font-display text-lg font-bold tracking-tight">Transações</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Toda tentativa de compra pelos seus links — Pix gerado, pago, recusado ou reembolsado. Compras abandonadas
+              no checkout da Applyfy não aparecem aqui: ela só nos avisa quando o pagamento acontece.
+            </p>
+          </>
+        )}
+        {aba === "indicados" && (
+          <>
+            <h2 className="font-display text-lg font-bold tracking-tight">Indicados</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Quem entrou pelos seus links. Normalmente é o pagamento que libera o acesso — liberar alguém aqui dá o
+              produto de graça e não gera comissão.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {(
+                [
+                  ["todos", "Todos", data.indicados.length],
+                  ["Não pagou", "Não pagaram", data.indicados.filter((i) => i.situacao === "Não pagou").length],
+                  ["Ativo", "Ativos", data.indicados.filter((i) => i.situacao === "Ativo").length],
+                  ["Bloqueado", "Bloqueados", data.indicados.filter((i) => i.situacao === "Bloqueado").length],
+                ] as const
+              ).map(([v, l, n]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => {
+                    setFiltro(v);
+                    setPage(0);
+                  }}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-semibold cursor-pointer",
+                    filtro === v ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground",
+                  )}
                 >
-                  {p.status}
-                </span>
-                <span className="font-mono font-bold tabular-nums">
-                  {p.amount}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
+                  {l}
+                  <span className="ml-1.5 tabular-nums">{n}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
+            <thead>
+              <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                {aba === "comissoes" && ["Data", "Plano", "Venda", "Comissão", "Status"].map((h) => <th key={h} className="pb-2 font-semibold">{h}</th>)}
+                {aba === "transacoes" && ["Data", "Comprador", "Plano", "Forma", "Valor", "Situação"].map((h) => <th key={h} className="pb-2 font-semibold">{h}</th>)}
+                {aba === "indicados" && ["Entrou em", "Nome", "E-mail", "Plano", "Situação", "Ações"].map((h) => <th key={h} className="pb-2 font-semibold">{h}</th>)}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {aba === "comissoes" &&
+                (slice as typeof data.comissoes).map((c, i) => (
+                  <tr key={i}>
+                    <td className="py-2.5 tabular-nums">{c.date}</td>
+                    <td>{c.plano}</td>
+                    <td className="tabular-nums">{formatBRL(c.vendaCents)}</td>
+                    <td className="tabular-nums">
+                      <span className="font-semibold">{formatBRL(c.comissaoCents)}</span>
+                      <span className="ml-1 text-xs text-muted-foreground">({Math.round(COMMISSION_RATE * 100)}%)</span>
+                    </td>
+                    <td><Badge s={c.status} /></td>
+                  </tr>
+                ))}
+              {aba === "transacoes" &&
+                (slice as typeof data.transacoes).map((t, i) => (
+                  <tr key={i}>
+                    <td className="py-2.5 tabular-nums">{t.date}</td>
+                    <td className="text-muted-foreground">{t.comprador}</td>
+                    <td>{t.plano}</td>
+                    <td className="font-mono text-xs">{t.forma}</td>
+                    <td className="tabular-nums">{formatBRL(t.valorCents)}</td>
+                    <td><Badge s={t.situacao} /></td>
+                  </tr>
+                ))}
+              {aba === "indicados" &&
+                (slice as typeof data.indicados).map((p, i) => (
+                  <tr key={i}>
+                    <td className="py-2.5 tabular-nums">{p.date}</td>
+                    <td>{p.nome}</td>
+                    <td className="text-muted-foreground">{p.email}</td>
+                    <td>{p.plano ?? "—"}</td>
+                    <td><Badge s={p.situacao} /></td>
+                    <td className="text-muted-foreground">—</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+          {total === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nada por aqui ainda.</p>}
+        </div>
+
+        {total > 0 && (
+          <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+            <span className="tabular-nums">
+              {from + 1}–{Math.min(from + PAGE, total)} de {total}
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={page === 0}
+                onClick={() => setPage((p) => p - 1)}
+                className="h-8 rounded-lg border border-border px-3 font-semibold disabled:opacity-40 cursor-pointer"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                disabled={from + PAGE >= total}
+                onClick={() => setPage((p) => p + 1)}
+                className="h-8 rounded-lg border border-border px-3 font-semibold disabled:opacity-40 cursor-pointer"
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

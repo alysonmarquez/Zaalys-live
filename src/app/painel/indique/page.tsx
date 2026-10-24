@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { Check, Copy } from "lucide-react";
+import { useIsDemo } from "@/lib/use-demo";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl border border-black/[0.06] bg-background/50 px-3.5 text-[15px] outline-none transition-[background-color,border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring/40 dark:border-white/[0.08] dark:bg-input/20";
@@ -35,7 +37,30 @@ function CopyBox({ label, value }: { label: string; value: string }) {
   );
 }
 
+// No original, a conta de demonstração é AFILIADO: para afiliados a página só aponta para o saque
+// de comissões (eles já ganham pelos próprios links). Criadores veem o programa de indicação completo.
 export default function IndiquePage() {
+  const demo = useIsDemo();
+  if (demo) {
+    return (
+      <div className="mx-auto w-full max-w-3xl">
+        <section className="rounded-3xl border border-black/[0.06] bg-card/85 p-5 shadow-2xs sm:p-6 dark:border-white/[0.08]">
+          <h1 className="font-display text-2xl font-extrabold tracking-tight">Indique e ganhe</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Como afiliado, você já ganha comissão pelos seus links. Acompanhe em{" "}
+            <Link href="/painel/comissoes" className="font-semibold text-foreground underline underline-offset-2">
+              Saque de comissões
+            </Link>
+            .
+          </p>
+        </section>
+      </div>
+    );
+  }
+  return <IndiqueCriador />;
+}
+
+function IndiqueCriador() {
   const [handle, setHandle] = useState("CRIADOR30");
   const [pixType, setPixType] = useState("cpf");
   const [pixKey, setPixKey] = useState("");

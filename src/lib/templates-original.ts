@@ -1,12 +1,10 @@
 import type { ProofGoal, ZaalysTemplate } from "@/lib/zaalys-data";
 
 // Os 26 templates do sistema original (lidos em 24/10/2026), na mesma ordem.
-// Mídias: as que estão em public/media/templates são servidas daqui; as demais ainda vêm do
-// servidor do original. Para deixar o projeto independente, baixe os arquivos com
-// `npm run media:templates` (ver README) e eles passam a sair daqui automaticamente.
+// Mídias (vídeo + capa) copiadas do original para public/media/templates e servidas pelo próprio projeto.
+// Para usar outro servidor/CDN, defina NEXT_PUBLIC_TEMPLATE_MEDIA_ORIGIN.
 
-const LOCAL = new Set(["19", "21", "23", "24", "25"]);
-const ORIGIN = process.env.NEXT_PUBLIC_TEMPLATE_MEDIA_ORIGIN || "https://www.zaalys.com";
+const ORIGIN = process.env.NEXT_PUBLIC_TEMPLATE_MEDIA_ORIGIN || "";
 
 const FORMAT_LABELS: Record<ZaalysTemplate["format"], string> = {
   "try-on": "Provando",
@@ -73,7 +71,7 @@ const ROWS: Row[] = [
 
 const media = (file: string, ext: "jpg" | "mp4") => {
   const path = `/media/templates/${file}.${ext}`;
-  return LOCAL.has(file.slice(0, 2)) ? path : `${ORIGIN}${encodeURI(path)}`;
+  return `${ORIGIN}${encodeURI(path)}`;
 };
 
 export const TEMPLATES_ORIGINAL: ZaalysTemplate[] = ROWS.map(

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatBRL } from "@/lib/zaalys-data";
 import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
+import { DEMO_CONFIG_EVENT, FIRE_SALE_EVENT, loadLiveSales } from "@/lib/demo-config";
 
 // Só produtos com venda e comissão registradas, como no original.
 const SALES = CATALOGO_ORIGINAL.filter((p) => p.salesCount > 0 && p.earningCents > 0);
@@ -14,8 +15,38 @@ const GAP_MS = 4500;
 export function LiveSaleToast() {
   const [idx, setIdx] = useState(0);
   const [visible, setVisible] = useState(false);
+  // "Modo de disparo" do Painel do Afiliado (aba Vendas ao Vivo).
+  const [enabled, setEnabled] = useState(true);
 
   useEffect(() => {
+    const load = () => setEnabled(loadLiveSales().enabled);
+    load();
+    window.addEventListener(DEMO_CONFIG_EVENT, load);
+    window.addEventListener("storage", load);
+    return () => {
+      window.removeEventListener(DEMO_CONFIG_EVENT, load);
+      window.removeEventListener("storage", load);
+    };
+  }, []);
+
+  // "Disparar venda agora": mostra a próxima venda na hora, mesmo com o motor desligado.
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    const fire = () => {
+      setIdx((i) => (i + 1) % SALES.length);
+      setVisible(true);
+      clearTimeout(t);
+      t = setTimeout(() => setVisible(false), SHOW_MS);
+    };
+    window.addEventListener(FIRE_SALE_EVENT, fire);
+    return () => {
+      window.removeEventListener(FIRE_SALE_EVENT, fire);
+      clearTimeout(t);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) return;
     let timer: ReturnType<typeof setTimeout>;
     const show = () => {
       setVisible(true);
@@ -30,7 +61,7 @@ export function LiveSaleToast() {
     };
     timer = setTimeout(show, 2500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [enabled]);
 
   const p = SALES[idx]!;
 

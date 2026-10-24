@@ -152,7 +152,7 @@ Para o painel mostrar o mesmo conteúdo do original, parte dos dados foi lida do
 
 Os dados são fixos: não se atualizam sozinhos. No original, o catálogo é relido a cada poucos minutos a partir do FastMoss e do Kalodata (via Firecrawl), e o Radar compara as leituras.
 
-Para não depender do servidor do original, copie as mídias dos templates e do Trend AI para `public/media/` e defina `NEXT_PUBLIC_TEMPLATE_MEDIA_ORIGIN` com o seu domínio (ou deixe vazio e ajuste os caminhos).
+As mídias dos templates (26 vídeos + capas) e do Trend AI (12 prévias + personagens) já estão em `public/media/` e são servidas pelo próprio projeto — não há dependência do servidor do original. `NEXT_PUBLIC_TEMPLATE_MEDIA_ORIGIN` só é necessário se quiser servi-las de um CDN.
 
 ## O que ainda falta (próximas fases)
 

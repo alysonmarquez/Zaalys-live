@@ -11,7 +11,7 @@ export default function DepoimentoPage() {
   const [result, setResult] = useState("");
   const [displayName, setDisplayName] = useState("Criador Zaalys");
   const [handle, setHandle] = useState("@criador");
-  const [consent, setConsent] = useState(true);
+  const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function DepoimentoPage() {
     <div className="mx-auto w-full max-w-xl space-y-6">
       <header>
         <h1 className="font-display text-3xl font-extrabold tracking-tight">
-          Deixar um depoimento
+          Conte como está sendo
         </h1>
         <p className="mt-1 text-pretty text-muted-foreground">
           Quem está decidindo se entra na Zaalys lê o que outros afiliados
@@ -71,13 +71,16 @@ export default function DepoimentoPage() {
             className={`${INPUT_CLASS} resize-y py-3 leading-relaxed`}
           />
           <span className="block text-right text-xs tabular-nums text-muted-foreground">
-            {quote.length}/600 (mínimo 20 caracteres)
+            {quote.length}/600
           </span>
         </label>
 
         <label className="block space-y-1.5">
           <span className="text-sm font-medium">
-            Resultado ou conquista (opcional)
+            Um resultado que você queira contar (opcional)
+          </span>
+          <span className="block text-xs text-muted-foreground">
+            Só o que aconteceu com você. A gente não mexe no texto.
           </span>
           <input
             value={result}
@@ -89,7 +92,7 @@ export default function DepoimentoPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block space-y-1.5">
-            <span className="text-sm font-medium">Como mostrar seu nome</span>
+            <span className="text-sm font-medium">Nome que aparece</span>
             <input
               required
               value={displayName}
@@ -116,7 +119,8 @@ export default function DepoimentoPage() {
             className="mt-0.5 size-4 rounded accent-primary"
           />
           <span>
-            Autorizo exibir meu depoimento, nome e @ na página inicial da Zaalys.
+            Autorizo a Zaalys a publicar este depoimento no site, com o nome e o @ acima.
+            <span className="mt-0.5 block">Sem a marcação, o texto chega só para o time, como sugestão.</span>
           </span>
         </label>
 

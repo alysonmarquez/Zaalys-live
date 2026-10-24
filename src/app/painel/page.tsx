@@ -11,6 +11,13 @@ import {
   compactNumber,
   formatBRL,
 } from "@/lib/zaalys-data";
+import {
+  DEMO_CONFIG_EVENT,
+  FIRE_SALE_EVENT,
+  hasCustomMetrics,
+  loadMetrics,
+  type BaseMetrics,
+} from "@/lib/demo-config";
 
 type PeriodKey = "today" | "week" | "d7" | "d15" | "month" | "d30";
 
@@ -558,7 +565,46 @@ function DashboardView() {
     },
   ]);
 
-  const data = SERIES_BY_PERIOD[period];
+  // Valores-base do Painel do Afiliado (aba Métricas), quando preenchidos, substituem os de exemplo.
+  const [custom, setCustom] = useState<Record<PeriodKey, BaseMetrics> | null>(null);
+  useEffect(() => {
+    const load = () => setCustom(loadMetrics());
+    load();
+    window.addEventListener(DEMO_CONFIG_EVENT, load);
+    window.addEventListener("storage", load);
+    return () => {
+      window.removeEventListener(DEMO_CONFIG_EVENT, load);
+      window.removeEventListener("storage", load);
+    };
+  }, []);
+
+  const builtIn = SERIES_BY_PERIOD[period];
+  const override = custom?.[period];
+  const data =
+    override && hasCustomMetrics(override)
+      ? (() => {
+          const gmvCents = Math.round(override.gmv * 100);
+          const scale = builtIn.gmvCents > 0 ? gmvCents / builtIn.gmvCents : 0;
+          const orders = override.orders;
+          // Ticket médio informado é o piso: mostra o maior entre ele e o calculado.
+          const calcTicket = orders > 0 ? Math.round(gmvCents / orders) : 0;
+          return {
+            gmvCents,
+            commissionCents: Math.round(override.commission * 100),
+            orders,
+            ticketCents: Math.max(Math.round(override.ticket * 100), calcTicket),
+            items: override.items,
+            views: override.views,
+            clicks: override.clicks,
+            commissionBaseCents: Math.round(override.commissionBase * 100),
+            series: builtIn.series.map((s) => ({
+              ...s,
+              gmvCents: Math.round(s.gmvCents * scale),
+              orders: Math.round(s.orders * (builtIn.orders > 0 ? orders / builtIn.orders : 0)),
+            })),
+          };
+        })()
+      : builtIn;
   const series = data.series;
   const maxVal = Math.max(1, ...series.map((s) => s.gmvCents));
   const width = 760;
@@ -571,6 +617,13 @@ function DashboardView() {
 
   const activePoint = hoverIdx !== null ? series[hoverIdx] : undefined;
   const liveTotalCents = liveSales.reduce((acc, s) => acc + s.amountCents, 0);
+
+  useEffect(() => {
+    const onFire = () => triggerLiveSale();
+    window.addEventListener(FIRE_SALE_EVENT, onFire);
+    return () => window.removeEventListener(FIRE_SALE_EVENT, onFire);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function triggerLiveSale() {
     const prod = ZAALYS_PRODUCTS[Math.floor(Math.random() * ZAALYS_PRODUCTS.length)]!;
