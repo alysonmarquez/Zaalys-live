@@ -50,7 +50,7 @@ export default function IndiquePage() {
       .catch(() => {});
   }, []);
 
-  const shareUrl = `https://zaalys.com/convite/${handle}`;
+  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.zaalys.com"}/convite/${handle}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
     `Eu uso a Zaalys para rodar minha live automática e criar vídeos com IA no TikTok Shop. Com o meu cupom ${handle} você ganha R$ 30,00 de desconto no acesso vitalício: ${shareUrl}`
   )}`;

@@ -6,6 +6,9 @@ import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { Brand, BrandLoader, RaisedButton, Segmented } from "@/components/brand";
 import { LIFETIME_CENTS, MONTHLY_CENTS, formatBRL, installmentQuote } from "@/lib/pricing";
 
+// Cupom próprio só vale no Mercado Pago. Na Applyfy, os cupons são da própria Applyfy.
+const COUPONS_ENABLED = (process.env.NEXT_PUBLIC_PAYMENT_PROVIDER ?? "applyfy") === "mercadopago";
+
 const FEATURE_DEMOS_CSS = `
 .zd {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -726,7 +729,7 @@ function CheckoutContent() {
                 </div>
               )}
 
-              {showCoupon ? (
+              {COUPONS_ENABLED && (showCoupon ? (
                 <div className="rounded-2xl border border-border/60 bg-card/70 p-5">
                   <h3 className="text-sm font-semibold tracking-tight">Cupom de desconto</h3>
                   {appliedCoupon ? (
@@ -791,7 +794,7 @@ function CheckoutContent() {
                 >
                   Tem um cupom de desconto?
                 </button>
-              )}
+              ))}
 
               <div className="space-y-3">
                 <div className="flex items-baseline justify-between gap-3 px-1">

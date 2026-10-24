@@ -300,7 +300,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
     router.refresh();
   }
 
-  const creatorInviteLink = `https://zaalys.com/convite/creator-${displayName
+  const creatorInviteLink = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.zaalys.com"}/convite/creator-${displayName
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
     .slice(0, 10) || "vip"}-${creatorUses}x`;

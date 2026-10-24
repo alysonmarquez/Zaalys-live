@@ -33,7 +33,20 @@ npm run dev
 3. Em Authentication > URL Configuration, adicione `http://localhost:3000/auth/callback` e a URL de produção.
 4. Copie URL, anon key e service role key para o `.env.local`.
 
-### Mercado Pago
+### Applyfy (padrão)
+
+O pagamento usa os links de checkout da Applyfy (`src/lib/checkout-links.ts`):
+
+| Uso | Vitalício | Mensal |
+|---|---|---|
+| Landing e checkout do site (valor cheio) | oferta `UCYM6OR` | oferta `95RF27C` |
+| Convites Acesso Creator / Indique (`/convite/...`) | oferta `KXSWOMU` | oferta `POL2VBI` |
+
+O formulário de `/checkout/vitalicio` leva para o link da Applyfy com o e-mail. Para liberar o acesso automaticamente, cadastre o postback de vendas na Applyfy apontando para `https://SEU-DOMINIO/api/webhooks/payment?token=APPLYFY_WEBHOOK_TOKEN`. O formato do postback ainda precisa ser confirmado: o adaptador (`src/lib/payments/applyfy.ts`) registra no log cada postback recebido para ajustar o mapeamento.
+
+### Mercado Pago (alternativo)
+
+Use com `PAYMENT_PROVIDER=mercadopago` e `NEXT_PUBLIC_PAYMENT_PROVIDER=mercadopago`.
 
 1. Crie uma aplicação em mercadopago.com.br/developers e copie o Access Token.
 2. Em Webhooks, aponte para `https://SEU-DOMINIO/api/webhooks/payment` com os eventos **Pagamentos** e **Planos e assinaturas**. Copie a assinatura secreta para `MERCADOPAGO_WEBHOOK_SECRET`.
