@@ -16,12 +16,12 @@ import { useIsDemo } from "@/lib/use-demo";
 
 const FORMATS = [
   { key: "todos", label: "Todos" },
-  { key: "presenter", label: "Apresentando" },
-  { key: "application", label: "Aplicação" },
-  { key: "hands-demo", label: "Demonstração" },
-  { key: "unboxing", label: "Unboxing" },
   { key: "try-on", label: "Provando" },
+  { key: "unboxing", label: "Unboxing" },
+  { key: "hands-demo", label: "Demonstração" },
   { key: "pov", label: "POV" },
+  { key: "application", label: "Aplicação" },
+  { key: "presenter", label: "Apresentando" },
   { key: "pet", label: "Pet" },
 ];
 

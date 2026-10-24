@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ZAALYS_PRODUCTS, formatBRL } from "@/lib/zaalys-data";
+import { formatBRL } from "@/lib/zaalys-data";
+import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
+
+// Só produtos com venda e comissão registradas, como no original.
+const SALES = CATALOGO_ORIGINAL.filter((p) => p.salesCount > 0 && p.earningCents > 0);
 
 // Notificação "Venda ao vivo" que alterna no canto (dados de exemplo, como no original).
 const SHOW_MS = 5500;
@@ -20,7 +24,7 @@ export function LiveSaleToast() {
     const hide = () => {
       setVisible(false);
       timer = setTimeout(() => {
-        setIdx((i) => (i + 1) % ZAALYS_PRODUCTS.length);
+        setIdx((i) => (i + 1) % SALES.length);
         show();
       }, GAP_MS);
     };
@@ -28,13 +32,13 @@ export function LiveSaleToast() {
     return () => clearTimeout(timer);
   }, []);
 
-  const p = ZAALYS_PRODUCTS[idx]!;
+  const p = SALES[idx]!;
 
   return (
     <div
       role="status"
       aria-live="polite"
-      className={`pointer-events-none fixed bottom-5 right-[92px] z-30 hidden w-[340px] transition-[opacity,transform] duration-500 ease-out md:block ${
+      className={`pointer-events-none fixed bottom-5 right-[92px] z-30 hidden w-[340px] transition-[opacity,transform] duration-500 ease-out xl:block ${
         visible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
       }`}
     >

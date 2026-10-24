@@ -165,16 +165,8 @@ function ArrowUpRight({ size = 20, className }: { size?: number; className?: str
 }
 
 function TemplatesPreviewStrip() {
-  const allPosters = [
-    "/media/templates/21_apresentando-produto.jpg",
-    "/media/models/woman-casual.webp",
-    "/media/templates/19_textura-pele.jpg",
-    "/media/templates/23_preparo-e-gole.jpg",
-    "/media/models/man-smart.webp",
-    "/media/templates/24_setup-mesa.jpg",
-    "/media/templates/25_pet-experimentando.jpg",
-    ...ZAALYS_TEMPLATES.map((t) => t.poster),
-  ].filter((src, i, arr) => arr.indexOf(src) === i);
+  // Mesma faixa do original: os quadros dos templates, na ordem (os modelos vêm primeiro).
+  const allPosters = ZAALYS_TEMPLATES.map((t) => t.poster);
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {

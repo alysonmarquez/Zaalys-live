@@ -7,13 +7,13 @@ import { RaisedButton, cn } from "@/components/brand";
 import {
   PROOF_GOAL_LABELS,
   ZAALYS_CATEGORIES,
-  ZAALYS_CHANGES,
   ZAALYS_PRODUCTS,
   type ZaalysProduct,
   compactNumber,
   formatBRL,
 } from "@/lib/zaalys-data";
 import { useIsDemo } from "@/lib/use-demo";
+import { Flame, Heart, Package, Percent, Star, Tag } from "lucide-react";
 
 type SortKey = "recommended" | "trending" | "sales" | "earnings" | "commission" | "recent";
 
@@ -31,6 +31,25 @@ function CatalogoInner() {
   const [newLink, setNewLink] = useState("");
   const [adding, setAdding] = useState(false);
   const demo = useIsDemo();
+  // Favoritos ficam só neste navegador.
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("zaalys_favorites");
+      if (raw) setFavorites(new Set(JSON.parse(raw) as number[]));
+    } catch {}
+  }, []);
+  function toggleFavorite(id: number) {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      try {
+        window.localStorage.setItem("zaalys_favorites", JSON.stringify([...next]));
+      } catch {}
+      return next;
+    });
+  }
   const [newName, setNewName] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [newCommission, setNewCommission] = useState("");
@@ -39,6 +58,9 @@ function CatalogoInner() {
     () => [...customProducts, ...ZAALYS_PRODUCTS],
     [customProducts],
   );
+  // Contadores do topo calculados a partir dos dados (sem números fixos).
+  const newCount = allProducts.filter((p) => p.salesCount === 0).length;
+  const changeCount = allProducts.filter((p) => p.lastChange).length;
 
   useEffect(() => {
     if (initialProdId) {
@@ -164,17 +186,17 @@ function CatalogoInner() {
             <span className="relative inline-flex size-2 rounded-full bg-primary" />
           </span>
           <span className="tabular">
-            <span className="font-semibold text-foreground">248</span> produtos
+            <span className="font-semibold text-foreground">{allProducts.length}</span> produtos
           </span>
           <span className="tabular">
-            · <span className="font-semibold text-primary">+18</span> novos
+            · <span className="font-semibold text-primary">+{newCount}</span> novos
           </span>
-          <span>· atualizado há 4 min</span>
+          <span>· atualizado em 24/10</span>
           <Link
             href="/painel/radar"
             className="tabular underline-offset-2 transition-colors hover:text-foreground hover:underline"
           >
-            · {ZAALYS_CHANGES.length} mudanças
+            · {changeCount} mudanças
           </Link>
         </span>
       </header>
@@ -262,63 +284,117 @@ function CatalogoInner() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {filtered.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setSelectedProduct(p)}
-              className="group flex flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-card text-left transition-[transform,border-color,box-shadow] duration-200 ease-out hover:border-primary/40 hover:shadow-[0_16px_36px_-12px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer dark:border-white/[0.08]"
-            >
-              <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
-                <img
-                  src={p.imageUrl}
-                  alt={p.title}
-                  loading="lazy"
-                  className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                {p.highCommission && (
-                  <span className="absolute left-2.5 top-2.5 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground shadow-xs">
-                    Alta comissão
-                  </span>
-                )}
-                <div className="absolute inset-x-2.5 bottom-2.5 flex items-center justify-between text-[11px] font-medium text-white/90">
-                  <span className="rounded-full bg-black/55 px-2 py-0.5 backdrop-blur-md">
-                    {p.commissionPct}% comissão
-                  </span>
-                  <span className="tabular rounded-full bg-black/55 px-2 py-0.5 backdrop-blur-md">
-                    {compactNumber(p.salesCount)} vendas
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-1 flex-col justify-between p-3.5">
-                <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {filtered.map((p) => {
+            const fav = favorites.has(p.id);
+            const change = p.lastChange;
+            const priceUp = change?.field === "priceCents" && change.to > change.from;
+            return (
+              <div
+                key={p.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedProduct(p)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedProduct(p);
+                  }
+                }}
+                className="group flex flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-card text-left transition-[transform,border-color,box-shadow] duration-200 ease-out hover:border-primary/40 hover:shadow-[0_16px_36px_-12px_rgba(0,0,0,0.4)] cursor-pointer dark:border-white/[0.08]"
+              >
+                <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
+                  <img
+                    src={p.imageUrl}
+                    alt={p.title}
+                    loading="lazy"
+                    className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  />
+                  <span className="absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
                     {p.category}
                   </span>
-                  <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-foreground">
-                    {p.title}
-                  </h3>
+                  <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5">
+                    {p.trending && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-primary-foreground shadow-xs">
+                        <Flame size={12} /> Em alta
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={fav ? "Remover dos favoritos" : "Salvar nos favoritos"}
+                      aria-pressed={fav}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(p.id);
+                      }}
+                      className="grid size-8 place-items-center rounded-full bg-black/70 text-white backdrop-blur-md transition-transform active:scale-90 cursor-pointer"
+                    >
+                      <Heart size={15} className={fav ? "fill-primary text-primary" : ""} />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="mt-3 flex items-end justify-between border-t border-border/60 pt-2.5">
-                  <div>
-                    <span className="block text-[10px] text-muted-foreground">Preço</span>
-                    <span className="tabular text-xs font-medium text-foreground">
-                      {formatBRL(p.priceCents)}
-                    </span>
+                <div className="flex flex-1 flex-col p-3.5">
+                  <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-foreground">
+                    {p.title}
+                  </h3>
+                  <p className="mt-2 font-mono text-lg font-bold tabular-nums text-foreground">
+                    {formatBRL(p.priceCents)}
+                  </p>
+                  <div className="mt-0.5 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{p.commissionPct > 0 ? `${p.commissionPct}% comissão` : "Comissão a confirmar"}</span>
+                    {p.rating > 0 && (
+                      <span className="inline-flex items-center gap-1 font-semibold text-foreground">
+                        <Star size={13} className="fill-amber-400 text-amber-400" />
+                        {String(p.rating).replace(".", ".")}
+                      </span>
+                    )}
                   </div>
-                  <div className="text-right">
-                    <span className="block text-[10px] text-muted-foreground">Ganho / venda</span>
-                    <span className="tabular text-sm font-bold text-primary">
-                      {formatBRL(p.earningCents)}
+
+                  {change && (
+                    <span
+                      className={cn(
+                        "mt-2 inline-flex w-fit items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums",
+                        change.tone === "good" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive",
+                      )}
+                    >
+                      {change.field === "priceCents" ? (
+                        <>
+                          <Tag size={11} /> {formatBRL(change.from)} {priceUp ? "↑" : "↓"} {formatBRL(change.to)}
+                        </>
+                      ) : (
+                        <>
+                          <Percent size={11} /> {change.from}% {change.to > change.from ? "↑" : "↓"} {change.to}%
+                        </>
+                      )}
                     </span>
+                  )}
+
+                  <p className="mt-2 line-clamp-1 text-[11px] text-muted-foreground">{p.reasons[0]}</p>
+
+                  <div className="mt-auto flex items-center justify-between border-t border-border/60 pt-2.5 text-[11px] text-muted-foreground">
+                    <span>
+                      <span className="font-mono font-semibold text-foreground">~{formatBRL(p.earningCents)}</span> por venda
+                    </span>
+                    {p.salesCount > 0 && (
+                      <span className="inline-flex items-center gap-1 tabular-nums">
+                        <Package size={12} /> {compactNumber(p.salesCount)}
+                      </span>
+                    )}
                   </div>
+
+                  <a
+                    href={p.affiliateUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-primary/10 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
+                  >
+                    <span className="size-1.5 rounded-full bg-primary" /> Afiliar-se
+                  </a>
                 </div>
               </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       )}
 

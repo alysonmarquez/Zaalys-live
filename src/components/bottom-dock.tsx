@@ -10,12 +10,13 @@ const ITEMS = [
   { href: "/painel/catalogo", label: "Produtos", icon: Boxes, match: ["/painel/catalogo", "/products", "/venda"] },
   { href: "/painel/influencers", label: "Templates", icon: Clapperboard, match: ["/painel/influencers", "/templates"] },
   { href: "/painel/radar", label: "Radar", icon: LineChart, match: ["/painel/radar", "/radar"] },
-  { href: "/painel/roteiros", label: "Trend AI", icon: Rocket, match: ["/painel/roteiros", "/trend-boost"] },
+  { href: "/painel/roteiros", label: "Trend", icon: Rocket, match: ["/painel/roteiros", "/trend-boost"] },
   { href: "/painel/raio-x", label: "Raio-X", icon: Film, match: ["/painel/raio-x", "/ferramentas/raio-x"] },
+  { href: "/painel/live", label: "Live", icon: Headphones, match: ["/painel/live", "/ferramentas/live"] },
 ];
 
-/** Menu flutuante no rodapé, ao centro (igual ao original). */
-export function BottomDock({ onSupport }: { onSupport: () => void }) {
+/** Menu flutuante no rodapé, ao centro (igual ao original: o fone leva à Live). */
+export function BottomDock() {
   const pathname = usePathname() || "/painel";
   const isActive = (match: string[]) =>
     match.some((m) => (m === "/painel" ? pathname === "/painel" : pathname === m || pathname.startsWith(`${m}/`)));
@@ -43,22 +44,11 @@ export function BottomDock({ onSupport }: { onSupport: () => void }) {
                 )}
               >
                 <Icon size={18} strokeWidth={2} className="shrink-0" />
-                {active && <span className="hidden sm:inline">{label}</span>}
+                {active && <span className="hidden whitespace-nowrap sm:inline">{label}</span>}
               </Link>
             </li>
           );
         })}
-        <li>
-          <button
-            type="button"
-            onClick={onSupport}
-            aria-label="Suporte"
-            title="Suporte"
-            className="flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground cursor-pointer"
-          >
-            <Headphones size={18} strokeWidth={2} />
-          </button>
-        </li>
       </ul>
     </nav>
   );

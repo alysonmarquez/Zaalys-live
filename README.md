@@ -139,6 +139,21 @@ Estes pontos dependem da página de LIVE do TikTok Shop, que não pôde ser test
 3. **Aba visível.** O Chrome reduz o ritmo de abas em segundo plano. Deixe a aba da live visível numa janela própria.
 4. **Termos do TikTok.** Automação de comentários pode ser restrita pelos termos da plataforma. Deixe o ritmo conservador e avise isso nos termos de uso da Zaalys.
 
+## Dados de exemplo lidos do sistema original
+
+Para o painel mostrar o mesmo conteúdo do original, parte dos dados foi lida do zaalys.com em 24/10/2026 (com login da conta) e salva no repositório:
+
+| O quê | Onde | Observação |
+|---|---|---|
+| 133 produtos (os mais vendidos de cada categoria) | `src/data/catalogo-original.json` → `src/lib/catalogo-original.ts` | Preço, comissão, vendas, fotos (FastMoss/TikTok) e link do TikTok Shop. Alimentam Produtos, Radar, Raio-X e a notificação de venda. |
+| 26 templates de vídeo | `src/lib/templates-original.ts` | 5 mídias estão em `public/media/templates`; as outras 21 ainda são carregadas do servidor do original. |
+| 12 formatos do Trend AI e seus personagens | `src/lib/trend-formats.ts` | Fotos e prévias carregadas do servidor do original (`/media/trend/...`). |
+| 98 vídeos de referência do Raio-X | `src/data/raiox-videos.json` → `src/lib/raiox-videos.ts` | Números do FastMoss coletados em 02/10/2026. |
+
+Os dados são fixos: não se atualizam sozinhos. No original, o catálogo é relido a cada poucos minutos a partir do FastMoss e do Kalodata (via Firecrawl), e o Radar compara as leituras.
+
+Para não depender do servidor do original, copie as mídias dos templates e do Trend AI para `public/media/` e defina `NEXT_PUBLIC_TEMPLATE_MEDIA_ORIGIN` com o seu domínio (ou deixe vazio e ajuste os caminhos).
+
 ## O que ainda falta (próximas fases)
 
 - Fonte de dados do catálogo e coleta periódica. As telas do painel (catálogo, radar de mudanças, galeria do Raio-X, notificações) ainda usam os dados fixos de `src/lib/zaalys-data.ts`; as tabelas `products` e `product_snapshots` já existem e alimentam o e-mail do Radar.

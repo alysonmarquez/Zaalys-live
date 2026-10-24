@@ -1,204 +1,143 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import React, { Suspense, useState } from "react";
+import React, { useState } from "react";
+import { ArrowUpRight, ChevronLeft, Download } from "lucide-react";
 import { RaisedButton, cn } from "@/components/brand";
 import {
-  TREND_FORMATS,
+  TREND_CTAS,
+  TREND_FORMATS_ORIGINAL,
+  TREND_TONES,
+  type TrendCharacter,
   type TrendFormat,
-  ZAALYS_PRODUCTS,
-  formatBRL,
-} from "@/lib/zaalys-data";
+} from "@/lib/trend-formats";
+import type { TrendScripts } from "@/lib/ai/prompts";
 import { useIsDemo } from "@/lib/use-demo";
 
-const TONES = [
-  { key: "engracado", label: "Engraçado" },
-  { key: "sarcastico", label: "Sarcástico" },
-  { key: "absurdo", label: "Absurdo" },
-  { key: "dramatico", label: "Dramático" },
-  { key: "ternurinha", label: "Ternurinha" },
-  { key: "nostalgico", label: "Nostálgico" },
-];
+type Script = TrendScripts["scripts"][number];
 
-type GeneratedScriptOption = {
-  id: number;
-  hook: string;
-  body: string;
-  cta: string;
-  englishPrompt: string;
-};
-
-function TrendAiInner() {
-  const searchParams = useSearchParams();
-  const initialProdName = searchParams.get("produto") ?? "";
-
-  const [selectedFormat, setSelectedFormat] = useState<TrendFormat | null>(null);
-  const [selectedCharId, setSelectedCharId] = useState<string>("");
-  const [selectedTone, setSelectedTone] = useState<string>("engracado");
-  const [selectedProdId, setSelectedProdId] = useState<number>(() => {
-    if (initialProdName) {
-      const found = ZAALYS_PRODUCTS.find((p) =>
-        p.title.toLowerCase().includes(initialProdName.toLowerCase()),
-      );
-      if (found) return found.id;
-    }
-    return ZAALYS_PRODUCTS[0]!.id;
-  });
+/** Trend AI no fluxo do original: personagem → tom & roteiro → prompt + download. */
+export default function TrendAiPage() {
+  const demo = useIsDemo();
+  const [format, setFormat] = useState<TrendFormat | null>(null);
+  const [character, setCharacter] = useState<TrendCharacter | null>(null);
+  const [tone, setTone] = useState(TREND_TONES[0]!.key);
+  const [cta, setCta] = useState(TREND_CTAS[0]!.key);
+  const [scripts, setScripts] = useState<Script[] | null>(null);
+  const [picked, setPicked] = useState(0);
   const [generating, setGenerating] = useState(false);
-  const [scripts, setScripts] = useState<GeneratedScriptOption[] | null>(null);
-  const [pickedScriptIdx, setPickedScriptIdx] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const product = ZAALYS_PRODUCTS.find((p) => p.id === selectedProdId) ?? ZAALYS_PRODUCTS[0]!;
-  const character =
-    selectedFormat?.characters.find((c) => c.id === selectedCharId) ??
-    selectedFormat?.characters[0];
+  const step = scripts ? 3 : character ? 2 : 1;
+  const ctaLine = TREND_CTAS.find((c) => c.key === cta)!.line;
+  const toneObj = TREND_TONES.find((t) => t.key === tone)!;
 
-  const [generateError, setGenerateError] = useState<string | null>(null);
-  const demo = useIsDemo();
-
-  // Modo demonstração: mesmos roteiros de exemplo do sistema original.
-  function demoGenerate() {
-    if (!selectedFormat || !character) return;
-    setGenerating(true);
-    setScripts(null);
-
-    setTimeout(() => {
-      const toneLabel = TONES.find((t) => t.key === selectedTone)?.label ?? "Engraçado";
-      const list: GeneratedScriptOption[] = [
-        {
-          id: 1,
-          hook: `"Moça, com licença! Qual foi a compra mais inteligente que você fez esse mês sem gastar quase nada?"`,
-          body: `${character.name} olha pra câmera indignada(o) no tom ${toneLabel.toLowerCase()}: "Menino, foi esse ${product.title.slice(0, 48)}! Eu achava que era conversa, até usar no primeiro dia: ${product.facts[0].toLowerCase()}."`,
-          cta: `"Tá aqui no carrinho laranja por ${formatBRL(product.priceCents)}, mas não espalha senão acaba o estoque!"`,
-          englishPrompt: `Cinematic 9:16 vertical video, 8 seconds, Brazilian street interview / studio style. Subject: ${character.name} (${character.role}), natural warm lighting, handheld iPhone 16 Pro realism. Holding "${product.title}" clearly toward the lens, expressive ${toneLabel.toLowerCase()} reaction while speaking in Brazilian Portuguese: "${product.facts[0]}". Shallow depth of field, authentic TikTok viral pacing.`,
-        },
-        {
-          id: 2,
-          hook: `"Ninguém no TikTok te conta isso, mas eu vou falar antes que apaguem o corte…"`,
-          body: `${character.name} inclina pra frente segurando o produto: "O segredo é esse ${product.title.slice(0, 48)}. Enquanto todo mundo paga o dobro, ${product.facts[1]?.toLowerCase() ?? product.facts[0].toLowerCase()}."`,
-          cta: `"Clica na sacolinha aqui embaixo antes que volte pro preço antigo!"`,
-          englishPrompt: `Cinematic 9:16 vertical podcast / close-up shot, 8 seconds. Subject: ${character.name}, moody warm key light, studio microphone in foreground. Reveals "${product.title}" on the table, taps it emphatically, speaking animatedly in Brazilian Portuguese with ${toneLabel.toLowerCase()} energy. Ultra-realistic skin texture and natural hand gestures.`,
-        },
-        {
-          id: 3,
-          hook: `"POV: você jurou que não ia comprar mais nada no TikTok Shop hoje… até ver isso funcionando."`,
-          body: `${character.name} mostra o antes e o depois na prática: "${product.facts[0]} em segundos. Não tem como voltar atrás depois que testa."`,
-          cta: `"Deixei o link direto na sacola laranja aqui no canto!"`,
-          englishPrompt: `Dynamic 9:16 vertical UGC POV video, 8 seconds. Subject: ${character.name} in a bright Brazilian home setting, demonstrating "${product.title}" with a surprised and delighted ${toneLabel.toLowerCase()} expression, pointing down to the bottom-left TikTok Shop orange cart icon at the end.`,
-        },
-      ];
-      setScripts(list);
-      setPickedScriptIdx(0);
-      setGenerating(false);
-    }, 950);
+  function demoScripts(f: TrendFormat, c: TrendCharacter): Script[] {
+    const base = (hook: string, lines: string[]): Script => ({
+      title: hook.slice(0, 40),
+      hook,
+      lines,
+      cta: ctaLine,
+      videoPrompt: `Use the attached character image as reference. Vertical 9:16, 8 seconds, ${f.title} style. ${c.name} looks straight at the camera with a ${toneObj.label.toLowerCase()} energy and says in Brazilian Portuguese: '${hook}' '${lines.join(" ")}' and ends with: '${ctaLine}'. Natural light, handheld phone realism, authentic TikTok pacing.`,
+    });
+    return [
+      base(`Ninguém me avisou que ia ser assim…`, [`Eu, ${c.name}, achei que já tinha visto de tudo.`]),
+      base(`Para tudo que eu preciso te contar uma coisa!`, [`Essa aqui ninguém esperava, nem eu.`]),
+      base(`Você também faz isso? Não minta pra mim.`, [`Porque eu faço todo santo dia.`]),
+    ];
   }
 
-
-  async function handleGenerate() {
-    if (!selectedFormat || !character) return;
-    if (demo) {
-      demoGenerate();
-      return;
-    }
+  async function generate() {
+    if (!format || !character) return;
+    setError(null);
     setGenerating(true);
-    setScripts(null);
-    setGenerateError(null);
-    const toneLabel = TONES.find((t) => t.key === selectedTone)?.label ?? "Engraçado";
-    const angles = ["pergunta provocativa", "segredo revelado", "POV antes e depois"];
     try {
-      const results = await Promise.all(
-        angles.map(async (angle) => {
-          const res = await fetch("/api/ai/video-script", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              product: {
-                name: product.title,
-                price: formatBRL(product.priceCents),
-                details: product.facts.join("; "),
-              },
-              character: { name: character.name, appearance: character.role },
-              template: {
-                scene: `${selectedFormat.title}: ${selectedFormat.desc}`,
-                camera_motion: "vertical 9:16, ritmo de vídeo viral",
-              },
-              tone: toneLabel,
-              angle,
-              durationSeconds: 8,
-            }),
-          });
-          const data = await res.json().catch(() => null);
-          if (!res.ok || !data?.script) throw new Error(data?.error || "Não foi possível gerar agora.");
-          return data.script as {
-            hook: string;
-            scenes: { shot: string; action: string; speech: string }[];
-            cta: string;
-            videoPrompt: string;
-          };
-        }),
-      );
-      setScripts(
-        results.map((sc, i) => ({
-          id: i + 1,
-          hook: `"${sc.hook}"`,
-          body: sc.scenes.map((c) => `${c.action} — "${c.speech}"`).join("\n"),
-          cta: `"${sc.cta}"`,
-          englishPrompt: sc.videoPrompt,
-        })),
-      );
-      setPickedScriptIdx(0);
+      if (demo) {
+        await new Promise((r) => setTimeout(r, 900));
+        setScripts(demoScripts(format, character));
+      } else {
+        const res = await fetch("/api/ai/trend-script", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ format: format.slug, character: character.name, tone, cta }),
+        });
+        const data = (await res.json().catch(() => null)) as (TrendScripts & { error?: string }) | null;
+        if (!res.ok || !data?.scripts) throw new Error(data?.error || "Não foi possível gerar os roteiros agora.");
+        setScripts(data.scripts);
+      }
+      setPicked(0);
     } catch (err) {
-      setGenerateError((err as Error).message);
+      setError((err as Error).message);
     } finally {
       setGenerating(false);
     }
   }
 
-  function handleCopyAndFlow(promptText: string) {
-    navigator.clipboard?.writeText(promptText).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    window.open("https://labs.google/fx/tools/flow", "_blank", "noopener,noreferrer");
-  }
+  const stepper = (
+    <ol className="flex items-center gap-3 rounded-full border border-border bg-card/70 p-1.5 text-xs">
+      {["Personagem", "Tom & roteiro", "Prompt + download"].map((label, i) => {
+        const n = i + 1;
+        const active = step === n;
+        const done = step > n;
+        return (
+          <li key={label} className="flex items-center gap-2">
+            <span
+              className={cn(
+                "flex items-center gap-2 rounded-full px-3 py-1 font-semibold",
+                active ? "bg-primary/15 text-foreground" : "text-muted-foreground",
+              )}
+            >
+              <span
+                className={cn(
+                  "grid size-5 place-items-center rounded-full text-[10px] font-bold",
+                  active || done ? "bg-primary text-primary-foreground" : "bg-muted",
+                )}
+              >
+                {done ? "✓" : n}
+              </span>
+              {label}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
 
-  if (!selectedFormat) {
+  // Passo 1a: formatos
+  if (!format) {
     return (
       <div className="space-y-6">
+        {stepper}
         <header>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Trend AI
-          </h1>
-          <p className="mt-1.5 max-w-2xl text-muted-foreground">
-            Escolha uma estrutura feita para retenção, comentário e compartilhamento.
-          </p>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Trend AI</h1>
+          <p className="mt-1.5 text-muted-foreground">Escolha uma estrutura feita para retenção, comentário e compartilhamento.</p>
         </header>
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          {TREND_FORMATS.map((fmt) => (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {TREND_FORMATS_ORIGINAL.map((f) => (
             <button
-              key={fmt.id}
+              key={f.slug}
               type="button"
-              onClick={() => {
-                setSelectedFormat(fmt);
-                setSelectedCharId(fmt.characters[0]!.id);
-                setScripts(null);
-              }}
-              className="group relative flex min-h-64 flex-col justify-end overflow-hidden rounded-3xl border border-black/[0.06] bg-card text-left shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] transition-[transform,border-color,box-shadow] duration-250 ease-out hover:border-primary/40 hover:shadow-[0_20px_48px_-16px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer dark:border-white/[0.08]"
+              onClick={() => setFormat(f)}
+              className="group relative aspect-[16/10] overflow-hidden rounded-3xl border border-black/[0.06] bg-muted text-left cursor-pointer dark:border-white/[0.08]"
             >
-              <img
-                src={fmt.cover}
-                alt=""
-                loading="lazy"
-                className="absolute inset-0 size-full object-cover opacity-55 transition-transform duration-500 ease-out group-hover:scale-105"
+              <video
+                src={f.preview}
+                poster={f.characters[0]?.image}
+                muted
+                loop
+                autoPlay
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/70 to-card/20" />
-              <div className="relative z-10 p-5">
-                <span className="inline-flex rounded-full border border-black/[0.04] bg-primary/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary dark:border-white/[0.06]">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+              <ArrowUpRight size={18} className="absolute right-4 top-4 text-white/80" />
+              <div className="absolute inset-x-4 bottom-4">
+                <span className="rounded-full bg-primary/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
                   Template
                 </span>
-                <h3 className="mt-2 font-display text-xl font-bold tracking-tight">{fmt.title}</h3>
-                <p className="mt-1 max-w-sm text-sm text-muted-foreground">{fmt.desc}</p>
+                <h2 className="mt-2 font-display text-xl font-bold text-white">{f.title}</h2>
+                <p className="mt-0.5 text-sm text-white/75">{f.desc}</p>
               </div>
             </button>
           ))}
@@ -207,249 +146,193 @@ function TrendAiInner() {
     );
   }
 
-  const activeScript = scripts?.[pickedScriptIdx];
+  // Passo 1b: personagens do formato
+  if (!character) {
+    return (
+      <div className="space-y-6">
+        {stepper}
+        <button
+          type="button"
+          onClick={() => setFormat(null)}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+        >
+          <ChevronLeft size={16} /> Voltar
+        </button>
+        <header className="text-center">
+          <h1 className="font-display text-3xl font-extrabold tracking-tight">{format.title}</h1>
+          <p className="mt-1.5 text-muted-foreground">Escolha o {format.noun} que vai protagonizar sua história.</p>
+        </header>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {format.characters.map((c) => (
+            <button
+              key={c.image}
+              type="button"
+              onClick={() => {
+                setCharacter(c);
+                setScripts(null);
+              }}
+              className="group relative aspect-[3/4] overflow-hidden rounded-3xl border border-black/[0.06] bg-muted text-left cursor-pointer dark:border-white/[0.08]"
+            >
+              <img src={c.image} alt={c.name} loading="lazy" className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+              <span className="absolute inset-x-3 bottom-3 text-sm font-semibold text-white">{c.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Passos 2 e 3
+  const active = scripts?.[picked];
+  const fullText = active
+    ? [`Gancho: "${active.hook}"`, ...active.lines.map((l) => `"${l}"`), `Chamada: "${active.cta}"`, "", active.videoPrompt].join("\n")
+    : "";
 
   return (
     <div className="space-y-6">
-      <button
-        type="button"
-        onClick={() => {
-          setSelectedFormat(null);
-          setScripts(null);
-        }}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground active:scale-95 cursor-pointer"
-      >
-        ← Voltar para estruturas
-      </button>
+      {stepper}
+      <div className="flex items-center gap-3">
+        <img src={character.image} alt="" className="size-14 rounded-2xl object-cover" />
+        <div>
+          <p className="font-display text-lg font-bold">{character.name}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setCharacter(null);
+              setScripts(null);
+            }}
+            className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground cursor-pointer"
+          >
+            Trocar personagem
+          </button>
+        </div>
+      </div>
 
-      <header>
-        <span className="inline-flex rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
-          8 segundos · 3 roteiros
-        </span>
-        <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-          {selectedFormat.title}
-        </h1>
-        <p className="mt-1 text-muted-foreground">
-          Escolha o {selectedFormat.castLabel.toLowerCase()} que vai protagonizar sua história, o
-          tom e o produto.
-        </p>
-      </header>
-
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.15fr]">
-        {/* Left Controls */}
-        <div className="apple-card space-y-5 p-5 sm:p-6">
-          {/* Character Picker */}
+      {!scripts && (
+        <div className="apple-card space-y-5 p-5">
           <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              1. {selectedFormat.castLabel}
-            </label>
-            <div className="grid grid-cols-3 gap-2.5">
-              {selectedFormat.characters.map((c) => {
-                const active = c.id === (character?.id ?? "");
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedCharId(c.id);
-                      setScripts(null);
-                    }}
-                    className={cn(
-                      "group relative flex aspect-[3/4] flex-col justify-end overflow-hidden rounded-2xl border text-left transition-all cursor-pointer",
-                      active
-                        ? "border-primary ring-2 ring-primary/40"
-                        : "border-black/[0.06] hover:border-primary/40 dark:border-white/[0.08]",
-                    )}
-                  >
-                    <img src={c.image} alt={c.name} className="absolute inset-0 size-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-                    <div className="relative z-10 p-2">
-                      <span className="block truncate text-xs font-bold text-white">{c.name}</span>
-                      <span className="block truncate text-[10px] text-white/70">{c.role}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            <h2 className="font-display text-lg font-bold">Escolha o tom do vídeo</h2>
+            <p className="text-xs text-muted-foreground">8 segundos · 3 roteiros</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {TREND_TONES.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTone(t.key)}
+                className={cn(
+                  "rounded-2xl border p-3 text-left transition-colors cursor-pointer",
+                  tone === t.key ? "border-primary bg-primary/10" : "border-border hover:border-primary/40",
+                )}
+              >
+                <span className="block text-sm font-semibold">{t.label}</span>
+                <span className="text-[11px] text-muted-foreground">{t.desc}</span>
+              </button>
+            ))}
           </div>
 
-          {/* Tone Selector */}
           <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              2. Escolha o tom do vídeo
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {TONES.map((t) => (
+            <p className="text-sm font-semibold">Chamada no final</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {TREND_CTAS.map((c) => (
                 <button
-                  key={t.key}
+                  key={c.key}
                   type="button"
-                  onClick={() => {
-                    setSelectedTone(t.key);
-                    setScripts(null);
-                  }}
+                  onClick={() => setCta(c.key)}
                   className={cn(
                     "rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
-                    selectedTone === t.key
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "border border-border bg-background/60 text-muted-foreground hover:text-foreground",
+                    cta === c.key ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {t.label}
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-3 rounded-2xl bg-muted/50 p-3 text-sm italic">“{ctaLine}”</p>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Duração fixa de 8 segundos. A IA analisa a cena do personagem e gera 3 roteiros virais prontos.
+          </p>
+          {error && (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {error}
+            </p>
+          )}
+          <RaisedButton onClick={generate} disabled={generating} className="w-full">
+            {generating ? "Gerando os roteiros…" : "Analisar com IA & gerar 3 roteiros"}
+          </RaisedButton>
+        </div>
+      )}
+
+      {scripts && active && (
+        <div className="apple-card space-y-4 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-lg font-bold">Escolha um roteiro</h2>
+            <div className="flex gap-1.5">
+              {scripts.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setPicked(i)}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-semibold cursor-pointer",
+                    picked === i ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground",
+                  )}
+                >
+                  Opção {i + 1}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Product Selector */}
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              3. Produto do TikTok Shop
-            </label>
-            <select
-              value={selectedProdId}
-              onChange={(e) => {
-                setSelectedProdId(Number(e.target.value));
-                setScripts(null);
-              }}
-              className="field text-sm"
-            >
-              {ZAALYS_PRODUCTS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title} ({formatBRL(p.priceCents)})
-                </option>
-              ))}
-            </select>
+          <div className="space-y-1.5 text-sm">
+            <p className="font-semibold">“{active.hook}”</p>
+            {active.lines.map((l, i) => (
+              <p key={i} className="text-foreground/90">
+                “{l}”
+              </p>
+            ))}
+            <p className="font-semibold text-primary">“{active.cta}”</p>
           </div>
-
-          <RaisedButton
-            size="lg"
-            className="w-full"
-            disabled={generating}
-            onClick={handleGenerate}
-          >
-            {generating
-              ? "A IA está estruturando cena, ritmo e fala…"
-              : "✦ Gerar 3 roteiros e prompt cinematográfico"}
-          </RaisedButton>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Prompt para o Google Flow</p>
+            <pre className="mt-1.5 max-h-48 overflow-auto whitespace-pre-wrap rounded-2xl border border-border bg-background/60 p-3 font-mono text-[11px] leading-relaxed">
+              {active.videoPrompt}
+            </pre>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <RaisedButton
+              size="sm"
+              onClick={() => {
+                navigator.clipboard?.writeText(fullText).catch(() => {});
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+            >
+              {copied ? "Copiado" : "Copiar roteiro + prompt"}
+            </RaisedButton>
+            <a
+              href={character.image}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-semibold hover:bg-muted"
+            >
+              <Download size={14} /> Imagem do personagem
+            </a>
+            <button
+              type="button"
+              onClick={() => setScripts(null)}
+              className="h-9 rounded-xl px-3 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              Trocar tom
+            </button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            No Flow, envie a imagem do personagem como referência e cole o prompt.
+          </p>
         </div>
-
-        {/* Right Output */}
-        <div className="space-y-4">
-          {!scripts ? (
-            <div className="apple-card flex min-h-80 flex-col items-center justify-center p-8 text-center">
-              <p className="font-display text-lg font-bold">
-                {generating ? "Gerando o roteiro viral…" : "Pronto para gerar"}
-              </p>
-              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                {generating
-                  ? "Preparando o conteúdo de alta conversão para o seu personagem."
-                  : "Clique no botão ao lado para receber 3 opções de roteiro de 8 segundos + o prompt pronto para o Google Flow."}
-              </p>
-              {generateError && (
-                <p role="alert" className="mt-3 text-xs font-medium text-destructive">
-                  {generateError}
-                </p>
-              )}
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Escolha um roteiro
-                </span>
-                <div className="flex gap-1.5">
-                  {scripts.map((s, idx) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setPickedScriptIdx(idx)}
-                      className={cn(
-                        "rounded-full px-3 py-1 text-xs font-semibold transition-colors cursor-pointer",
-                        pickedScriptIdx === idx
-                          ? "bg-primary text-primary-foreground"
-                          : "border border-border bg-card text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      Opção {idx + 1}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {activeScript && (
-                <div className="apple-card space-y-4 p-5 sm:p-6">
-                  <div>
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-                      Gancho (0–2s)
-                    </span>
-                    <p className="mt-1 text-sm font-medium text-foreground">{activeScript.hook}</p>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Cena & Resposta (2–6s)
-                    </span>
-                    <p className="mt-1 whitespace-pre-line text-sm text-foreground/90">{activeScript.body}</p>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Chamada no final (6–8s)
-                    </span>
-                    <p className="mt-1 text-sm font-medium text-primary">{activeScript.cta}</p>
-                  </div>
-
-                  <div className="border-t border-border pt-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Prompt gerado (em inglês)
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard?.writeText(activeScript.englishPrompt).catch(() => {});
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 2000);
-                        }}
-                        className="rounded-lg border border-border px-2.5 py-1 text-xs font-semibold hover:bg-foreground/[0.05] cursor-pointer"
-                      >
-                        {copied ? "✓ Copiado" : "Copiar prompt"}
-                      </button>
-                    </div>
-                    <pre className="whitespace-pre-wrap rounded-2xl border border-border bg-background/60 p-3.5 font-mono text-xs leading-relaxed text-foreground/90">
-                      {activeScript.englishPrompt}
-                    </pre>
-                  </div>
-
-                  <div className="flex flex-wrap justify-end gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={handleGenerate}
-                      className="btn-ghost py-2 text-xs"
-                    >
-                      Gerar outro
-                    </button>
-                    <RaisedButton
-                      size="sm"
-                      onClick={() => handleCopyAndFlow(activeScript.englishPrompt)}
-                    >
-                      Copiar e abrir no Google Flow ↗
-                    </RaisedButton>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+      )}
     </div>
-  );
-}
-
-export default function RoteirosPage() {
-  return (
-    <Suspense fallback={null}>
-      <TrendAiInner />
-    </Suspense>
   );
 }

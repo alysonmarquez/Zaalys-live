@@ -15,7 +15,6 @@ import {
   Wallet,
   ShieldCheck,
   LogOut,
-  ChevronRight,
   Check,
   Copy,
   ShoppingBag,
@@ -34,33 +33,6 @@ type AppShellProps = {
   /** Painel em modo demonstração (sem Supabase, fora de produção). */
   demo?: boolean;
   children: React.ReactNode;
-};
-
-const ROUTE_TITLES: Record<string, string> = {
-  "/painel/catalogo": "Produtos Virais",
-  "/products": "Produtos Virais",
-  "/painel/influencers": "Templates Virais",
-  "/templates": "Templates Virais",
-  "/painel/radar": "Radar de mudanças",
-  "/radar": "Radar de mudanças",
-  "/painel/roteiros": "Trend AI",
-  "/trend-boost": "Trend AI",
-  "/painel/raio-x": "Raio-X de Vídeo",
-  "/ferramentas/raio-x": "Raio-X de Vídeo",
-  "/painel/live": "Assistente de Live",
-  "/ferramentas/live": "Assistente de Live",
-  "/painel/conta": "Meu Perfil",
-  "/profile": "Meu Perfil",
-  "/painel/configuracoes": "Configurações",
-  "/settings": "Configurações",
-  "/painel/indique": "Indique e ganhe",
-  "/indique": "Indique e ganhe",
-  "/painel/depoimento": "Depoimento",
-  "/depoimento": "Depoimento",
-  "/painel/comissoes": "Saque de comissões",
-  "/comissoes": "Saque de comissões",
-  "/painel/afiliado": "Painel do Afiliado",
-  "/admin": "Painel do Afiliado",
 };
 
 type ZaalQA = {
@@ -160,8 +132,6 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
     "Creator";
   const initial = displayName.charAt(0).toUpperCase();
 
-  const isCentral = pathname === "/painel" || pathname === "/";
-  const currentTitle = ROUTE_TITLES[pathname] ?? null;
 
   // Theme state (default light matching zaalys.com studio, toggleable to dark)
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -317,30 +287,9 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
       {/* Top Navbar matching 3jz1kpdvh_75d.js */}
       <header className="sticky top-0 z-30 border-b border-black/[0.06] bg-background/85 backdrop-blur-xl dark:border-white/[0.08]">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:px-6">
-          {/* Left: Brand + Breadcrumb */}
+          {/* Left: só a marca, como no original */}
           <div className="flex min-w-0 items-center gap-1.5">
             <BrandLogo />
-            {!isCentral && currentTitle && (
-              <>
-                <ChevronRight
-                  size={14}
-                  className="shrink-0 text-muted-foreground/60"
-                />
-                <Link
-                  href="/painel"
-                  className="rounded-full bg-muted/70 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  Central
-                </Link>
-                <ChevronRight
-                  size={14}
-                  className="shrink-0 text-muted-foreground/60"
-                />
-                <span className="truncate text-xs font-semibold text-foreground sm:text-sm">
-                  {currentTitle}
-                </span>
-              </>
-            )}
           </div>
 
           {/* Right: 1. Acesso Creator | 2. Bell (9+) | 3. Suporte | 4. Moon/Sun | 5. Avatar Circle */}
@@ -862,12 +811,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
       )}
 
       {/* Menu flutuante e notificação de venda ao vivo (como no original) */}
-      <BottomDock
-        onSupport={() => {
-          setSupportSent(false);
-          setSupportOpen(true);
-        }}
-      />
+      <BottomDock />
       {!zaalDrawerOpen && <LiveSaleToast />}
 
       {/* Floating "Zaal" 3D Mascot Assistant Widget (matching Screenshot 1 & 3jz1kpdvh_75d.js) */}

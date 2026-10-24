@@ -1,3 +1,5 @@
+import { TEMPLATES_ORIGINAL } from "@/lib/templates-original";
+import { CATALOGO_CHANGES, CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
 export type ProofGoal = "details" | "use" | "contents" | "fit";
 
 export const PROOF_GOAL_LABELS: Record<ProofGoal, string> = {
@@ -33,18 +35,19 @@ export type ZaalysProduct = {
   };
 };
 
+// Mesmas abas do original.
 export const ZAALYS_CATEGORIES = [
   { key: null, label: "Top Produtos" },
-  { key: "beleza", label: "Beleza e cuidados" },
-  { key: "cozinha", label: "Casa e cozinha" },
-  { key: "moda", label: "Moda e acessórios" },
-  { key: "eletronicos", label: "Eletrônicos" },
-  { key: "saude", label: "Saúde e bem-estar" },
-  { key: "esporte", label: "Esporte e lazer" },
-  { key: "pets", label: "Pets" },
+  { key: "beleza", label: "Beleza" },
+  { key: "casa", label: "Casa" },
+  { key: "fitness", label: "Fitness" },
+  { key: "moda", label: "Moda" },
+  { key: "pet", label: "Pet" },
+  { key: "saude", label: "Saúde" },
+  { key: "tecnologia", label: "Tecnologia" },
 ];
 
-export const ZAALYS_PRODUCTS: ZaalysProduct[] = [
+const BASE_PRODUCTS: ZaalysProduct[] = [
   {
     id: 101,
     title: "Escova Alisadora 5 em 1 Bivolt com Revestimento Cerâmico e Íons Negativos",
@@ -76,7 +79,7 @@ export const ZAALYS_PRODUCTS: ZaalysProduct[] = [
     id: 102,
     title: "HILEE Garrafa Térmica Inox 591ml com Isolamento a Vácuo e Canudo Antivazamento",
     category: "Casa e cozinha",
-    categoryKey: "cozinha",
+    categoryKey: "casa",
     priceCents: 6490,
     commissionPct: 18,
     earningCents: 1168,
@@ -130,7 +133,7 @@ export const ZAALYS_PRODUCTS: ZaalysProduct[] = [
     id: 104,
     title: "Espeto Giratório Churrasco Flex Elétrico Soft Grill Inox com Cabo Térmico",
     category: "Casa e cozinha",
-    categoryKey: "cozinha",
+    categoryKey: "casa",
     priceCents: 13490,
     commissionPct: 19,
     earningCents: 2563,
@@ -156,7 +159,7 @@ export const ZAALYS_PRODUCTS: ZaalysProduct[] = [
     id: 105,
     title: "Coberdrom Queen Com Sherpa Lã de Carneiro Dupla Face Macio e Quente",
     category: "Casa e cozinha",
-    categoryKey: "cozinha",
+    categoryKey: "casa",
     priceCents: 14990,
     commissionPct: 18,
     earningCents: 2698,
@@ -208,7 +211,7 @@ export const ZAALYS_PRODUCTS: ZaalysProduct[] = [
     id: 107,
     title: "Percarbonato de Sódio 100% Puro Tira Manchas AlvejaPro Até 5kg Original",
     category: "Casa e cozinha",
-    categoryKey: "cozinha",
+    categoryKey: "casa",
     priceCents: 7490,
     commissionPct: 17,
     earningCents: 1273,
@@ -287,7 +290,7 @@ export const ZAALYS_PRODUCTS: ZaalysProduct[] = [
     id: 110,
     title: "Kit 2 Calças Legging Canelada Poliamida Sem Costura Cintura Alta Zero Transparência",
     category: "Esporte e lazer",
-    categoryKey: "esporte",
+    categoryKey: "fitness",
     priceCents: 9490,
     commissionPct: 20,
     earningCents: 1898,
@@ -313,7 +316,7 @@ export const ZAALYS_PRODUCTS: ZaalysProduct[] = [
     id: 111,
     title: "Fonte Bebedouro Inox Silenciosa 2,5L com Tripla Filtragem para Gatos e Cães",
     category: "Pets",
-    categoryKey: "pets",
+    categoryKey: "pet",
     priceCents: 8490,
     commissionPct: 18,
     earningCents: 1528,
@@ -339,7 +342,7 @@ export const ZAALYS_PRODUCTS: ZaalysProduct[] = [
     id: 112,
     title: "Mini Projetor Portátil Smart Wi-Fi 6 Bluetooth 5.0 180° Giratório Full HD 4K Support",
     category: "Eletrônicos",
-    categoryKey: "eletronicos",
+    categoryKey: "tecnologia",
     priceCents: 21990,
     commissionPct: 15,
     earningCents: 3298,
@@ -362,6 +365,9 @@ export const ZAALYS_PRODUCTS: ZaalysProduct[] = [
     ],
   },
 ];
+/** Produtos de exemplo + recorte do catálogo original (133 produtos reais do TikTok Shop). */
+export const ZAALYS_PRODUCTS: ZaalysProduct[] = [...BASE_PRODUCTS, ...CATALOGO_ORIGINAL];
+
 
 export type ZaalysChange = {
   id: string;
@@ -383,7 +389,7 @@ export type ZaalysChange = {
   };
 };
 
-export const ZAALYS_CHANGES: ZaalysChange[] = [
+const BASE_CHANGES: ZaalysChange[] = [
   {
     id: "chg-1",
     field: "commissionPct",
@@ -481,6 +487,9 @@ export const ZAALYS_CHANGES: ZaalysChange[] = [
     earnings: { before: 1348, after: 1149 },
   },
 ];
+/** Mudanças reais do catálogo original primeiro, depois as de exemplo. */
+export const ZAALYS_CHANGES: ZaalysChange[] = [...CATALOGO_CHANGES, ...BASE_CHANGES];
+
 
 export type ZaalysModel = {
   id: string;
@@ -549,112 +558,9 @@ export type ZaalysTemplate = {
   description: string;
 };
 
-export const ZAALYS_TEMPLATES: ZaalysTemplate[] = [
-  {
-    id: "tpl-21-apresentando",
-    title: "Apresentando o produto na mão · Gancho em 3s",
-    format: "presenter",
-    formatLabel: "Apresentando",
-    cast: "model",
-    video: "/media/templates/21_apresentando-produto.mp4",
-    poster: "/media/templates/21_apresentando-produto.jpg",
-    needsModel: true,
-    proofGoals: ["details", "use", "contents"],
-    categories: ["Beleza e cuidados", "Casa e cozinha", "Moda e acessórios"],
-    description: "A criadora segura o produto na altura do rosto logo no primeiro segundo, mostra o rótulo/detalhe e faz a chamada para a sacola.",
-  },
-  {
-    id: "tpl-19-textura",
-    title: "Aplicação na pele · Textura de perto",
-    format: "application",
-    formatLabel: "Aplicação",
-    cast: "model",
-    video: "/media/templates/19_textura-pele.mp4",
-    poster: "/media/templates/19_textura-pele.jpg",
-    needsModel: true,
-    proofGoals: ["use", "details"],
-    categories: ["Beleza e cuidados", "Saúde e bem-estar"],
-    description: "Mostra a textura real do produto na pele com iluminação natural próxima, ideal para séruns, cremes, maquiagem e cuidados pessoais.",
-  },
-  {
-    id: "tpl-23-preparo",
-    title: "Preparo e gole na rotina · Demonstração real",
-    format: "hands-demo",
-    formatLabel: "Demonstração",
-    cast: "model",
-    video: "/media/templates/23_preparo-e-gole.mp4",
-    poster: "/media/templates/23_preparo-e-gole.jpg",
-    needsModel: true,
-    proofGoals: ["use", "contents", "details"],
-    categories: ["Saúde e bem-estar", "Casa e cozinha", "Esporte e lazer"],
-    description: "Cena de rotina preparando e usando o produto na bancada da cozinha com movimento fluido de câmera.",
-  },
-  {
-    id: "tpl-24-setup",
-    title: "Setup e bancada · Só as mãos em ação",
-    format: "unboxing",
-    formatLabel: "Unboxing",
-    cast: "hands",
-    video: "/media/templates/24_setup-mesa.mp4",
-    poster: "/media/templates/24_setup-mesa.jpg",
-    needsModel: false,
-    proofGoals: ["details", "contents", "use"],
-    categories: ["Eletrônicos", "Casa e cozinha", "Moda e acessórios"],
-    description: "Foco total no produto sobre a mesa sem precisar escolher modelo. Ideal para mostrar acabamento, encaixe e o que vem na caixa.",
-  },
-  {
-    id: "tpl-25-pet",
-    title: "Pet experimentando · Reação espontânea",
-    format: "pet",
-    formatLabel: "Pet",
-    cast: "hands",
-    video: "/media/templates/25_pet-experimentando.mp4",
-    poster: "/media/templates/25_pet-experimentando.jpg",
-    needsModel: false,
-    proofGoals: ["use", "details"],
-    categories: ["Pets", "Casa e cozinha"],
-    description: "Cena autêntica com pet interagindo com o produto no ambiente de casa — altíssima retenção nos primeiros 3 segundos.",
-  },
-  {
-    id: "tpl-tryon-casual",
-    title: "Provando no espelho · Caimento e tecido",
-    format: "try-on",
-    formatLabel: "Provando",
-    cast: "model",
-    video: "/media/templates/21_apresentando-produto.mp4",
-    poster: "/media/models/woman-casual.webp",
-    needsModel: true,
-    proofGoals: ["fit", "details"],
-    categories: ["Moda e acessórios", "Esporte e lazer"],
-    description: "Mostra como a peça veste no corpo em movimento natural, destacando tecido, costura e numeração.",
-  },
-  {
-    id: "tpl-presenter-smart",
-    title: "Review direto de estúdio · Ponto forte e preço",
-    format: "presenter",
-    formatLabel: "Apresentando",
-    cast: "model",
-    video: "/media/templates/24_setup-mesa.mp4",
-    poster: "/media/models/man-smart.webp",
-    needsModel: true,
-    proofGoals: ["details", "contents", "use"],
-    categories: ["Eletrônicos", "Casa e cozinha", "Esporte e lazer"],
-    description: "Apresentador mostra o produto com autoridade, responde à principal objeção de compra e aponta para o link.",
-  },
-  {
-    id: "tpl-pov-bancada",
-    title: "POV Primeira Pessoa · Testando na prática",
-    format: "pov",
-    formatLabel: "POV",
-    cast: "hands",
-    video: "/media/templates/23_preparo-e-gole.mp4",
-    poster: "/media/templates/23_preparo-e-gole.jpg",
-    needsModel: false,
-    proofGoals: ["use", "contents"],
-    categories: ["Casa e cozinha", "Beleza e cuidados", "Eletrônicos"],
-    description: "Ângulo em primeira pessoa tirando da caixa e colocando para funcionar imediatamente.",
-  },
-];
+/** Os 26 templates do original (ver templates-original.ts). */
+export const ZAALYS_TEMPLATES: ZaalysTemplate[] = TEMPLATES_ORIGINAL;
+
 
 export type FastMossVideo = {
   id: string;

@@ -1,396 +1,503 @@
 "use client";
 
-import React, { useState } from "react";
-import { RaisedButton, Segmented, cn } from "@/components/brand";
-import { ZAALYS_PRODUCTS, ZAALYS_TEMPLATES, formatBRL } from "@/lib/zaalys-data";
-import { LiveAssistant } from "./live-assistant";
+import Link from "next/link";
+import React, { useEffect, useMemo, useState } from "react";
+import { Laptop, Search, Smartphone, Tablet, Trash2, Wand2 } from "lucide-react";
+import { RaisedButton, cn } from "@/components/brand";
+import { ZAALYS_PRODUCTS, formatBRL, type ZaalysProduct } from "@/lib/zaalys-data";
+import { useIsDemo } from "@/lib/use-demo";
+import { LiveTools } from "./live-tools";
 
-const DEFAULT_AUTO_COMMENTS = [
-  "O link com cupom tá fixado na sacola laranja aqui embaixo 👇",
-  "Envio rápido direto do Brasil com garantia do TikTok Shop!",
-  "Qualquer dúvida sobre tamanho ou voltagem, manda aqui no chat!",
-  "Últimas unidades do lote promocional na sacolinha #1 🔥",
+// Assistente de Live no formato do original: 4 etapas, 6 passos, e as preparações salvas.
+
+type Prep = { id: string; productId: number; title: string; clips: number; comments: number; createdAt: string; step: number };
+type Device = "desktop" | "ios" | "android";
+
+const STORAGE = "zaalys_live_preps";
+const DEVICE_STORAGE = "zaalys_live_device";
+
+const STAGES = ["Produto", "Aparelho", "Vídeos", "Abrir no TikTok"];
+// Cada passo pertence a uma etapa (índice em STAGES).
+const STEPS: { stage: number; title: string }[] = [
+  { stage: 1, title: "Onde você vai fazer a live?" },
+  { stage: 1, title: "Adicione a extensão ao Chrome" },
+  { stage: 1, title: "Sua chave, se o painel pedir" },
+  { stage: 2, title: "Quais vídeos você vai usar?" },
+  { stage: 3, title: "Abra a live no TikTok Shop" },
+  { stage: 3, title: "Confira a prévia e inicie pelo painel" },
 ];
 
+const DEVICES: { key: Device; label: string; browser: string; icon: React.ReactNode }[] = [
+  { key: "desktop", label: "Computador", browser: "Google Chrome", icon: <Laptop size={18} /> },
+  { key: "ios", label: "iPhone ou iPad", browser: "navegador Orion", icon: <Tablet size={18} /> },
+  { key: "android", label: "Android", browser: "navegador Quetta", icon: <Smartphone size={18} /> },
+];
+
+const readPreps = (): Prep[] => {
+  try {
+    return JSON.parse(window.localStorage.getItem(STORAGE) || "[]") as Prep[];
+  } catch {
+    return [];
+  }
+};
+
 export default function LivePage() {
-  const [mode, setMode] = useState<"infinite" | "presenter">("infinite");
-  const [selectedProdId, setSelectedProdId] = useState<number>(ZAALYS_PRODUCTS[0]!.id);
-  const [comments, setComments] = useState<string[]>(DEFAULT_AUTO_COMMENTS);
-  const [newComment, setNewComment] = useState("");
-  const [voiceActive, setVoiceActive] = useState(true);
-  const [chatAutoReply, setChatAutoReply] = useState(true);
-  const [pinProduct, setPinProduct] = useState(true);
-  const [rhythm, setRhythm] = useState<"calm" | "normal" | "intense">("normal");
-  const [obsOpen, setObsOpen] = useState(false);
-  const [liveRunning, setLiveRunning] = useState(false);
+  const demo = useIsDemo();
+  const [preps, setPreps] = useState<Prep[]>([]);
+  const [current, setCurrent] = useState<Prep | null>(null);
+  const [query, setQuery] = useState("");
+  const [product, setProduct] = useState<ZaalysProduct | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [device, setDevice] = useState<Device>("desktop");
+  const [videoSource, setVideoSource] = useState<"mine" | "flow">("mine");
+  const [showTools, setShowTools] = useState(false);
+  const [showObs, setShowObs] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const product = ZAALYS_PRODUCTS.find((p) => p.id === selectedProdId) ?? ZAALYS_PRODUCTS[0]!;
+  useEffect(() => {
+    setPreps(readPreps());
+    try {
+      const d = window.localStorage.getItem(DEVICE_STORAGE) as Device | null;
+      if (d) setDevice(d);
+      else if (/iPhone|iPad/i.test(navigator.userAgent)) setDevice("ios");
+      else if (/Android/i.test(navigator.userAgent)) setDevice("android");
+    } catch {}
+  }, []);
 
-  function handleAddComment(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = newComment.trim();
-    if (!trimmed || trimmed.length > 100) return;
-    setComments((prev) => [...prev, trimmed]);
-    setNewComment("");
+  const save = (list: Prep[]) => {
+    setPreps(list);
+    try {
+      window.localStorage.setItem(STORAGE, JSON.stringify(list.slice(0, 20)));
+    } catch {}
+  };
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return ZAALYS_PRODUCTS.filter((p) => p.title.toLowerCase().includes(q) || p.affiliateUrl.includes(q)).slice(0, 8);
+  }, [query]);
+
+  async function prepare() {
+    if (!product) return;
+    setError(null);
+    setPreparing(true);
+    try {
+      let comments = 24;
+      if (!demo) {
+        // Gera o roteiro da live com a IA (o mesmo usado pelo modo "Eu apresento").
+        const res = await fetch("/api/ai/live-script", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            products: [{ name: product.title.slice(0, 200), price: formatBRL(product.priceCents), details: product.facts.join("; ") }],
+            minutesPerProduct: 8,
+          }),
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(data?.error || "Não foi possível preparar a live agora.");
+        comments = (data?.script?.products?.[0]?.faq?.length ?? 4) * 6;
+      } else {
+        await new Promise((r) => setTimeout(r, 900));
+      }
+      const prep: Prep = {
+        id: crypto.randomUUID(),
+        productId: product.id,
+        title: product.title,
+        clips: 6,
+        comments,
+        createdAt: new Date().toISOString(),
+        step: 0,
+      };
+      save([prep, ...preps]);
+      setCurrent(prep);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setPreparing(false);
+    }
   }
 
-  function handleRemoveComment(idx: number) {
-    setComments((prev) => prev.filter((_, i) => i !== idx));
+  function goTo(step: number) {
+    if (!current) return;
+    const next = { ...current, step };
+    setCurrent(next);
+    save(preps.map((p) => (p.id === next.id ? next : p)));
   }
+
+  const header = (
+    <>
+      <Link href="/painel" className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+        Voltar à Central
+      </Link>
+      <header>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Assistente de Live</h1>
+        <p className="mt-2 max-w-2xl text-muted-foreground">
+          Live infinita: vídeos do produto em ordem aleatória, narração, comentários e produto fixado no automático.
+        </p>
+      </header>
+    </>
+  );
+
+  const extras = (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setShowTools((v) => !v)}
+        className="text-sm font-semibold text-muted-foreground underline underline-offset-4 hover:text-foreground cursor-pointer"
+      >
+        {showTools ? "Fechar comentários automáticos" : "Editar comentários automáticos"}
+      </button>
+      <div>
+        <button
+          type="button"
+          onClick={() => setShowObs((v) => !v)}
+          className="text-sm font-semibold text-muted-foreground underline underline-offset-4 hover:text-foreground cursor-pointer"
+        >
+          Transmitir pelo OBS ou LIVE Studio
+        </button>
+        <p className="text-xs text-muted-foreground">
+          Só se o seu computador não transmite pelo navegador. Por esse caminho a extensão não comenta, não fixa o produto e não
+          bloqueia ninguém.
+        </p>
+        {showObs && (
+          <p className="mt-2 rounded-2xl bg-muted/50 p-3 text-xs text-muted-foreground">
+            No OBS, adicione os clipes como fonte de mídia em loop e use a chave de transmissão do LIVE Studio. Comentários,
+            produto fixado e respostas ficam por sua conta.
+          </p>
+        )}
+      </div>
+      {showTools && (
+        <div className="pt-4">
+          <LiveTools />
+        </div>
+      )}
+    </div>
+  );
+
+  // Etapa 1: produto
+  if (!current) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <section className="space-y-4">
+          <div>
+            <h2 className="font-display text-xl font-bold">Do produto à sua LIVE</h2>
+            <p className="text-sm text-muted-foreground">
+              Um passo por vez. A configuração do aparelho fica salva neste navegador para as próximas transmissões.
+            </p>
+          </div>
+          <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {STAGES.map((s, i) => (
+              <li key={s} className="flex items-center gap-2 text-sm">
+                <span
+                  className={cn(
+                    "grid size-6 place-items-center rounded-full text-xs font-bold",
+                    i === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {i + 1}
+                </span>
+                <span className={i === 0 ? "font-semibold" : "text-muted-foreground"}>{s}</span>
+              </li>
+            ))}
+          </ol>
+
+          {preps.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Continuar uma preparação</p>
+              {preps.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setCurrent(p)}
+                  className="flex w-full flex-col rounded-2xl border border-border bg-card/70 p-3 text-left hover:border-primary/40 cursor-pointer"
+                >
+                  <span className="line-clamp-1 text-sm font-semibold">{p.title}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Roteiro com {p.clips} clipes · {p.comments} comentários · {new Date(p.createdAt).toLocaleDateString("pt-BR")}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="apple-card space-y-3 p-5">
+            <div>
+              <h3 className="font-display text-base font-bold">Escolha o produto da sua LIVE</h3>
+              <p className="text-xs text-muted-foreground">
+                Vamos preparar o roteiro e os comentários deste produto. Depois, você escolhe o aparelho e os vídeos. A
+                transmissão só começa quando você iniciar pelo painel no TikTok.
+              </p>
+            </div>
+            <div className="relative">
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setProduct(null);
+                }}
+                placeholder="Busque pelo nome ou cole o link do TikTok Shop"
+                className="field pl-9 text-sm"
+              />
+            </div>
+            {results.length > 0 && !product && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {results.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setProduct(p);
+                      setQuery(p.title);
+                    }}
+                    className="flex items-center gap-3 rounded-2xl border border-border p-2.5 text-left hover:border-primary/40 cursor-pointer"
+                  >
+                    <img src={p.imageUrl} alt="" className="size-10 shrink-0 rounded-xl object-cover" />
+                    <span className="line-clamp-2 text-xs font-semibold">{p.title}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {error && (
+              <p role="alert" className="text-sm font-medium text-destructive">
+                {error}
+              </p>
+            )}
+            <RaisedButton onClick={prepare} disabled={!product || preparing}>
+              <Wand2 size={16} /> {preparing ? "Preparando…" : "Preparar minha LIVE"}
+            </RaisedButton>
+            {!product && <p className="text-xs text-muted-foreground">Escolha um produto acima para criar a live.</p>}
+          </div>
+        </section>
+        {extras}
+      </div>
+    );
+  }
+
+  // Etapas 2 a 4
+  const step = STEPS[current.step]!;
+  const stageIndex = step.stage;
+  const inStage = STEPS.filter((s) => s.stage === stageIndex);
+  const posInStage = inStage.indexOf(step) + 1;
+  const isLast = current.step === STEPS.length - 1;
+  const dev = DEVICES.find((d) => d.key === device)!;
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+    <div className="space-y-6">
+      {header}
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Assistente de Live
-          </h1>
-          <p className="mt-1.5 max-w-2xl text-muted-foreground">
-            {mode === "infinite"
-              ? "A live infinita roda sozinha: vídeos do produto, narração, comentários e produto fixado."
-              : "Gere o roteiro de vendas ao vivo e abra o teleprompter em tela cheia."}
+          <p className="line-clamp-1 font-semibold">{current.title}</p>
+          <p className="text-xs text-muted-foreground">
+            Roteiro com {current.clips} clipes · {current.comments} comentários
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            save(preps.filter((p) => p.id !== current.id));
+            setCurrent(null);
+          }}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-destructive cursor-pointer"
+        >
+          <Trash2 size={13} /> Apagar
+        </button>
+      </div>
+
+      <section className="apple-card space-y-4 p-5">
+        <div>
+          <h2 className="font-display text-xl font-bold">Prepare sua LIVE</h2>
+          <p className="text-xs text-muted-foreground">
+            Etapa {stageIndex + 1} de 4 · {STAGES[stageIndex]}. A transmissão começa no TikTok.
           </p>
         </div>
 
-        <Segmented
-          label="Modo da live"
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: "infinite", label: "Live Infinita" },
-            { value: "presenter", label: "Eu Apresento" },
-          ]}
-        />
-      </header>
+        <ol className="flex flex-wrap gap-1.5">
+          {STEPS.map((s, i) => (
+            <li key={s.title}>
+              <button
+                type="button"
+                onClick={() => goTo(i)}
+                className={cn(
+                  "rounded-full px-3 py-1 text-[11px] font-semibold cursor-pointer",
+                  i === current.step ? "bg-primary text-primary-foreground" : i < current.step ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground",
+                )}
+              >
+                {i + 1} · {s.title}
+              </button>
+            </li>
+          ))}
+        </ol>
 
-      {mode === "presenter" ? (
-        <LiveAssistant saved={[]} />
-      ) : (
-        <div className="space-y-6">
-          {/* Zaalys Live Extension Bar */}
-          <section className="apple-card p-5 sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-start gap-3.5">
-                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/15 text-primary">
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
-                  </svg>
-                </span>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-display text-lg font-bold">Zaalys Live · Extensão Oficial</h2>
-                    <span className="rounded-full bg-primary/15 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-primary">
-                      v3.17.0
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Roda no Chrome no computador ou no celular (iPhone/iPad via Orion Browser e
-                    Android via Quetta Browser).
-                  </p>
-                </div>
-              </div>
+        <div className="space-y-3">
+          <h3 className="font-display text-lg font-bold">{step.title}</h3>
+          <p className="text-[11px] font-semibold text-muted-foreground">
+            {posInStage} de {inStage.length} nesta etapa ·{" "}
+            {stageIndex === 1 ? "configure uma vez por aparelho" : stageIndex === 2 ? "prepare uma vez por produto" : "confira a cada transmissão"}
+          </p>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <a
-                  href="/downloads/zaalys-live.zip"
-                  download
-                  className="btn-ghost py-2 text-xs"
-                >
-                  ⬇ Baixar extensão (.zip)
-                </a>
-                <a
-                  href="/downloads/zaalys-live.crx"
-                  download
-                  className="btn-primary py-2 text-xs"
-                >
-                  ⬇ Baixar zaalys-live.crx
-                </a>
-              </div>
-            </div>
-
-            {/* Mobile Browsers Compatibility Row */}
-            <div className="mt-5 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2">
-              <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/50 p-3">
-                <img
-                  src="/media/browsers/orion.webp"
-                  alt="Orion Browser"
-                  className="size-10 shrink-0 rounded-xl object-cover"
-                />
-                <div className="min-w-0 flex-1 text-xs">
-                  <p className="font-semibold text-foreground">iPhone & iPad · Orion Browser</p>
-                  <p className="text-muted-foreground">
-                    Suporte nativo a extensões do Chrome com modo de compatibilidade.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/50 p-3">
-                <img
-                  src="/media/browsers/quetta.webp"
-                  alt="Quetta Browser"
-                  className="size-10 shrink-0 rounded-xl object-cover"
-                />
-                <div className="min-w-0 flex-1 text-xs">
-                  <p className="font-semibold text-foreground">Android · Quetta Browser</p>
-                  <p className="text-muted-foreground">
-                    Instale o pacote .crx/.zip e abra zaalys.com/ferramentas/live.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Clipes desta saída & Voz e chat na saída */}
-          <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
-            <section className="apple-card space-y-4 p-5 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 className="font-display text-lg font-bold">Clipes desta saída</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Os vídeos rodam em loop embaralhado (ClipShuffler) sem repetição seguida.
-                  </p>
-                </div>
-                <RaisedButton
-                  size="sm"
-                  onClick={() => setLiveRunning((r) => !r)}
-                  className={cn(liveRunning && "bg-destructive text-white")}
-                >
-                  {liveRunning ? "■ Parar transmissão demo" : "▶ Iniciar saída da live"}
-                </RaisedButton>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Produto fixado na sacola #1
-                </label>
-                <select
-                  value={selectedProdId}
-                  onChange={(e) => setSelectedProdId(Number(e.target.value))}
-                  className="field text-sm"
-                >
-                  {ZAALYS_PRODUCTS.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.title} ({formatBRL(p.priceCents)} · {p.commissionPct}%)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Video Loop Preview */}
-              <div className="grid grid-cols-4 gap-2">
-                {ZAALYS_TEMPLATES.map((tpl, i) => (
-                  <div
-                    key={tpl.id}
+          {current.step === 0 && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Este é o aparelho que vai transmitir, mesmo que você esteja lendo em outro. Instale a extensão nele uma vez;
+                depois, você só confere a configuração.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {DEVICES.map((d) => (
+                  <button
+                    key={d.key}
+                    type="button"
+                    onClick={() => setDevice(d.key)}
                     className={cn(
-                      "relative aspect-[9/16] overflow-hidden rounded-2xl border bg-black",
-                      i === 0 ? "border-primary ring-2 ring-primary/40" : "border-white/10",
+                      "flex items-center gap-3 rounded-2xl border p-3 text-left cursor-pointer",
+                      device === d.key ? "border-primary bg-primary/10" : "border-border hover:border-primary/40",
                     )}
                   >
-                    <video
-                      src={tpl.video}
-                      poster={tpl.poster}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      className="size-full object-cover"
-                    />
-                    <span className="absolute left-1.5 top-1.5 rounded-md bg-black/65 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-white">
-                      Clipe #{i + 1}
+                    {d.icon}
+                    <span>
+                      <span className="block text-sm font-semibold">{d.label}</span>
+                      <span className="text-[11px] text-muted-foreground">{d.browser}</span>
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
-            </section>
+              <p className="text-xs text-muted-foreground">Sugerimos o aparelho em que você está. Confirme abaixo ou escolha outro.</p>
+            </>
+          )}
 
-            {/* Voz e chat na saída */}
-            <section className="apple-card space-y-4 p-5 sm:p-6">
-              <div>
-                <h3 className="font-display text-lg font-bold">Voz e chat na saída</h3>
-                <p className="text-xs text-muted-foreground">
-                  Narração por IA e respostas automáticas para segurar audiência e conversão.
-                </p>
-              </div>
-
-              <div className="space-y-2.5 text-sm">
-                <label className="flex items-center justify-between rounded-2xl border border-border bg-background/50 p-3.5 cursor-pointer">
-                  <div>
-                    <p className="font-semibold">Narração contínua por IA</p>
-                    <p className="text-xs text-muted-foreground">
-                      Alterna benefícios, prova social e chamada para a sacola.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={voiceActive}
-                    onChange={(e) => setVoiceActive(e.target.checked)}
-                    className="size-4 accent-primary"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between rounded-2xl border border-border bg-background/50 p-3.5 cursor-pointer">
-                  <div>
-                    <p className="font-semibold">Responder perguntas do chat por voz</p>
-                    <p className="text-xs text-muted-foreground">
-                      Lê dúvidas sobre preço, frete, voltagem e garantia em tempo real.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={chatAutoReply}
-                    onChange={(e) => setChatAutoReply(e.target.checked)}
-                    className="size-4 accent-primary"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between rounded-2xl border border-border bg-background/50 p-3.5 cursor-pointer">
-                  <div>
-                    <p className="font-semibold">Fixar produto automaticamente</p>
-                    <p className="text-xs text-muted-foreground">
-                      Renova o destaque do item #1 na tela a cada 45 segundos.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={pinProduct}
-                    onChange={(e) => setPinProduct(e.target.checked)}
-                    className="size-4 accent-primary"
-                  />
-                </label>
-              </div>
-
-              <div>
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Ritmo de comentários no chat
-                </span>
-                <Segmented
-                  label="Ritmo de comentários"
-                  size="sm"
-                  value={rhythm}
-                  onChange={setRhythm}
-                  options={[
-                    { value: "calm", label: "Calmo (3–5 min)" },
-                    { value: "normal", label: "Normal (1–2 min)" },
-                    { value: "intense", label: "Intenso (30–60s)" },
-                  ]}
-                />
-              </div>
-
-              {liveRunning && (
-                <div className="zd zd-live rounded-2xl border border-primary/30 bg-primary/[0.06] p-3.5">
-                  <div className="zd-eyebrow">
-                    <span className="zd-dot" />
-                    <span>No ar · {product.title.slice(0, 34)}…</span>
-                  </div>
-                  <div className="mt-2 space-y-1 text-xs">
-                    <p className="zd-msg">
-                      <span className="zd-dim">@mari.c:</span>{" "}
-                      <span>funciona em 220v?</span>
-                    </p>
-                    <p className="zd-msg">
-                      <span className="zd-acc font-semibold">Voz IA:</span>{" "}
-                      <span>É bivolt automático! Pode ligar no 110v ou 220v direto.</span>
-                    </p>
-                  </div>
-                </div>
-              )}
-            </section>
-          </div>
-
-          {/* Comentários automáticos (Exact 14vn4n-oycf8e.js component) */}
-          <section className="apple-card space-y-3 p-5 sm:p-6">
-            <div>
-              <h3 className="font-semibold">Comentários automáticos</h3>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                A extensão posta um por vez, em ordem aleatória, no ritmo escolhido no painel
-                (Normal, o padrão: a cada 1 a 2 min). Até 100 caracteres cada.
+          {current.step === 1 && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {device === "desktop"
+                  ? "Na Chrome Web Store, clique em Usar no Chrome e depois em Adicionar extensão. Ela se atualiza sozinha."
+                  : `No ${dev.browser}, abra a página da extensão Zaalys Live e toque em Adicionar.`}
               </p>
-            </div>
-
-            <ul className="flex flex-wrap gap-2">
-              {comments.map((c, idx) => (
-                <li
-                  key={`${c}-${idx}`}
-                  className="flex max-w-full items-center gap-1 rounded-full border border-border/70 bg-background/60 py-1 pl-3 pr-1 text-sm"
+              <p className="text-xs text-muted-foreground">
+                Sem acesso à loja? Baixe o .zip e carregue a pasta em chrome://extensions, com o Modo do desenvolvedor ligado.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="/downloads/zaalys-live.zip"
+                  className="inline-flex h-9 items-center rounded-xl border border-border px-3 text-xs font-semibold hover:bg-muted"
+                  download
                 >
-                  <span className="truncate">{c}</span>
+                  Baixar extensão (.zip)
+                </a>
+              </div>
+            </>
+          )}
+
+          {current.step === 2 && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Se o painel do TikTok pedir a chave, copie em Conta e ative por lá. Copiar a chave não ativa a extensão.
+              </p>
+              <Link href="/painel/conta" className="text-sm font-semibold text-primary underline underline-offset-4">
+                Ver minha chave em Conta
+              </Link>
+            </>
+          )}
+
+          {current.step === 3 && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Escolha uma opção. Você seleciona os arquivos no painel Zaalys, dentro do TikTok.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {[
+                  { key: "mine" as const, label: "Usar meus vídeos", desc: "Tenha os MP4 deste produto no aparelho que vai transmitir." },
+                  { key: "flow" as const, label: "Gerar no Google Flow", desc: "Vamos mostrar como baixar a foto e gerar os clipes, um por vez." },
+                ].map((o) => (
                   <button
+                    key={o.key}
                     type="button"
-                    aria-label={`Remover "${c}"`}
-                    onClick={() => handleRemoveComment(idx)}
-                    className="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+                    onClick={() => setVideoSource(o.key)}
+                    className={cn(
+                      "rounded-2xl border p-3 text-left cursor-pointer",
+                      videoSource === o.key ? "border-primary bg-primary/10" : "border-border hover:border-primary/40",
+                    )}
                   >
-                    ✕
+                    <span className="block text-sm font-semibold">{o.label}</span>
+                    <span className="text-[11px] text-muted-foreground">{o.desc}</span>
                   </button>
-                </li>
-              ))}
-            </ul>
+                ))}
+              </div>
+              {videoSource === "flow" && (
+                <Link href="/painel/influencers" className="text-sm font-semibold text-primary underline underline-offset-4">
+                  Abrir os Templates para gerar os clipes
+                </Link>
+              )}
+            </>
+          )}
 
-            <form onSubmit={handleAddComment} className="flex gap-2">
-              <input
-                value={newComment}
-                maxLength={100}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Adicionar comentário"
-                aria-label="Novo comentário automático"
-                className="min-h-10 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              <button
-                type="submit"
-                disabled={!newComment.trim()}
-                className="btn-ghost py-2 text-xs disabled:opacity-50"
+          {current.step === 4 && (
+            <>
+              <p className="text-sm text-muted-foreground">O painel Zaalys Live aparece no canto da página do TikTok.</p>
+              <a
+                href="https://shop.tiktok.com/streamer/live"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-9 items-center rounded-xl border border-border px-3 text-xs font-semibold hover:bg-muted"
               >
-                + Adicionar
-              </button>
-            </form>
-            <p className="text-right text-xs tabular-nums text-muted-foreground">
-              {newComment.length}/100
-            </p>
-          </section>
+                Abrir o TikTok Shop
+              </a>
+            </>
+          )}
 
-          {/* OBS Fallback Accordion (Exact 14vn4n-oycf8e.js section) */}
-          <section className="apple-card overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setObsOpen((o) => !o)}
-              className="flex w-full items-center justify-between gap-3 p-5 text-left cursor-pointer"
-            >
-              <div>
-                <h3 className="font-semibold">Primeiro, o OBS (Opcional)</h3>
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  Só se o seu computador não transmite pelo navegador. Por esse caminho a extensão
-                  não comenta, não fixa o produto e não bloqueia ninguém.
-                </p>
-              </div>
-              <span className={cn("text-muted-foreground transition-transform", obsOpen && "rotate-180")}>
-                ▼
-              </span>
-            </button>
-            {obsOpen && (
-              <div className="border-t border-border px-5 pb-5 pt-4 text-xs text-muted-foreground space-y-2">
-                <p>
-                  1. Baixe o OBS Studio na página oficial (obsproject.com) ou via Flatpak no Linux.
-                </p>
-                <p>
-                  2. Adicione uma fonte de <strong>Navegador (Browser Source)</strong> em 1080x1920
-                  (9:16) com a URL da sua saída Zaalys Live.
-                </p>
-                <p>
-                  3. Cole a chave de transmissão do TikTok Live Studio e inicie a transmissão.
-                </p>
-              </div>
-            )}
-          </section>
+          {current.step === 5 && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Confira vídeos, câmera, som e produto. Quando os itens do painel estiverem prontos, clique em Ligar live
+                automática. Confirme no TikTok se a transmissão começou.
+              </p>
+              <ol className="space-y-1.5 text-sm">
+                <li>1. Clipes da live → Escolher → selecione os MP4 que você baixou.</li>
+                <li>2. Live do Zaalys → escolha “{current.title.slice(0, 60)}”.</li>
+                <li>3. Câmera: no TikTok, escolha “Zaalys Live (vídeo)” e, no microfone, “Zaalys Live (áudio)”.</li>
+                <li>4. Produto no carrinho → Copiar link → cole em Adicionar produtos.</li>
+              </ol>
+              <button
+                type="button"
+                onClick={() => {
+                  const p = ZAALYS_PRODUCTS.find((x) => x.id === current.productId);
+                  if (p) navigator.clipboard?.writeText(p.affiliateUrl).catch(() => {});
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="inline-flex h-9 items-center rounded-xl border border-border px-3 text-xs font-semibold hover:bg-muted cursor-pointer"
+              >
+                {copied ? "Copiado" : "Copiar link do produto"}
+              </button>
+            </>
+          )}
         </div>
-      )}
+
+        <div className="flex gap-2 border-t border-border pt-4">
+          <button
+            type="button"
+            onClick={() => (current.step === 0 ? setCurrent(null) : goTo(current.step - 1))}
+            className="h-10 rounded-xl border border-border px-4 text-sm font-semibold hover:bg-muted cursor-pointer"
+          >
+            Voltar
+          </button>
+          <RaisedButton
+            onClick={() => {
+              if (current.step === 0) {
+                try {
+                  window.localStorage.setItem(DEVICE_STORAGE, device);
+                } catch {}
+              }
+              if (isLast) setCurrent(null);
+              else goTo(current.step + 1);
+            }}
+          >
+            {current.step === 0 ? "Confirmar aparelho" : current.step === 3 ? "Continuar com estes vídeos" : isLast ? "Concluir passo a passo" : "Já fiz, continuar"}
+          </RaisedButton>
+        </div>
+      </section>
+      {extras}
     </div>
   );
 }

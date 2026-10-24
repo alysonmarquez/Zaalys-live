@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import React, { useState } from "react";
+import { CATALOGO_DESTAQUES } from "@/lib/catalogo-original";
 import { Segmented, cn } from "@/components/brand";
 import {
   PROOF_GOAL_LABELS,
@@ -14,7 +15,8 @@ export default function RadarPage() {
   const [tone, setTone] = useState<"all" | "good" | "bad">("all");
 
   const filtered = ZAALYS_CHANGES.filter((c) => (tone === "all" ? true : c.tone === tone));
-  const recommended = ZAALYS_PRODUCTS.slice(0, 3);
+  // Como no original: os produtos com mais vendas registradas.
+  const recommended = CATALOGO_DESTAQUES.slice(0, 3);
 
   return (
     <div className="space-y-6">

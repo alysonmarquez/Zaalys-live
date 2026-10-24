@@ -197,3 +197,44 @@ Devolva um JSON com "versions": exatamente 3 versões, cada uma com um ângulo d
     maxTokens: 3000,
   };
 }
+
+// ---------- Trend AI (vídeos virais com personagem) ----------
+
+export const TrendScripts = z.object({
+  scripts: z
+    .array(
+      z.object({
+        title: z.string(),
+        hook: z.string(),
+        lines: z.array(z.string()).min(1).max(4),
+        cta: z.string(),
+        videoPrompt: z.string(),
+      }),
+    )
+    .min(3)
+    .max(3),
+});
+export type TrendScripts = z.infer<typeof TrendScripts>;
+
+export function trendScriptPrompt(input: {
+  format: { title: string; desc: string };
+  character: string;
+  tone: { label: string; desc: string };
+  cta: string;
+}) {
+  return {
+    system: `${VOICE} Você escreve roteiros de 8 segundos para vídeos virais gerados por IA (Google Flow, Veo), feitos para retenção, comentário e compartilhamento.`,
+    prompt: `Formato: ${input.format.title} — ${input.format.desc}
+Personagem: ${input.character}
+Tom: ${input.tone.label} (${input.tone.desc})
+Chamada no final (fala exata ou bem próxima): "${input.cta}"
+
+Devolva um JSON com "scripts": exatamente 3 roteiros diferentes, cada um com:
+- title: nome curto do roteiro
+- hook: primeira fala, que prende nos 2 primeiros segundos
+- lines: 1 a 3 falas seguintes do personagem, em PT-BR, cabendo em 8 segundos no total
+- cta: a chamada final
+- videoPrompt: prompt único em inglês para gerar o vídeo vertical 9:16 de 8 segundos, descrevendo o personagem (use a imagem de referência enviada), cenário, luz, câmera e as falas em português entre aspas simples. Comece com "Use the attached character image as reference."`,
+    maxTokens: 2500,
+  };
+}
