@@ -12,6 +12,7 @@ import {
   type ZaalysTemplate,
   formatBRL,
 } from "@/lib/zaalys-data";
+import { useIsDemo } from "@/lib/use-demo";
 
 const FORMATS = [
   { key: "todos", label: "Todos" },
@@ -57,9 +58,44 @@ function TemplatesInner() {
     ZAALYS_MODELS.find((m) => m.id === selectedModelId) ?? ZAALYS_MODELS[0]!;
 
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const demo = useIsDemo();
+
+  // Modo demonstração: mesmo prompt de exemplo do sistema original.
+  function demoGenerate() {
+    if (!activeTemplate) return;
+    setGenerating(true);
+    setGeneratedPrompt(null);
+    setTimeout(() => {
+      const modelDesc = activeTemplate.needsModel
+        ? `Creator: ${selectedModel.name} (${selectedModel.appearance}).`
+        : `Hands-only POV shot on a clean sunlit countertop, no face visible.`;
+
+      const prompt = `[PLANO DE CENA · 8 SEGUNDOS · ${activeTemplate.formatLabel.toUpperCase()}]
+Pergunta respondida: ${PROOF_GOAL_LABELS[selectedGoal]}
+Produto: ${selectedProduct.title}
+
+0.0s – 2.0s (Gancho visual):
+${modelDesc} Segura o produto "${selectedProduct.title}" próximo à lente em 9:16 vertical, luz natural suave de janela, foco nítido na textura real do item.
+Fala em português brasileiro natural: "Se você estava procurando saber se vale a pena, olha esse detalhe de perto."
+
+2.0s – 6.0s (Prova · ${PROOF_GOAL_LABELS[selectedGoal]}):
+Demonstração contínua mostrando: ${selectedProduct.facts[0]}. Movimento de câmera orgânico estilo iPhone 16 Pro UGC, sem cortes bruscos.
+
+6.0s – 8.0s (Chamada para a sacola):
+Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do TikTok Shop): "Deixei o link com desconto aqui no carrinho laranja."`;
+
+      setGeneratedPrompt(prompt);
+      setGenerating(false);
+    }, 900);
+  }
+
 
   async function handleGenerate() {
     if (!activeTemplate) return;
+    if (demo) {
+      demoGenerate();
+      return;
+    }
     setGenerating(true);
     setGeneratedPrompt(null);
     setGenerateError(null);

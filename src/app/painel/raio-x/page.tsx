@@ -9,6 +9,7 @@ import {
   compactNumber,
   formatBRL,
 } from "@/lib/zaalys-data";
+import { useIsDemo } from "@/lib/use-demo";
 import type { VideoAnalysis, VideoRemake } from "@/lib/ai/prompts";
 
 /** Vídeo da galeria de exemplos ou analisado de verdade pela IA (sem números de venda). */
@@ -20,7 +21,8 @@ export default function RaioXPage() {
   const [category, setCategory] = useState<string>("all");
   const [sort, setSort] = useState<"sales" | "views">("sales");
   const [selectedVideo, setSelectedVideo] = useState<RaioXVideo | null>(null);
-  const [savedVideos, setSavedVideos] = useState<RaioXVideo[]>([]);
+  const demo = useIsDemo();
+  const [savedVideos, setSavedVideos] = useState<RaioXVideo[]>([FASTMOSS_VIDEOS[0]!]);
   const [transcript, setTranscript] = useState("");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -49,9 +51,72 @@ export default function RaioXPage() {
       .sort((a, b) => (sort === "sales" ? b.sales - a.sales : b.views - a.views));
   }, [search, category, sort]);
 
+  // Modo demonstração: mesmas respostas de exemplo do sistema original.
+  function demoAnalyzeLink() {
+    if (!pastedUrl.trim()) return;
+    const custom: FastMossVideo = {
+      id: `custom-${Date.now()}`,
+      title: `Vídeo analisado (${pastedUrl.trim().slice(0, 38)}…)`,
+      creator: "tiktok_creator",
+      category: "TikTok Shop BR",
+      thumbnail: "/media/central-raiox.webp",
+      source: "TikTok",
+      sourceUrl: pastedUrl.trim(),
+      tiktokUrl: pastedUrl.trim(),
+      views: 68400,
+      sales: 119,
+      hook: "Não compre antes de ver esse detalhe funcionando ao vivo na prática.",
+      structure: [
+        {
+          stage: "Gancho (0–2s)",
+          time: "0:00–0:02",
+          whatHappens: "Mostra o resultado final imediatamente nos primeiros 2 segundos sem introdução.",
+        },
+        {
+          stage: "Prova (2–6s)",
+          time: "0:02–0:06",
+          whatHappens: "Demonstra o diferencial físico do produto em uso real resolvendo a principal objeção.",
+        },
+        {
+          stage: "Chamada (6–8s)",
+          time: "0:06–0:08",
+          whatHappens: "Aponta para a sacola laranja destacando estoque limitado e preço promocional.",
+        },
+      ],
+      takeaways: [
+        "Ritmo direto de 8 segundos sem cumprimentos iniciais.",
+        "Prova visual na mão antes de falar qualquer benefício técnico.",
+      ],
+    };
+    setSavedVideos((prev) => [custom, ...prev]);
+    setSelectedVideo(custom);
+    setRecreatedVersions(null);
+    setPastedUrl("");
+  }
+
+  function demoRecreate() {
+    if (!selectedVideo) return;
+    setRecreating(true);
+    setRecreatedVersions(null);
+    const prod = ZAALYS_PRODUCTS.find((p) => p.id === targetProductId) ?? ZAALYS_PRODUCTS[0]!;
+
+    setTimeout(() => {
+      setRecreatedVersions([
+        `Versão 1 (Foco na Dor + Prova Rápida):\n• 0–2s (Gancho): "Se você ia comprar sem olhar esse detalhe, para agora e vê isso aqui."\n• 2–6s (Prova): Mostra ${prod.title} em close: ${prod.facts[0]}.\n• 6–8s (CTA): "Deixei o link oficial por ${formatBRL(prod.priceCents)} aqui no carrinho laranja."`,
+        `Versão 2 (Teste de Risco / Curiosidade):\n• 0–2s (Gancho): "Testei na prática pra ver se valia o hype do TikTok Shop…"\n• 2–6s (Prova): Demonstra ${prod.facts[1] ?? prod.facts[0]} sem corte.\n• 6–8s (CTA): "Tá com frete e cupom na sacolinha aqui embaixo."`,
+        `Versão 3 (Comparação de Custo-Benefício):\n• 0–2s (Gancho): "Por ${formatBRL(prod.priceCents)}, isso aqui entregou mais que o dobro do preço."\n• 2–6s (Prova): Mostra acabamento e uso real de ${prod.title}.\n• 6–8s (CTA): "Corre no link do carrinho antes que acabe o lote."`,
+      ]);
+      setRecreating(false);
+    }, 750);
+  }
+
   async function handleAnalyzeLink(e: React.FormEvent) {
     e.preventDefault();
     setAnalyzeError(null);
+    if (demo) {
+      demoAnalyzeLink();
+      return;
+    }
     if (!transcript.trim() && !mediaFile) {
       setAnalyzeError(
         "O TikTok não deixa baixar o vídeo pelo link. Cole a fala do vídeo ou envie o áudio/vídeo baixado.",
@@ -107,6 +172,10 @@ export default function RaioXPage() {
 
   async function handleRecreate() {
     if (!selectedVideo) return;
+    if (demo) {
+      demoRecreate();
+      return;
+    }
     setRecreating(true);
     setRecreatedVersions(null);
     setRecreateError(null);

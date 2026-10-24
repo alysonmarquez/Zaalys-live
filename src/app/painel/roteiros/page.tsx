@@ -9,6 +9,7 @@ import {
   ZAALYS_PRODUCTS,
   formatBRL,
 } from "@/lib/zaalys-data";
+import { useIsDemo } from "@/lib/use-demo";
 
 const TONES = [
   { key: "engracado", label: "Engraçado" },
@@ -54,9 +55,52 @@ function TrendAiInner() {
     selectedFormat?.characters[0];
 
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const demo = useIsDemo();
+
+  // Modo demonstração: mesmos roteiros de exemplo do sistema original.
+  function demoGenerate() {
+    if (!selectedFormat || !character) return;
+    setGenerating(true);
+    setScripts(null);
+
+    setTimeout(() => {
+      const toneLabel = TONES.find((t) => t.key === selectedTone)?.label ?? "Engraçado";
+      const list: GeneratedScriptOption[] = [
+        {
+          id: 1,
+          hook: `"Moça, com licença! Qual foi a compra mais inteligente que você fez esse mês sem gastar quase nada?"`,
+          body: `${character.name} olha pra câmera indignada(o) no tom ${toneLabel.toLowerCase()}: "Menino, foi esse ${product.title.slice(0, 48)}! Eu achava que era conversa, até usar no primeiro dia: ${product.facts[0].toLowerCase()}."`,
+          cta: `"Tá aqui no carrinho laranja por ${formatBRL(product.priceCents)}, mas não espalha senão acaba o estoque!"`,
+          englishPrompt: `Cinematic 9:16 vertical video, 8 seconds, Brazilian street interview / studio style. Subject: ${character.name} (${character.role}), natural warm lighting, handheld iPhone 16 Pro realism. Holding "${product.title}" clearly toward the lens, expressive ${toneLabel.toLowerCase()} reaction while speaking in Brazilian Portuguese: "${product.facts[0]}". Shallow depth of field, authentic TikTok viral pacing.`,
+        },
+        {
+          id: 2,
+          hook: `"Ninguém no TikTok te conta isso, mas eu vou falar antes que apaguem o corte…"`,
+          body: `${character.name} inclina pra frente segurando o produto: "O segredo é esse ${product.title.slice(0, 48)}. Enquanto todo mundo paga o dobro, ${product.facts[1]?.toLowerCase() ?? product.facts[0].toLowerCase()}."`,
+          cta: `"Clica na sacolinha aqui embaixo antes que volte pro preço antigo!"`,
+          englishPrompt: `Cinematic 9:16 vertical podcast / close-up shot, 8 seconds. Subject: ${character.name}, moody warm key light, studio microphone in foreground. Reveals "${product.title}" on the table, taps it emphatically, speaking animatedly in Brazilian Portuguese with ${toneLabel.toLowerCase()} energy. Ultra-realistic skin texture and natural hand gestures.`,
+        },
+        {
+          id: 3,
+          hook: `"POV: você jurou que não ia comprar mais nada no TikTok Shop hoje… até ver isso funcionando."`,
+          body: `${character.name} mostra o antes e o depois na prática: "${product.facts[0]} em segundos. Não tem como voltar atrás depois que testa."`,
+          cta: `"Deixei o link direto na sacola laranja aqui no canto!"`,
+          englishPrompt: `Dynamic 9:16 vertical UGC POV video, 8 seconds. Subject: ${character.name} in a bright Brazilian home setting, demonstrating "${product.title}" with a surprised and delighted ${toneLabel.toLowerCase()} expression, pointing down to the bottom-left TikTok Shop orange cart icon at the end.`,
+        },
+      ];
+      setScripts(list);
+      setPickedScriptIdx(0);
+      setGenerating(false);
+    }, 950);
+  }
+
 
   async function handleGenerate() {
     if (!selectedFormat || !character) return;
+    if (demo) {
+      demoGenerate();
+      return;
+    }
     setGenerating(true);
     setScripts(null);
     setGenerateError(null);

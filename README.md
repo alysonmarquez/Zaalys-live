@@ -24,7 +24,7 @@ npm run vapid                   # gera as chaves de push; copie para o .env.loca
 npm run dev
 ```
 
-**Modo demonstração.** Sem Supabase configurado e fora de produção, o painel abre com um usuário de exemplo e uma faixa avisando. Em produção (`npm run build && npm start`) o modo só liga com `ZAALYS_DEMO_MODE=true`. Com Supabase configurado, o painel exige login e assinatura ativa: sem plano, a pessoa vai para o checkout.
+**Modo demonstração.** Sem Supabase configurado e fora de produção, o painel abre com um usuário de exemplo e uma faixa avisando. Nesse modo, Raio-X, remake, roteiros, templates e "adicionar produto" mostram as mesmas respostas de exemplo do sistema original, sem chamar a IA. Com Supabase configurado, tudo usa a IA real. Em produção (`npm run build && npm start`) o modo só liga com `ZAALYS_DEMO_MODE=true`. Com Supabase configurado, o painel exige login e assinatura ativa: sem plano, a pessoa vai para o checkout.
 
 ### Supabase
 
