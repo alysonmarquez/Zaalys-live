@@ -189,6 +189,14 @@ function LoginScreen() {
 
       // Sem banco configurado (só em desenvolvimento) o painel abre em modo demonstração.
       if (!isSupabaseConfigured()) {
+        // Só abre o painel se o servidor estiver em modo demonstração; senão avisa em vez de voltar ao login.
+        const { user } = await fetch("/api/auth/session").then((r) => r.json()).catch(() => ({ user: null }));
+        if (!user) {
+          setErrors({
+            form: "Login indisponível neste site: o banco (Supabase) não está configurado e o modo demonstração está desligado. Na Vercel, defina ZAALYS_DEMO_MODE=true (ou as chaves do Supabase) e faça um novo deploy.",
+          });
+          return;
+        }
         setNotice("Modo demonstração: abrindo o painel com dados de exemplo…");
         goNext();
         return;

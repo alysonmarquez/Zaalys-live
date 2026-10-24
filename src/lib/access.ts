@@ -25,7 +25,8 @@ export function isSupabaseConfigured() {
  */
 export function isDemoMode() {
   if (isSupabaseConfigured()) return false;
-  return process.env.NODE_ENV !== "production" || process.env.ZAALYS_DEMO_MODE === "true";
+  const flag = (process.env.ZAALYS_DEMO_MODE || "").trim().toLowerCase();
+  return process.env.NODE_ENV !== "production" || flag === "true" || flag === "1";
 }
 
 const DEMO: Access = {
