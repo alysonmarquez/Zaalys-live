@@ -25,6 +25,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { ZAALYS_NOTIFICATIONS, formatBRL } from "@/lib/zaalys-data";
+import { BottomDock } from "@/components/bottom-dock";
+import { LiveSaleToast } from "@/components/live-sale-toast";
 
 type AppShellProps = {
   userEmail: string;
@@ -567,7 +569,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-6 sm:px-6 sm:pt-8">
         {children}
       </main>
 
@@ -858,6 +860,15 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
           </div>
         </div>
       )}
+
+      {/* Menu flutuante e notificação de venda ao vivo (como no original) */}
+      <BottomDock
+        onSupport={() => {
+          setSupportSent(false);
+          setSupportOpen(true);
+        }}
+      />
+      {!zaalDrawerOpen && <LiveSaleToast />}
 
       {/* Floating "Zaal" 3D Mascot Assistant Widget (matching Screenshot 1 & 3jz1kpdvh_75d.js) */}
       {!zaalDrawerOpen && (

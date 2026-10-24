@@ -174,7 +174,7 @@ function TemplatesPreviewStrip() {
     "/media/templates/24_setup-mesa.jpg",
     "/media/templates/25_pet-experimentando.jpg",
     ...ZAALYS_TEMPLATES.map((t) => t.poster),
-  ];
+  ].filter((src, i, arr) => arr.indexOf(src) === i);
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
@@ -184,7 +184,9 @@ function TemplatesPreviewStrip() {
     return () => clearInterval(id);
   }, [allPosters.length]);
 
-  const visible = [0, 1, 2].map((i) => allPosters[(offset + i) % allPosters.length]!);
+  // Faixa cheia, como no original: até 10 quadros girando.
+  const count = Math.min(10, allPosters.length * 2);
+  const visible = Array.from({ length: count }, (_, i) => allPosters[(offset + i) % allPosters.length]!);
 
   return (
     <div className="flex gap-2 overflow-hidden px-5 opacity-40 saturate-[0.55] transition-[opacity,filter] duration-300 ease-out group-hover:opacity-100 group-hover:saturate-100">
