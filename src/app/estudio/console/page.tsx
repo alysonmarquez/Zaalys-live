@@ -29,7 +29,6 @@ import { cn } from "@/components/brand";
 import { CATALOGO_ORIGINAL, CATEGORY_LABELS } from "@/lib/catalogo-original";
 import { formatBRL } from "@/lib/zaalys-data";
 
-const PANEL = "rounded-xl border border-border/60 bg-white dark:bg-card";
 
 // Indicadores do painel lateral. Sem transmissão, ficam em "--" (o clone não gera vendas).
 const METRICS = [
@@ -129,9 +128,9 @@ export default function ConsolePage() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(260px,1fr)_minmax(300px,1.1fr)_minmax(280px,1fr)]">
+      <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border border-border/60 bg-card lg:grid-cols-[1.05fr_0.95fr_0.95fr] lg:divide-x lg:divide-border/60">
         {/* Coluna 1: produtos */}
-        <section className={cn(PANEL, "relative flex min-h-0 flex-col")}>
+        <section className="relative flex min-h-0 flex-col">
           <div className="grid grid-cols-4 gap-1.5 border-b border-border/60 p-3">
             {[
               [Zap, "Oferta relâmpago"],
@@ -236,8 +235,8 @@ export default function ConsolePage() {
         </section>
 
         {/* Coluna 2: prévia + chat */}
-        <section className="flex min-h-0 flex-col gap-3">
-          <div className="relative flex aspect-[4/3] min-h-[220px] flex-col overflow-hidden rounded-xl bg-neutral-900 lg:aspect-auto lg:flex-[1.2]">
+        <section className="flex min-h-0 flex-col">
+          <div className="relative flex h-[280px] shrink-0 flex-col overflow-hidden bg-neutral-950">
             <div className="flex items-center justify-between p-3">
               <div className="flex items-center gap-4">
                 <Toggle label="Vídeo" on={videoOn} onChange={setVideoOn} />
@@ -261,7 +260,7 @@ export default function ConsolePage() {
               </div>
             </div>
 
-            <div className="relative flex flex-1 items-center justify-center text-center text-white/70">
+            <div className="relative mx-2 flex flex-1 items-center justify-center rounded-lg bg-neutral-800 text-center text-white/70">
               {videoOn && pinnedProduct && onAir ? (
                 <img src={pinnedProduct.imageUrl} alt="" className="absolute inset-0 size-full object-contain opacity-80" />
               ) : (
@@ -308,7 +307,7 @@ export default function ConsolePage() {
                 <span className="absolute left-3 top-1 rounded bg-red-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">Prévia</span>
               )}
             </div>
-            <p className="flex items-start gap-1.5 px-3 pb-3 text-[11px] text-white/45">
+            <p className="flex items-start gap-1.5 px-4 py-2 text-[11px] text-white/45">
               <Smartphone size={12} className="mt-0.5 shrink-0" />
               <span>
                 Se você <span className="underline">iniciar uma LIVE com o celular</span>, será feita a sincronização com o Estúdio de LIVE.
@@ -316,7 +315,7 @@ export default function ConsolePage() {
             </p>
           </div>
 
-          <div className={cn(PANEL, "flex min-h-[200px] flex-1 flex-col")}>
+          <div className="flex min-h-[200px] flex-1 flex-col">
             <div className="flex items-center justify-between px-3 py-2">
               <span className="text-sm font-semibold">Chat</span>
               <span className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -369,8 +368,8 @@ export default function ConsolePage() {
         </section>
 
         {/* Coluna 3: análise + atividade */}
-        <section className="flex min-h-0 flex-col gap-3">
-          <div className={cn(PANEL, "p-3")}>
+        <section className="flex min-h-0 flex-col">
+          <div className="border-b border-border/60 p-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold">Análise de transmissões ao vivo</h2>
               <a href="/estudio/desempenho" className="text-xs font-semibold text-primary">
@@ -398,7 +397,7 @@ export default function ConsolePage() {
             </div>
           </div>
 
-          <div className={cn(PANEL, "flex min-h-[180px] flex-1 flex-col p-3")}>
+          <div className="flex min-h-[180px] flex-1 flex-col p-3">
             <h2 className="text-sm font-semibold">Atividade</h2>
             <p className="flex-1 py-6 text-center text-sm text-muted-foreground">Os pedidos feitos durante a sua LIVE aparecerão aqui</p>
             <p className="pb-1 text-center text-[11px] text-muted-foreground/70">Arraste para redimensionar</p>
