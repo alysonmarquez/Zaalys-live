@@ -311,3 +311,19 @@ insert into public.extension_config (selectors) values ('{
   "pinButton": "[data-e2e=\"pin-product\"]",
   "liveEndedMarker": "[data-e2e=\"live-ended\"]"
 }');
+
+-- ---------- Preparações de live ("Continuar uma preparação") ----------
+create table public.live_preps (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  product_id integer not null,
+  title text not null,
+  clips integer not null default 6,
+  comments integer not null default 24,
+  step integer not null default 0,
+  created_at timestamptz not null default now()
+);
+create index on public.live_preps (user_id, created_at desc);
+alter table public.live_preps enable row level security;
+create policy "own live preps" on public.live_preps for all
+  using (user_id = auth.uid()) with check (user_id = auth.uid());

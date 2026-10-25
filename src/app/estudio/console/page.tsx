@@ -2,18 +2,22 @@
 
 import { useMemo, useState } from "react";
 import {
+  ArrowLeftRight,
   ChevronDown,
+  ChevronUp,
+  CircleHelp,
   Gift,
-  Maximize2,
   Pencil,
   Pin,
   Plus,
   RefreshCw,
   Search,
+  ScanLine,
   Settings,
   ShoppingBag,
+  Smartphone,
   Sparkles,
-  Tag,
+  Briefcase,
   Ticket,
   Trash2,
   TriangleAlert,
@@ -25,7 +29,7 @@ import { cn } from "@/components/brand";
 import { CATALOGO_ORIGINAL, CATEGORY_LABELS } from "@/lib/catalogo-original";
 import { formatBRL } from "@/lib/zaalys-data";
 
-const PANEL = "rounded-xl border border-border/60 bg-card";
+const PANEL = "rounded-xl border border-border/60 bg-white dark:bg-card";
 
 // Indicadores do painel lateral. Sem transmissão, ficam em "--" (o clone não gera vendas).
 const METRICS = [
@@ -67,6 +71,8 @@ export default function ConsolePage() {
   const [chatInput, setChatInput] = useState("");
   const [onAir, setOnAir] = useState(false);
   const [tip, setTip] = useState(true);
+  const [chatSize, setChatSize] = useState(14);
+  const [suggestOpen, setSuggestOpen] = useState(true);
 
   const products = productIds.map((id) => CATALOGO_ORIGINAL.find((p) => p.id === id)!).filter(Boolean);
   const pinnedProduct = products.find((p) => p.id === pinned);
@@ -114,10 +120,10 @@ export default function ConsolePage() {
           </div>
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">
-          <button type="button" className="h-8 rounded-full border border-border px-3 text-xs font-semibold text-foreground">
-            Alternar modo
+          <button type="button" className="flex h-8 items-center gap-1.5 rounded-full border border-foreground/60 px-3 text-xs font-semibold text-foreground">
+            Alternar modo <ArrowLeftRight size={13} />
           </button>
-          <Maximize2 size={17} />
+          <ScanLine size={17} />
           <Settings size={17} />
           <TriangleAlert size={17} />
         </div>
@@ -130,7 +136,7 @@ export default function ConsolePage() {
             {[
               [Zap, "Oferta relâmpago"],
               [Gift, "Recompensa"],
-              [Tag, "Cartaz"],
+              [Briefcase, "Cartaz"],
               [Ticket, "Cupom"],
             ].map(([Icon, l]) => {
               const I = Icon as typeof Zap;
@@ -139,8 +145,9 @@ export default function ConsolePage() {
                   key={l as string}
                   type="button"
                   title={l as string}
-                  className="flex h-9 items-center justify-center gap-1 truncate rounded-lg border border-border/70 px-1.5 text-[11px] font-semibold hover:bg-muted cursor-pointer"
+                  className="relative flex h-10 items-center justify-center gap-1 truncate rounded-md bg-muted/70 px-1.5 text-[13px] font-semibold hover:bg-muted cursor-pointer"
                 >
+                  <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-red-500" />
                   <I size={13} className="shrink-0" />
                   <span className="truncate">{l as string}</span>
                 </button>
@@ -158,7 +165,7 @@ export default function ConsolePage() {
 
           {products.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
-              <ShoppingBag size={40} className="text-primary" />
+              <ShoppingBag size={56} className="text-primary" strokeWidth={1.6} />
               <p className="font-semibold">Ainda não há produtos</p>
               <p className="text-xs text-muted-foreground">Os produtos adicionados aparecerão aqui</p>
               <button
@@ -236,17 +243,22 @@ export default function ConsolePage() {
                 <Toggle label="Vídeo" on={videoOn} onChange={setVideoOn} />
                 <Toggle label="Roteiro" on={scriptOn} onChange={setScriptOn} />
               </div>
-              <button
-                type="button"
-                disabled={products.length === 0}
-                onClick={() => setOnAir((v) => !v)}
-                className={cn(
-                  "h-8 rounded-md px-4 text-xs font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-40",
-                  onAir ? "bg-red-500 text-white" : "bg-primary text-primary-foreground",
-                )}
-              >
-                {onAir ? "Encerrar prévia" : "Iniciar LIVE"}
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={products.length === 0}
+                  onClick={() => setOnAir((v) => !v)}
+                  className={cn(
+                    "h-8 rounded-md px-4 text-xs font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-40",
+                    onAir ? "bg-red-500 text-white" : "bg-primary text-primary-foreground",
+                  )}
+                >
+                  {onAir ? "Encerrar prévia" : "Iniciar LIVE"}
+                </button>
+                <span className="grid size-8 place-items-center rounded-md bg-white text-neutral-900">
+                  <ChevronDown size={14} />
+                </span>
+              </div>
             </div>
 
             <div className="relative flex flex-1 items-center justify-center text-center text-white/70">
@@ -296,11 +308,22 @@ export default function ConsolePage() {
                 <span className="absolute left-3 top-1 rounded bg-red-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">Prévia</span>
               )}
             </div>
+            <p className="flex items-start gap-1.5 px-3 pb-3 text-[11px] text-white/45">
+              <Smartphone size={12} className="mt-0.5 shrink-0" />
+              <span>
+                Se você <span className="underline">iniciar uma LIVE com o celular</span>, será feita a sincronização com o Estúdio de LIVE.
+              </span>
+            </p>
           </div>
 
           <div className={cn(PANEL, "flex min-h-[200px] flex-1 flex-col")}>
-            <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
+            <div className="flex items-center justify-between px-3 py-2">
               <span className="text-sm font-semibold">Chat</span>
+              <span className="flex items-center gap-3 text-xs text-muted-foreground">
+                <button type="button" onClick={() => setChatSize((z) => Math.min(z + 1, 18))} className="cursor-pointer">A+</button>
+                <button type="button" onClick={() => setChatSize((z) => Math.max(z - 1, 12))} className="cursor-pointer">A−</button>
+                <Settings size={14} />
+              </span>
             </div>
             <div className="flex gap-1.5 px-3 pt-2">
               {(
@@ -321,7 +344,7 @@ export default function ConsolePage() {
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
               {chatTab === "todos" && chat.length > 0 ? (
-                <ul className="space-y-1.5 text-sm">
+                <ul className="space-y-1.5" style={{ fontSize: chatSize }}>
                   {chat.map((m) => (
                     <li key={m.id}>
                       <span className="font-semibold text-primary">Você</span> {m.text}
@@ -365,16 +388,21 @@ export default function ConsolePage() {
               ))}
             </div>
             <div className="mt-3 rounded-lg bg-muted/40 p-3">
-              <p className="flex items-center gap-1.5 text-xs font-semibold">
-                <Sparkles size={13} className="text-primary" /> Sugestão
-              </p>
-              <p className="mt-2 text-center text-xs text-muted-foreground">Receba sugestões em tempo real durante sua LIVE.</p>
+              <button type="button" onClick={() => setSuggestOpen((o) => !o)} className="flex w-full items-center justify-between cursor-pointer">
+                <span className="flex items-center gap-1.5 text-xs font-semibold">
+                  <Sparkles size={13} className="text-primary" /> Sugestão <CircleHelp size={12} className="text-muted-foreground" />
+                </span>
+                {suggestOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+              {suggestOpen && <p className="mt-3 py-2 text-center text-xs text-muted-foreground">Receba sugestões em tempo real durante sua LIVE.</p>}
             </div>
           </div>
 
           <div className={cn(PANEL, "flex min-h-[180px] flex-1 flex-col p-3")}>
             <h2 className="text-sm font-semibold">Atividade</h2>
             <p className="flex-1 py-6 text-center text-sm text-muted-foreground">Os pedidos feitos durante a sua LIVE aparecerão aqui</p>
+            <p className="pb-1 text-center text-[11px] text-muted-foreground/70">Arraste para redimensionar</p>
+            <span className="mx-auto mb-2 h-0.5 w-10 rounded bg-border" />
             <div className="border-t border-border/60 pt-2">
               <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-xs font-semibold">
                 Todas as atividades <ChevronDown size={12} />

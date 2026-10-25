@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
-import { Laptop, Search, Smartphone, Tablet, Trash2, Wand2 } from "lucide-react";
+import { ChevronRight, Film, Laptop, Search, Smartphone, Tablet, Trash2, Wand2 } from "lucide-react";
 import { RaisedButton, cn } from "@/components/brand";
-import { ZAALYS_PRODUCTS, formatBRL, type ZaalysProduct } from "@/lib/zaalys-data";
+import { formatBRL, type ZaalysProduct } from "@/lib/zaalys-data";
+import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
 import { useIsDemo } from "@/lib/use-demo";
 import { LiveTools } from "./live-tools";
 
@@ -33,11 +34,43 @@ const DEVICES: { key: Device; label: string; browser: string; icon: React.ReactN
   { key: "android", label: "Android", browser: "navegador Quetta", icon: <Smartphone size={18} /> },
 ];
 
+// Modo demonstração: as mesmas preparações da conta de exemplo do original (produtos do catálogo).
+const DEMO_PREPS: [string, number, number, string][] = [
+  ["Creme Gel Regenerador Facial Gota de Colágeno Kokeshi", 6, 25, "2026-10-24"],
+  ["Hidrabene Protetor solar facial fps 70 Uniformizador", 6, 25, "2026-10-20"],
+  ["Dark Lab Multivitamin 60 Tabletes", 6, 23, "2026-10-20"],
+  ["Hidrabene Protetor solar facial fps 70 Uniformizador", 6, 25, "2026-10-19"],
+  ["Multivitamínico 90 Cápsulas Dux Nutrition", 6, 22, "2026-10-19"],
+  ["BIORE UV AQUA RICH WATERY ESSENCE", 6, 24, "2026-10-19"],
+  ["Multivitamínico 90 Cápsulas Dux Nutrition", 6, 23, "2026-10-19"],
+  ["Multivitamínico 90 Cápsulas Dux Nutrition", 5, 22, "2026-10-18"],
+  ["Hidrabene Protetor solar facial fps 70 Uniformizador", 6, 24, "2026-10-17"],
+  ["Creamy Skincare Protetor Solar 50g", 6, 21, "2026-10-16"],
+  ["Multivitamínico 90 Cápsulas Dux Nutrition", 6, 23, "2026-10-15"],
+  ["Mounjarin Psyllium", 6, 23, "2026-10-15"],
+];
+
+function demoPreps(): Prep[] {
+  return DEMO_PREPS.map(([name, clips, comments, date], i) => {
+    const p = CATALOGO_ORIGINAL.find((x) => x.title.toLowerCase().startsWith(name.toLowerCase().slice(0, 24)));
+    return {
+      id: `demo-${i}`,
+      productId: p?.id ?? 0,
+      title: p?.title ?? name,
+      clips,
+      comments,
+      createdAt: `${date}T15:00:00.000Z`,
+      step: 0,
+    };
+  });
+}
+
 const readPreps = (): Prep[] => {
   try {
-    return JSON.parse(window.localStorage.getItem(STORAGE) || "[]") as Prep[];
+    const raw = window.localStorage.getItem(STORAGE);
+    return raw ? (JSON.parse(raw) as Prep[]) : demoPreps();
   } catch {
-    return [];
+    return demoPreps();
   }
 };
 
@@ -55,8 +88,19 @@ export default function LivePage() {
   const [showObs, setShowObs] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Conta real: preparações vêm do banco (valem em qualquer aparelho). Demonstração: navegador.
   useEffect(() => {
-    setPreps(readPreps());
+    if (demo) {
+      setPreps(readPreps());
+      return;
+    }
+    fetch("/api/live/preps")
+      .then((r) => (r.ok ? r.json() : { preps: [] }))
+      .then((d) => setPreps(d.preps ?? []))
+      .catch(() => {});
+  }, [demo]);
+
+  useEffect(() => {
     try {
       const d = window.localStorage.getItem(DEVICE_STORAGE) as Device | null;
       if (d) setDevice(d);
@@ -67,15 +111,21 @@ export default function LivePage() {
 
   const save = (list: Prep[]) => {
     setPreps(list);
+    if (!demo) return;
     try {
       window.localStorage.setItem(STORAGE, JSON.stringify(list.slice(0, 20)));
     } catch {}
   };
 
+  function removePrep(id: string) {
+    save(preps.filter((p) => p.id !== id));
+    if (!demo) fetch(`/api/live/preps?id=${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
+  }
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return ZAALYS_PRODUCTS.filter((p) => p.title.toLowerCase().includes(q) || p.affiliateUrl.includes(q)).slice(0, 8);
+    return CATALOGO_ORIGINAL.filter((p) => p.title.toLowerCase().includes(q) || p.affiliateUrl.includes(q)).slice(0, 8);
   }, [query]);
 
   async function prepare() {
@@ -95,12 +145,14 @@ export default function LivePage() {
           }),
         });
         const data = await res.json().catch(() => null);
-        if (!res.ok) throw new Error(data?.error || "Não foi possível preparar a live agora.");
-        comments = (data?.script?.products?.[0]?.faq?.length ?? 4) * 6;
+        if (res.ok) comments = (data?.script?.products?.[0]?.faq?.length ?? 4) * 6;
+        // Sem IA configurada no servidor, segue com os comentários padrão em vez de travar.
+        else if (!String(data?.error || "").includes("configurada"))
+          throw new Error(data?.error || "Não foi possível preparar a live agora.");
       } else {
         await new Promise((r) => setTimeout(r, 900));
       }
-      const prep: Prep = {
+      let prep: Prep = {
         id: crypto.randomUUID(),
         productId: product.id,
         title: product.title,
@@ -109,6 +161,16 @@ export default function LivePage() {
         createdAt: new Date().toISOString(),
         step: 0,
       };
+      if (!demo) {
+        const res = await fetch("/api/live/preps", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: prep.productId, title: prep.title.slice(0, 300), clips: prep.clips, comments: prep.comments }),
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.prep) throw new Error("Não foi possível salvar a preparação.");
+        prep = data.prep;
+      }
       save([prep, ...preps]);
       setCurrent(prep);
     } catch (err) {
@@ -123,6 +185,12 @@ export default function LivePage() {
     const next = { ...current, step };
     setCurrent(next);
     save(preps.map((p) => (p.id === next.id ? next : p)));
+    if (!demo)
+      fetch("/api/live/preps", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: next.id, step }),
+      }).catch(() => {});
   }
 
   const header = (
@@ -216,19 +284,28 @@ export default function LivePage() {
           {preps.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-semibold">Continuar uma preparação</p>
-              {preps.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setCurrent(p)}
-                  className="flex w-full flex-col rounded-2xl border border-border bg-card/70 p-3 text-left hover:border-primary/40 cursor-pointer"
-                >
-                  <span className="line-clamp-1 text-sm font-semibold">{p.title}</span>
-                  <span className="text-xs text-muted-foreground">
-                    Roteiro com {p.clips} clipes · {p.comments} comentários · {new Date(p.createdAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
-                  </span>
-                </button>
-              ))}
+              <div className="grid gap-2 sm:grid-cols-2">
+                {preps.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setCurrent(p)}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card/70 p-3 text-left hover:border-primary/40 cursor-pointer"
+                  >
+                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                      <Film size={15} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="line-clamp-1 text-sm font-semibold">{p.title}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        Roteiro com {p.clips} clipes · {p.comments} comentários ·{" "}
+                        {new Date(p.createdAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                      </span>
+                    </span>
+                    <ChevronRight size={16} className="shrink-0 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -307,7 +384,7 @@ export default function LivePage() {
         <button
           type="button"
           onClick={() => {
-            save(preps.filter((p) => p.id !== current.id));
+            removePrep(current.id);
             setCurrent(null);
           }}
           className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-destructive cursor-pointer"
@@ -471,7 +548,7 @@ export default function LivePage() {
               <button
                 type="button"
                 onClick={() => {
-                  const p = ZAALYS_PRODUCTS.find((x) => x.id === current.productId);
+                  const p = CATALOGO_ORIGINAL.find((x) => x.id === current.productId);
                   if (p) navigator.clipboard?.writeText(p.affiliateUrl).catch(() => {});
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
