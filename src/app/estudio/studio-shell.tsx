@@ -6,11 +6,9 @@ import { useState } from "react";
 import {
   BarChart3,
   Bell,
-  CalendarDays,
   ChevronDown,
   ChevronUp,
   House,
-  LayoutGrid,
   MonitorPlay,
   PanelLeftClose,
   PanelLeftOpen,
@@ -24,20 +22,32 @@ import { Brand, cn } from "@/components/brand";
 type Item = { label: string; href?: string; icon?: LucideIcon };
 type Group = { label: string; icon: LucideIcon; items: Item[] };
 
-// Mesma organização de menu do original; só o que está implementado leva a uma página.
+// Mesma organização, ordem e nomes do menu do original. No original, só Console e Desempenho
+// abrem uma página; os demais itens são apenas visuais (aqui também).
 const NAV: (Item | Group)[] = [
   { label: "Início", href: "/painel", icon: House },
-  { label: "Console de LIVE", href: "/estudio/console", icon: MonitorPlay },
-  { label: "Eventos LIVE", icon: CalendarDays },
-  { label: "Ferramentas da LIVE", icon: LayoutGrid, items: [{ label: "Recompensa da LIVE" }] },
-  { label: "Vitrine", icon: Store, items: [{ label: "Produtos da vitrine" }, { label: "Kit de produtos da LIVE" }] },
-  { label: "Campanhas de vídeo", icon: Radio },
+  {
+    label: "Ferramentas da LIVE",
+    icon: MonitorPlay,
+    items: [
+      { label: "Eventos LIVE" },
+      { label: "Console de LIVE", href: "/estudio/console" },
+      { label: "Kit de produtos da LIVE" },
+      { label: "Recompensa da LIVE" },
+      { label: "Campanhas de vídeo curto e LIVE" },
+    ],
+  },
+  { label: "Vitrine", icon: Store, items: [{ label: "Produtos da vitrine" }] },
   {
     label: "Escopo de dados",
     icon: BarChart3,
     items: [{ label: "Desempenho da LIVE", href: "/estudio/desempenho" }, { label: "Histórico de LIVE" }, { label: "Análise de mercado" }],
   },
-  { label: "Integridade da conta", icon: UserRound, items: [{ label: "Pontos de qualidade" }, { label: "Classificação de integridade" }] },
+  {
+    label: "Integridade da conta",
+    icon: UserRound,
+    items: [{ label: "Pontos de qualidade das promoções" }, { label: "Classificação de integridade do criador" }],
+  },
 ];
 
 function NavLink({ item, nested }: { item: Item; nested?: boolean }) {
@@ -45,37 +55,44 @@ function NavLink({ item, nested }: { item: Item; nested?: boolean }) {
   const active = item.href && pathname === item.href;
   const Icon = item.icon;
   const cls = cn(
-    "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[14px] transition-colors",
-    nested && "pl-10",
-    active ? "bg-muted font-medium text-primary" : item.href ? "text-foreground hover:bg-muted" : "cursor-default text-foreground",
+    "flex h-[38px] items-center gap-2.5 rounded-md px-3 text-[14px] transition-colors",
+    nested && "pl-[34px]",
+    active
+      ? "bg-black/[0.05] text-primary"
+      : nested
+        ? "text-black/65 hover:bg-black/[0.03]"
+        : "text-black/90 hover:bg-black/[0.03]",
+    !item.href && "cursor-default",
   );
+  const label = <span className="truncate">{item.label}</span>;
   return item.href ? (
-    <Link href={item.href} className={cls} aria-current={active ? "page" : undefined}>
-      {Icon && <Icon size={16} />}
-      {item.label}
+    <Link href={item.href} className={cls} aria-current={active ? "page" : undefined} title={item.label}>
+      {Icon && <Icon size={16} className="shrink-0" />}
+      {label}
     </Link>
   ) : (
-    <span className={cls} title="Ainda não disponível no clone">
-      {Icon && <Icon size={16} />}
-      {item.label}
+    <span className={cls} title={item.label}>
+      {Icon && <Icon size={16} className="shrink-0" />}
+      {label}
     </span>
   );
 }
 
 function NavGroup({ group }: { group: Group }) {
   const [open, setOpen] = useState(true);
+  const pathname = usePathname();
   return (
     <div>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-[14px] text-foreground hover:bg-muted cursor-pointer"
+        className="flex h-[38px] w-full items-center justify-between rounded-md px-3 text-[14px] text-black/90 hover:bg-black/[0.03] cursor-pointer"
       >
         <span className="flex items-center gap-2.5">
-          <group.icon size={16} />
+          <group.icon size={16} className={group.items.some((i) => i.href && i.href === pathname) ? "text-primary" : ""} />
           {group.label}
         </span>
-        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        {open ? <ChevronUp size={14} className="text-black/45" /> : <ChevronDown size={14} className="text-black/45" />}
       </button>
       {open && group.items.map((i) => <NavLink key={i.label} item={i} nested />)}
     </div>
@@ -115,7 +132,7 @@ export function StudioShell({ handle, children }: { handle: string; children: Re
         <aside
           className={cn(
             "shrink-0 overflow-y-auto border-r border-border/60 bg-card transition-[width] duration-200",
-            collapsed ? "w-0 border-r-0" : "w-60",
+            collapsed ? "w-0 border-r-0" : "w-[264px]",
           )}
         >
           <div className="flex min-h-full flex-col">
