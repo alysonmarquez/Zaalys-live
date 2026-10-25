@@ -37,31 +37,24 @@ const DEVICES: { key: Device; label: string; browser: string; icon: React.ReactN
 // Modo demonstração: as mesmas preparações da conta de exemplo do original (produtos do catálogo).
 const DEMO_PREPS: [string, number, number, string][] = [
   ["Creme Gel Regenerador Facial Gota de Colágeno Kokeshi", 6, 25, "2026-10-24"],
+  ["Creme Gel Regenerador Facial Gota de Colágeno Kokeshi", 6, 25, "2026-10-24"],
   ["Hidrabene Protetor solar facial fps 70 Uniformizador", 6, 25, "2026-10-20"],
-  ["Dark Lab Multivitamin 60 Tabletes", 6, 23, "2026-10-20"],
+  ["Dark Lab Multivitamin 60 Tabletes - Suplemento de Minerais Essenciais para Saúde e Energia Diária - Essential Minerals S", 6, 23, "2026-10-20"],
   ["Hidrabene Protetor solar facial fps 70 Uniformizador", 6, 25, "2026-10-19"],
-  ["Multivitamínico 90 Cápsulas Dux Nutrition", 6, 22, "2026-10-19"],
-  ["BIORE UV AQUA RICH WATERY ESSENCE", 6, 24, "2026-10-19"],
-  ["Multivitamínico 90 Cápsulas Dux Nutrition", 6, 23, "2026-10-19"],
-  ["Multivitamínico 90 Cápsulas Dux Nutrition", 5, 22, "2026-10-18"],
+  ["Multivitamínico 90 Cápsulas Dux Nutrition Polivitamínico Sabor Sem Sabor", 6, 22, "2026-10-19"],
+  ["BIORE UV AQUA RICH WATERY ESSENCE 50g", 6, 24, "2026-10-19"],
+  ["Multivitamínico 90 Cápsulas Dux Nutrition Polivitamínico Sabor Sem Sabor", 6, 23, "2026-10-19"],
+  ["Multivitamínico 90 Cápsulas Dux Nutrition Polivitamínico Sabor Sem Sabor", 5, 22, "2026-10-18"],
   ["Hidrabene Protetor solar facial fps 70 Uniformizador", 6, 24, "2026-10-17"],
-  ["Creamy Skincare Protetor Solar 50g", 6, 21, "2026-10-16"],
-  ["Multivitamínico 90 Cápsulas Dux Nutrition", 6, 23, "2026-10-15"],
-  ["Mounjarin Psyllium", 6, 23, "2026-10-15"],
+  ["Creamy Skincare Protetor Solar 50g | FPS 60, Watery Lotion, Toque Seco, Efeito Matte, Rápida Absorção, Resistente à Agua", 6, 21, "2026-10-16"],
+  ["Multivitamínico 90 Cápsulas Dux Nutrition Polivitamínico Sabor Sem Sabor", 6, 23, "2026-10-15"],
+  ["Mounjarin Psyllium 60/90 e 120 Caps - Etron", 6, 23, "2026-10-15"],
 ];
 
 function demoPreps(): Prep[] {
-  return DEMO_PREPS.map(([name, clips, comments, date], i) => {
-    const p = CATALOGO_ORIGINAL.find((x) => x.title.toLowerCase().startsWith(name.toLowerCase().slice(0, 24)));
-    return {
-      id: `demo-${i}`,
-      productId: p?.id ?? 0,
-      title: p?.title ?? name,
-      clips,
-      comments,
-      createdAt: `${date}T15:00:00.000Z`,
-      step: 0,
-    };
+  return DEMO_PREPS.map(([title, clips, comments, date], i) => {
+    const p = CATALOGO_ORIGINAL.find((x) => x.title.toLowerCase().startsWith(title.toLowerCase().slice(0, 24)));
+    return { id: `demo-${i}`, productId: p?.id ?? 0, title, clips, comments, createdAt: `${date}T15:00:00.000Z`, step: 0 };
   });
 }
 
