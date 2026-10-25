@@ -90,7 +90,7 @@ export function StudioShell({ handle, children }: { handle: string; children: Re
     <div className="studio-light flex h-svh flex-col bg-background text-foreground">
       <header className="flex h-14 shrink-0 items-center justify-between bg-neutral-950 px-4 text-white">
         <div className="flex items-center gap-3">
-          <Link href="/painel" className="[&_span]:!text-white">
+          <Link href="/painel" className="[--color-primary:#ade74e] [&_span]:!text-white">
             <Brand />
           </Link>
           <span className="h-5 w-px bg-white/30" />
@@ -122,7 +122,7 @@ export function StudioShell({ handle, children }: { handle: string; children: Re
           <div className="flex-1 space-y-0.5 p-3">
             <Link
               href="/estudio/console"
-              className="mb-3 flex h-10 items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-primary-foreground"
+              className="mb-3 flex h-10 items-center justify-center gap-2 rounded-md bg-[#e5394e] text-sm font-semibold text-white"
             >
               <Radio size={16} /> Iniciar LIVE agora
             </Link>

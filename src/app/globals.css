@@ -390,7 +390,7 @@
   animation: pulse-dot 1.6s ease-in-out infinite;
 }
 
-/* Estúdio de LIVE: tema claro só nessa área (o console do original é claro). */
+/* Estúdio de LIVE: tema claro e verde-água só nessa área, como o console do original. */
 .studio-light {
   color-scheme: light;
   --background: #f4f4f3;
@@ -399,7 +399,7 @@
   --card-foreground: #161616;
   --popover: #ffffff;
   --popover-foreground: #161616;
-  --primary: #4f8a10;
+  --primary: #00a19c;
   --primary-foreground: #ffffff;
   --secondary: #f1f1f0;
   --secondary-foreground: #161616;
@@ -409,7 +409,7 @@
   --accent-foreground: #161616;
   --border: #0000001a;
   --input: #00000024;
-  --ring: #4f8a10;
+  --ring: #00a19c;
   /* As cores do Tailwind são resolvidas no :root; aqui elas apontam para a paleta clara. */
   --color-background: var(--background);
   --color-foreground: var(--foreground);

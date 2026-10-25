@@ -275,7 +275,7 @@ export default function ConsolePage() {
                   disabled={products.length === 0}
                   onClick={() => setOnAir((v) => !v)}
                   className={cn(
-                    "h-8 rounded-md px-4 text-xs font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-40",
+                    "h-8 rounded-md px-4 text-xs font-semibold cursor-pointer disabled:cursor-not-allowed disabled:bg-[#9fdcd9] disabled:text-white",
                     onAir ? "bg-red-500 text-white" : "bg-primary text-primary-foreground",
                   )}
                 >
