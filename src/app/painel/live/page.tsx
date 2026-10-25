@@ -215,7 +215,7 @@ export default function LivePage() {
                 >
                   <span className="line-clamp-1 text-sm font-semibold">{p.title}</span>
                   <span className="text-xs text-muted-foreground">
-                    Roteiro com {p.clips} clipes · {p.comments} comentários · {new Date(p.createdAt).toLocaleDateString("pt-BR")}
+                    Roteiro com {p.clips} clipes · {p.comments} comentários · {new Date(p.createdAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                   </span>
                 </button>
               ))}

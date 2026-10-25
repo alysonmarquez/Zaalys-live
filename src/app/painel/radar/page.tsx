@@ -109,7 +109,7 @@ export default function RadarPage() {
                     {w.product.category}
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    {new Date(w.observedAt).toLocaleDateString("pt-BR")}
+                    {new Date(w.observedAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                   </span>
                 </div>
 
