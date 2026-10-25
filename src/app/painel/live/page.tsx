@@ -141,6 +141,16 @@ export default function LivePage() {
 
   const extras = (
     <div className="space-y-2">
+      <div>
+        <Link
+          href="/estudio/console"
+          target="_blank"
+          className="text-sm font-semibold text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          Abrir o Estúdio de LIVE
+        </Link>
+        <p className="text-xs text-muted-foreground">Console e desempenho das transmissões, numa janela própria.</p>
+      </div>
       <button
         type="button"
         onClick={() => setShowTools((v) => !v)}
