@@ -5,6 +5,9 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   BarChart3,
+  CalendarDays,
+  Clapperboard,
+  LayoutGrid,
   Bell,
   ChevronDown,
   ChevronUp,
@@ -22,31 +25,37 @@ import { Brand, cn } from "@/components/brand";
 type Item = { label: string; href?: string; icon?: LucideIcon };
 type Group = { label: string; icon: LucideIcon; items: Item[] };
 
-// Mesma organização, ordem e nomes do menu do original. No original só Console e Desempenho têm
-// tela; no clone os demais abrem uma página com estado vazio (src/lib/estudio-secoes.ts).
+// Mesma organização, ordem e nomes do menu do Gerenciador de LIVE do TikTok Shop; todo item abre sua tela.
 const NAV: (Item | Group)[] = [
-  { label: "Início", href: "/painel", icon: House },
+  { label: "Início", href: "/estudio/inicio", icon: House },
+  { label: "Console de LIVE", href: "/estudio/console", icon: MonitorPlay },
+  { label: "Eventos LIVE", href: "/estudio/eventos", icon: CalendarDays },
+  { label: "Ferramentas da LIVE", icon: LayoutGrid, items: [{ label: "Recompensa da LIVE", href: "/estudio/recompensa" }] },
   {
-    label: "Ferramentas da LIVE",
-    icon: MonitorPlay,
+    label: "Vitrine",
+    icon: Store,
     items: [
-      { label: "Eventos LIVE", href: "/estudio/eventos" },
-      { label: "Console de LIVE", href: "/estudio/console" },
+      { label: "Produtos da vitrine", href: "/estudio/vitrine" },
       { label: "Kit de produtos da LIVE", href: "/estudio/kit-de-produtos" },
-      { label: "Recompensa da LIVE", href: "/estudio/recompensa" },
-      { label: "Campanhas de vídeo curto e LIVE", href: "/estudio/campanhas" },
     ],
   },
-  { label: "Vitrine", icon: Store, items: [{ label: "Produtos da vitrine", href: "/estudio/vitrine" }] },
+  { label: "Campanhas de vídeo curto e LIVE", href: "/estudio/campanhas", icon: Clapperboard },
   {
     label: "Escopo de dados",
     icon: BarChart3,
-    items: [{ label: "Desempenho da LIVE", href: "/estudio/desempenho" }, { label: "Histórico de LIVE", href: "/estudio/historico" }, { label: "Análise de mercado", href: "/estudio/analise-de-mercado" }],
+    items: [
+      { label: "Desempenho da LIVE", href: "/estudio/desempenho" },
+      { label: "Histórico de LIVE", href: "/estudio/historico" },
+      { label: "Análise de mercado", href: "/estudio/analise-de-mercado" },
+    ],
   },
   {
     label: "Integridade da conta",
     icon: UserRound,
-    items: [{ label: "Pontos de qualidade das promoções", href: "/estudio/pontos-de-qualidade" }, { label: "Classificação de integridade do criador", href: "/estudio/classificacao-de-integridade" }],
+    items: [
+      { label: "Pontos de qualidade das promoções", href: "/estudio/pontos-de-qualidade" },
+      { label: "Classificação de integridade do criador", href: "/estudio/classificacao-de-integridade" },
+    ],
   },
 ];
 
