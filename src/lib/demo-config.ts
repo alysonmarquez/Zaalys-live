@@ -94,3 +94,37 @@ export function loadLiveSales(): LiveSalesConfig {
 export function saveLiveSales(cfg: LiveSalesConfig) {
   write(LIVE_KEY, cfg);
 }
+
+// ---------- Vendas ao vivo do dia ----------
+// Cada notificação "Venda ao vivo" é uma venda que entra no dashboard (como no original).
+// Ficam guardadas por dia neste navegador, então o dashboard soma também as que apareceram
+// enquanto ele estava fechado.
+
+export type LiveSale = { id: string; title: string; imageUrl: string; amountCents: number; commissionCents: number; at: string };
+export const LIVE_SALE_EVENT = "zaalys:live-sale";
+
+const dayKey = () => {
+  const d = new Date();
+  return `zaalys_live_sales_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+export function loadTodaySales(): LiveSale[] {
+  try {
+    return JSON.parse(localStorage.getItem(dayKey()) || "[]") as LiveSale[];
+  } catch {
+    return [];
+  }
+}
+
+export function recordLiveSale(sale: Omit<LiveSale, "id" | "at">): LiveSale {
+  const full: LiveSale = { ...sale, id: `ls-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, at: new Date().toISOString() };
+  try {
+    const list = loadTodaySales();
+    list.push(full);
+    localStorage.setItem(dayKey(), JSON.stringify(list.slice(-500)));
+  } catch {
+    /* sem armazenamento: vale só nesta aba */
+  }
+  window.dispatchEvent(new CustomEvent<LiveSale>(LIVE_SALE_EVENT, { detail: full }));
+  return full;
+}

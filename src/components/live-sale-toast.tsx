@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatBRL } from "@/lib/zaalys-data";
 import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
-import { DEMO_CONFIG_EVENT, FIRE_SALE_EVENT, loadLiveSales } from "@/lib/demo-config";
+import { DEMO_CONFIG_EVENT, FIRE_SALE_EVENT, loadLiveSales, recordLiveSale } from "@/lib/demo-config";
 
 // Só produtos com venda e comissão registradas, como no original.
 const SALES = CATALOGO_ORIGINAL.filter((p) => p.salesCount > 0 && p.earningCents > 0);
@@ -12,8 +12,19 @@ const SALES = CATALOGO_ORIGINAL.filter((p) => p.salesCount > 0 && p.earningCents
 const SHOW_MS = 5500;
 const GAP_MS = 4500;
 
+// Registra a venda mostrada para o dashboard somar.
+function record(i: number) {
+  const p = SALES[i];
+  if (p) recordLiveSale({ title: p.title, imageUrl: p.imageUrl, amountCents: p.priceCents, commissionCents: p.earningCents });
+}
+
 export function LiveSaleToast() {
   const [idx, setIdx] = useState(0);
+  const idxRef = useRef(0);
+  const go = (n: number) => {
+    idxRef.current = n;
+    setIdx(n);
+  };
   const [visible, setVisible] = useState(false);
   // "Modo de disparo" do Painel do Afiliado (aba Vendas ao Vivo).
   const [enabled, setEnabled] = useState(true);
@@ -33,7 +44,9 @@ export function LiveSaleToast() {
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
     const fire = () => {
-      setIdx((i) => (i + 1) % SALES.length);
+      const n = (idxRef.current + 1) % SALES.length;
+      go(n);
+      record(n);
       setVisible(true);
       clearTimeout(t);
       t = setTimeout(() => setVisible(false), SHOW_MS);
@@ -49,13 +62,14 @@ export function LiveSaleToast() {
     if (!enabled) return;
     let timer: ReturnType<typeof setTimeout>;
     const show = () => {
+      record(idxRef.current);
       setVisible(true);
       timer = setTimeout(hide, SHOW_MS);
     };
     const hide = () => {
       setVisible(false);
       timer = setTimeout(() => {
-        setIdx((i) => (i + 1) % SALES.length);
+        go((idxRef.current + 1) % SALES.length);
         show();
       }, GAP_MS);
     };

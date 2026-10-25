@@ -14,9 +14,12 @@ import {
 import {
   DEMO_CONFIG_EVENT,
   FIRE_SALE_EVENT,
+  LIVE_SALE_EVENT,
   hasCustomMetrics,
   loadMetrics,
+  loadTodaySales,
   type BaseMetrics,
+  type LiveSale,
 } from "@/lib/demo-config";
 
 type PeriodKey = "today" | "week" | "d7" | "d15" | "month" | "d30";
@@ -541,29 +544,14 @@ function DashboardView() {
   const [period, setPeriod] = useState<PeriodKey>("today");
   const [chartType, setChartType] = useState<"area" | "bars">("area");
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-  const [liveSales, setLiveSales] = useState([
-    {
-      id: "ls-1",
-      title: ZAALYS_PRODUCTS[0]!.title,
-      imageUrl: ZAALYS_PRODUCTS[0]!.imageUrl,
-      amountCents: 8990,
-      commissionCents: 1978,
-    },
-    {
-      id: "ls-2",
-      title: ZAALYS_PRODUCTS[2]!.title,
-      imageUrl: ZAALYS_PRODUCTS[2]!.imageUrl,
-      amountCents: 11990,
-      commissionCents: 2398,
-    },
-    {
-      id: "ls-3",
-      title: ZAALYS_PRODUCTS[1]!.title,
-      imageUrl: ZAALYS_PRODUCTS[1]!.imageUrl,
-      amountCents: 6490,
-      commissionCents: 1168,
-    },
-  ]);
+  // Vendas ao vivo de hoje: cada notificação "Venda ao vivo" entra aqui e soma nos números.
+  const [liveSales, setLiveSales] = useState<LiveSale[]>([]);
+  useEffect(() => {
+    setLiveSales(loadTodaySales());
+    const onSale = (e: Event) => setLiveSales((prev) => [...prev, (e as CustomEvent<LiveSale>).detail]);
+    window.addEventListener(LIVE_SALE_EVENT, onSale);
+    return () => window.removeEventListener(LIVE_SALE_EVENT, onSale);
+  }, []);
 
   // Valores-base do Painel do Afiliado (aba Métricas), quando preenchidos, substituem os de exemplo.
   const [custom, setCustom] = useState<Record<PeriodKey, BaseMetrics> | null>(null);
@@ -605,7 +593,8 @@ function DashboardView() {
           };
         })()
       : builtIn;
-  const series = data.series;
+  // As vendas ao vivo entram no último ponto do gráfico (o momento atual).
+  const series = data.series.map((s, i, arr) => (i === arr.length - 1 ? { ...s, gmvCents: s.gmvCents + liveSales.reduce((a, x) => a + x.amountCents, 0), orders: s.orders + liveSales.length } : s));
   const maxVal = Math.max(1, ...series.map((s) => s.gmvCents));
   const width = 760;
   const xs = series.map((_, i) =>
@@ -617,48 +606,31 @@ function DashboardView() {
 
   const activePoint = hoverIdx !== null ? series[hoverIdx] : undefined;
   const liveTotalCents = liveSales.reduce((acc, s) => acc + s.amountCents, 0);
-
-  useEffect(() => {
-    const onFire = () => triggerLiveSale();
-    window.addEventListener(FIRE_SALE_EVENT, onFire);
-    return () => window.removeEventListener(FIRE_SALE_EVENT, onFire);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function triggerLiveSale() {
-    const prod = ZAALYS_PRODUCTS[Math.floor(Math.random() * ZAALYS_PRODUCTS.length)]!;
-    setLiveSales((prev) => [
-      {
-        id: `ls-${Date.now()}`,
-        title: prod.title,
-        imageUrl: prod.imageUrl,
-        amountCents: prod.priceCents,
-        commissionCents: prod.earningCents,
-      },
-      ...prev.slice(0, 5),
-    ]);
-  }
+  const liveCommissionCents = liveSales.reduce((acc, s) => acc + s.commissionCents, 0);
+  const totalOrders = data.orders + liveSales.length;
+  const totalGmv = data.gmvCents + liveTotalCents;
 
   const metrics = [
     {
       label: "GMV",
-      value: formatBRL(data.gmvCents + liveTotalCents),
+      value: formatBRL(totalGmv),
       sub: "Base + vendas ao vivo",
       accent: true,
     },
     {
       label: "Comissão estimada",
-      value: formatBRL(data.commissionCents),
+      value: formatBRL(data.commissionCents + liveCommissionCents),
       sub: "Sobre as vendas",
     },
     {
       label: "Pedidos confirmados",
-      value: compactNumber(data.orders + liveSales.length),
+      value: compactNumber(totalOrders),
       sub: "No período",
     },
     {
       label: "Ticket médio",
-      value: formatBRL(data.ticketCents),
+      // O ticket médio informado é o piso: mostra o maior entre ele e o calculado.
+      value: formatBRL(Math.max(data.ticketCents, totalOrders > 0 ? Math.round(totalGmv / totalOrders) : 0)),
       sub: "Faturamento / pedidos",
     },
     {
@@ -678,7 +650,7 @@ function DashboardView() {
     },
     {
       label: "Base de comissão",
-      value: formatBRL(data.commissionBaseCents),
+      value: formatBRL(data.commissionBaseCents + liveTotalCents),
       sub: "Consistente com o volume",
     },
   ];
@@ -880,7 +852,7 @@ function DashboardView() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={triggerLiveSale}
+              onClick={() => window.dispatchEvent(new Event(FIRE_SALE_EVENT))}
               className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/20 cursor-pointer"
             >
               + Simular venda ao vivo
@@ -891,7 +863,8 @@ function DashboardView() {
           </div>
         </div>
         <ul className="mt-3 space-y-2">
-          {liveSales.map((s) => (
+          {liveSales.length === 0 && <li className="text-sm text-muted-foreground">As vendas do dia aparecem aqui conforme acontecem.</li>}
+          {[...liveSales].reverse().slice(0, 6).map((s) => (
             <li key={s.id} className="flex items-center gap-2.5 text-sm">
               <div className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-black/[0.06] bg-muted dark:border-white/[0.08]">
                 <img src={s.imageUrl} alt="" className="size-full object-cover" />
