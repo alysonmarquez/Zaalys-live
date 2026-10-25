@@ -8,7 +8,21 @@ import { formatBRL, type ZaalysProduct } from "@/lib/zaalys-data";
 import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
 import { useIsDemo } from "@/lib/use-demo";
 import { LiveTools } from "./live-tools";
-import { ChromeStoreDemo, OpenTikTokDemo, PreviewDemo } from "./how-to";
+import {
+  ChromeStoreDemo,
+  ConnectDemo,
+  DownloadCrxDemo,
+  IphoneReadyDemo,
+  MobileOpenDemo,
+  MobilePreviewDemo,
+  OpenTikTokDemo,
+  OrionInstallDemo,
+  OrionSettingsDemo,
+  PreviewDemo,
+  QuettaCheckDemo,
+  QuettaDesktopSiteDemo,
+  StoreDemo,
+} from "./how-to";
 
 // Assistente de Live no formato do original: 4 etapas, 6 passos, e as preparações salvas.
 
@@ -19,15 +33,113 @@ const STORAGE = "zaalys_live_preps";
 const DEVICE_STORAGE = "zaalys_live_device";
 
 const STAGES = ["Produto", "Aparelho", "Vídeos", "Abrir no TikTok"];
+// Os passos mudam conforme o aparelho (como no original): Computador 6, iPhone/iPad 10, Android 9.
 // Cada passo pertence a uma etapa (índice em STAGES).
-const STEPS: { stage: number; title: string }[] = [
-  { stage: 1, title: "Onde você vai fazer a live?" },
-  { stage: 1, title: "Adicione a extensão ao Chrome" },
-  { stage: 1, title: "Sua chave, se o painel pedir" },
-  { stage: 2, title: "Quais vídeos você vai usar?" },
-  { stage: 3, title: "Abra a live no TikTok Shop" },
-  { stage: 3, title: "Confira a prévia e inicie pelo painel" },
-];
+type StepKey =
+  | "device" | "ext" | "key" | "videos" | "open" | "preview"
+  | "orion-install" | "orion-ext" | "orion-download" | "orion-file" | "quetta-install" | "quetta-crx" | "quetta-check"
+  | "connect" | "ios-ready" | "android-ready";
+type Step = { key: StepKey; stage: number; title: string };
+
+function flowFor(device: Device): Step[] {
+  const first: Step = { key: "device", stage: 1, title: "Onde você vai fazer a live?" };
+  const videos: Step = { key: "videos", stage: 2, title: "Quais vídeos você vai usar?" };
+  const preview: Step = { key: "preview", stage: 3, title: "Confira a prévia e inicie pelo painel" };
+  if (device === "ios")
+    return [
+      first,
+      { key: "orion-install", stage: 1, title: "Instale o Orion" },
+      { key: "orion-ext", stage: 1, title: "Ligue as extensões no Orion" },
+      { key: "orion-download", stage: 1, title: "Baixe a extensão no Orion" },
+      { key: "orion-file", stage: 1, title: "Instale no Orion" },
+      { key: "connect", stage: 1, title: "Conecte a extensão à sua conta" },
+      { key: "ios-ready", stage: 1, title: "Deixe o iPhone pronto para a live" },
+      videos,
+      { key: "open", stage: 3, title: "Abra a live no Orion" },
+      preview,
+    ];
+  if (device === "android")
+    return [
+      first,
+      { key: "quetta-install", stage: 1, title: "Instale o Quetta" },
+      { key: "quetta-crx", stage: 1, title: "Instale a extensão no Quetta" },
+      { key: "quetta-check", stage: 1, title: "Confira se a extensão entrou" },
+      { key: "connect", stage: 1, title: "Conecte a extensão à sua conta" },
+      { key: "android-ready", stage: 1, title: "Deixe o Android pronto para a live" },
+      videos,
+      { key: "open", stage: 3, title: "Abra a live no Quetta" },
+      preview,
+    ];
+  return [
+    first,
+    { key: "ext", stage: 1, title: "Adicione a extensão ao Chrome" },
+    { key: "key", stage: 1, title: "Sua chave, se o painel pedir" },
+    videos,
+    { key: "open", stage: 3, title: "Abra a live no TikTok Shop" },
+    preview,
+  ];
+}
+
+// Passos de celular: texto, lista numerada, botão e animação lidos do original.
+const MOBILE: Partial<Record<StepKey, { desc: string; list?: string[]; action?: { label: string; href: string; download?: boolean } }>> = {
+  "orion-install": {
+    desc: "É o navegador de iPhone e iPad que aceita extensões do Chrome. Grátis, na App Store.",
+    list: ["Toque em **Abrir a App Store**.", "Toque em **Obter** e espere instalar."],
+    action: { label: "Abrir a App Store", href: "https://apps.apple.com/app/orion-browser-by-kagi/id1484498200" },
+  },
+  "orion-ext": {
+    desc: "Uma vez só. Sem isso o Orion não aceita a Zaalys Live.",
+    list: ["No Orion, toque em **•••** e depois em **Ajustes**.", "Em **Extensões**, ligue **Extensões do Chrome**.", "Em **Sites**, deixe o **Modo de compatibilidade** desligado."],
+  },
+  "orion-download": {
+    desc: "Abra esta página no Orion, já logada na sua conta, e baixe o arquivo.",
+    list: ["No Orion, entre em **zaalys.com** e abra este passo.", "Toque em **Baixar extensão** e confirme em **Baixar**.", "Se ele cair no iCloud Drive, mova para **No iPhone** no app Arquivos."],
+    action: { label: "Baixar extensão (.crx)", href: "/downloads/zaalys-live.crx", download: true },
+  },
+  "orion-file": {
+    desc: "Quatro toques no menu do Orion.",
+    list: ["Toque em **•••** e depois em **Extensões**.", "Toque em **+** e escolha **Instalar do arquivo**.", "Escolha **zaalys-live.crx**. A Zaalys Live aparece na lista, ligada."],
+  },
+  "quetta-install": {
+    desc: "É o navegador de Android que aceita extensões do Chrome. Grátis, na Play Store.",
+    list: ["Toque em **Abrir a Play Store**.", "Toque em **Instalar** e espere terminar."],
+    action: { label: "Abrir a Play Store", href: "https://play.google.com/store/search?q=Quetta%20browser&c=apps" },
+  },
+  "quetta-crx": {
+    desc: "Abra esta página no Quetta, já logada na sua conta. O Quetta instala o arquivo na hora.",
+    list: ["No Quetta, entre em **zaalys.com** e abra este passo.", "Toque em **Baixar extensão (.crx)**.", "O Quetta pergunta **Adicionar “Zaalys Live”?**. Toque em **Adicionar** (ou OK)."],
+    action: { label: "Baixar extensão (.crx)", href: "/downloads/zaalys-live.crx", download: true },
+  },
+  "quetta-check": {
+    desc: "Se o Quetta não perguntou nada ao baixar, instale pelo menu. Os nomes podem mudar um pouco de uma versão para outra.",
+    list: ["Toque em **⋮** e depois em **Extensões**.", "Abra as **opções de desenvolvedor** e toque em **carregar arquivo .zip/.crx**.", "Escolha **zaalys-live.crx** em Downloads."],
+  },
+  "ios-ready": {
+    desc: "A live roda dentro do Orion: ele precisa ficar aberto, na frente, e o celular carregando.",
+    list: ["**Ajustes › Tela e Brilho › Bloqueio automático › Nunca**. A extensão também mantém a tela acesa enquanto a live está no ar.", "Deixe o carregador ligado a live inteira.", "Não abra outro app por cima nem divida a tela do iPad: o iOS desliga a câmera."],
+  },
+  "android-ready": {
+    desc: "O TikTok só abre o LIVE Manager como site para computador, e a live roda com o Quetta na frente.",
+    list: ["Na página do TikTok, toque em **⋮** e marque **Site para computador**.", "Quando o Quetta pedir, permita a **câmera** e o **microfone**.", "Deixe carregando e não troque de app. A extensão mantém a tela acesa durante a live."],
+  },
+};
+
+/** Texto com **negrito** simples. */
+function Rich({ text }: { text: string }) {
+  return (
+    <>
+      {text.split("**").map((part, i) =>
+        i % 2 ? (
+          <b key={i} className="text-foreground">
+            {part}
+          </b>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  );
+}
 
 const DEVICES: { key: Device; label: string; browser: string; icon: React.ReactNode }[] = [
   { key: "desktop", label: "Computador", browser: "Google Chrome", icon: <Laptop size={18} /> },
@@ -77,6 +189,7 @@ export default function LivePage() {
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [device, setDevice] = useState<Device>("desktop");
+  const [detected, setDetected] = useState<Device>("desktop");
   const [videoSource, setVideoSource] = useState<"real" | "mine" | "flow">("real");
   const [showTools, setShowTools] = useState(false);
   const [showObs, setShowObs] = useState(false);
@@ -95,12 +208,15 @@ export default function LivePage() {
   }, [demo]);
 
   useEffect(() => {
+    const ua = navigator.userAgent;
+    const det: Device = /iPhone|iPad/i.test(ua) ? "ios" : /Android/i.test(ua) ? "android" : "desktop";
+    setDetected(det);
     try {
       const d = window.localStorage.getItem(DEVICE_STORAGE) as Device | null;
-      if (d) setDevice(d);
-      else if (/iPhone|iPad/i.test(navigator.userAgent)) setDevice("ios");
-      else if (/Android/i.test(navigator.userAgent)) setDevice("android");
-    } catch {}
+      setDevice(d || det);
+    } catch {
+      setDevice(det);
+    }
   }, []);
 
   const save = (list: Prep[]) => {
@@ -358,21 +474,27 @@ export default function LivePage() {
   }
 
   // Etapas 2 a 4
-  const step = STEPS[current.step]!;
+  const flow = flowFor(device);
+  const stepIdx = Math.min(current.step, flow.length - 1);
+  const step = flow[stepIdx]!;
   const stageIndex = step.stage;
-  const inStage = STEPS.filter((s) => s.stage === stageIndex);
+  const inStage = flow.filter((s) => s.stage === stageIndex);
   const posInStage = inStage.indexOf(step) + 1;
-  const isLast = current.step === STEPS.length - 1;
+  const isLast = stepIdx === flow.length - 1;
   const dev = DEVICES.find((d) => d.key === device)!;
   const prod = CATALOGO_ORIGINAL.find((x) => x.id === current.productId);
-  const deviceDone = current.step >= 3;
+  const deviceDone = stepIdx > flow.findIndex((s) => s.key === "videos");
+  const mobile = device !== "desktop";
+  const os = device === "ios" ? "ios" : "android";
+  const browserName = device === "ios" ? "Orion" : "Quetta";
+  const mob = MOBILE[step.key];
 
   const primaryLabel =
-    current.step === 0
+    step.key === "device"
       ? "Confirmar aparelho"
-      : current.step === 1 || current.step === 2
+      : step.key === "ext" || step.key === "key"
         ? "Continuar"
-        : current.step === 3
+        : step.key === "videos"
           ? "Continuar com estes vídeos"
           : isLast
             ? "Concluir passo a passo"
@@ -449,34 +571,34 @@ export default function LivePage() {
           {[1, 2, 3].map((st) => (
             <div key={st}>
               <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {STEPS.every((s, i) => s.stage !== st || i < current.step) ? <span className="text-primary">✓</span> : <span>{STAGE_ICONS[st]}</span>}
+                {flow.every((s, i) => s.stage !== st || i < stepIdx) ? <span className="text-primary">✓</span> : <span>{STAGE_ICONS[st]}</span>}
                 {STAGES[st]}
               </p>
               <ul className="mt-1.5 space-y-1">
-                {STEPS.map((s, i) =>
+                {flow.map((s, i) =>
                   s.stage !== st ? null : (
-                    <li key={s.title}>
+                    <li key={s.key}>
                       <button
                         type="button"
                         onClick={() => goTo(i)}
                         className={cn(
                           "flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left cursor-pointer",
-                          i === current.step ? "bg-muted font-semibold" : "hover:bg-muted/50",
+                          i === stepIdx ? "bg-muted font-semibold" : "hover:bg-muted/50",
                         )}
                       >
-                        {i < current.step ? (
+                        {i < stepIdx ? (
                           <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">✓</span>
                         ) : (
                           <span
                             className={cn(
                               "grid size-5 shrink-0 place-items-center rounded-full border text-[10px] font-bold",
-                              i === current.step ? "border-foreground" : "border-border text-muted-foreground",
+                              i === stepIdx ? "border-foreground" : "border-border text-muted-foreground",
                             )}
                           >
                             {i + 1}
                           </span>
                         )}
-                        <span className={i === current.step ? "" : "text-muted-foreground"}>{s.title}</span>
+                        <span className={i === stepIdx ? "" : "text-muted-foreground"}>{s.title}</span>
                       </button>
                     </li>
                   ),
@@ -491,12 +613,12 @@ export default function LivePage() {
           <div className="space-y-4 p-6">
             <div>
               <h3 className="text-xl font-bold">{step.title}</h3>
-              {current.step === 0 && (
+              {step.key === "device" && (
                 <p className="mt-1 text-sm text-muted-foreground">
                   Este é o aparelho que vai transmitir, mesmo que você esteja lendo em outro. Instale a extensão nele uma vez; depois, você só confere a configuração.
                 </p>
               )}
-              {current.step === 1 && (
+              {step.key === "ext" && (
                 <p className="mt-1 text-sm text-muted-foreground">
                   {device === "desktop" ? (
                     <>
@@ -507,14 +629,26 @@ export default function LivePage() {
                   )}
                 </p>
               )}
-              {current.step === 2 && (
+              {step.key === "key" && (
                 <p className="mt-1 text-sm text-muted-foreground">
                   Você já concluiu a configuração ou tem um aparelho registrado. Se o painel do TikTok pedir a chave novamente, copie aqui e ative por lá.
                 </p>
               )}
-              {current.step === 3 && <p className="mt-1 text-sm text-muted-foreground">Escolha uma opção. Você seleciona os arquivos no painel Zaalys, dentro do TikTok.</p>}
-              {current.step === 4 && <p className="mt-1 text-sm text-muted-foreground">O painel Zaalys Live aparece no canto da página do TikTok.</p>}
-              {current.step === 5 && (
+              {step.key === "videos" && <p className="mt-1 text-sm text-muted-foreground">Escolha uma opção. Você seleciona os arquivos no painel Zaalys, dentro do TikTok.</p>}
+              {step.key === "open" && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {mobile
+                    ? "Toque no botão abaixo pelo navegador do celular. O painel Zaalys Live sobe da parte de baixo da tela."
+                    : "O painel Zaalys Live aparece no canto da página do TikTok."}
+                </p>
+              )}
+              {mob && <p className="mt-1 text-sm text-muted-foreground">{mob.desc}</p>}
+              {step.key === "connect" && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Abra este passo no {browserName} do celular, com a extensão instalada, e toque em Conectar neste navegador. Não precisa copiar nada.
+                </p>
+              )}
+              {step.key === "preview" && (
                 <p className="mt-1 text-sm text-muted-foreground">
                   Confira vídeos, câmera, som e produto. Quando os itens do painel estiverem prontos, clique em Ligar live automática. Confirme no TikTok se a transmissão começou.
                 </p>
@@ -525,7 +659,7 @@ export default function LivePage() {
               </p>
             </div>
 
-            {current.step === 0 && (
+            {step.key === "device" && (
               <>
                 <p className="text-xs font-semibold text-muted-foreground">Aparelho da live</p>
                 <div className="grid gap-2 sm:grid-cols-3">
@@ -546,12 +680,12 @@ export default function LivePage() {
                     </button>
                   ))}
                 </div>
-                <p className="text-sm text-muted-foreground">Sugerimos o aparelho em que você está. Confirme abaixo ou escolha outro.</p>
+                <p className="text-sm text-muted-foreground">{device === detected ? "Sugerimos o aparelho em que você está. Confirme abaixo ou escolha outro." : "Aparelho escolhido. Você pode trocar quando precisar."}</p>
                 {deviceDone && <p className="text-sm text-muted-foreground">Sua conta já tem um aparelho registrado. Vamos conferir a instalação neste navegador.</p>}
               </>
             )}
 
-            {current.step === 1 && (
+            {step.key === "ext" && (
               <>
                 <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                   Funciona no Google Chrome, no computador.{" "}
@@ -605,9 +739,57 @@ export default function LivePage() {
               </>
             )}
 
-            {current.step === 2 && <KeyBox demo={demo} />}
+            {step.key === "key" && <KeyBox demo={demo} />}
 
-            {current.step === 3 && (
+            {step.key === "connect" && (
+              <>
+                <p className="text-sm text-muted-foreground">Se preferir, copie a chave e cole no painel da extensão:</p>
+                <KeyBox demo={demo} />
+                <HowTo>
+                  <ConnectDemo os={os} />
+                </HowTo>
+              </>
+            )}
+
+            {mob && (
+              <>
+                {mob.list && (
+                  <ol className="space-y-3 text-sm">
+                    {mob.list.map((t, i) => (
+                      <li key={i} className="flex gap-3">
+                        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">{i + 1}</span>
+                        <span>
+                          <Rich text={t} />
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                <HowTo>
+                  {step.key === "orion-install" && <StoreDemo os="ios" />}
+                  {step.key === "quetta-install" && <StoreDemo os="android" />}
+                  {step.key === "orion-ext" && <OrionSettingsDemo />}
+                  {(step.key === "orion-download" || step.key === "quetta-crx") && <DownloadCrxDemo />}
+                  {step.key === "orion-file" && <OrionInstallDemo />}
+                  {step.key === "quetta-check" && <QuettaCheckDemo />}
+                  {step.key === "ios-ready" && <IphoneReadyDemo />}
+                  {step.key === "android-ready" && <QuettaDesktopSiteDemo />}
+                </HowTo>
+                {mob.action && (
+                  <a
+                    href={mob.action.href}
+                    target={mob.action.download ? undefined : "_blank"}
+                    rel="noreferrer"
+                    download={mob.action.download || undefined}
+                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold hover:bg-muted"
+                  >
+                    ↗ {mob.action.label}
+                  </a>
+                )}
+              </>
+            )}
+
+            {step.key === "videos" && (
               <>
                 <p className="text-xs font-semibold text-muted-foreground">Origem dos vídeos</p>
                 <div className="space-y-2">
@@ -642,8 +824,29 @@ export default function LivePage() {
               </>
             )}
 
-            {current.step === 4 && (
+            {step.key === "open" && (
               <>
+                {mobile && (
+                  <ol className="space-y-3 text-sm">
+                    {[
+                      "Toque em **Abrir o TikTok Shop** e entre com a conta do TikTok da live.",
+                      "O painel sobe na parte de baixo. Toque no **–** para minimizar e ver a prévia inteira.",
+                      "O menu do TikTok fica no **☰**, e as colunas Produtos, Vídeo e Dados e chat ficam nas abas logo abaixo.",
+                    ].map((t, i) => (
+                      <li key={i} className="flex gap-3">
+                        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">{i + 1}</span>
+                        <span>
+                          <Rich text={t} />
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                {mobile && (
+                  <HowTo>
+                    <MobileOpenDemo os={os} />
+                  </HowTo>
+                )}
                 <details className="group rounded-2xl bg-muted/40 p-4">
                   <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold">
                     Travou? Veja o que fazer <span className="text-muted-foreground transition-transform group-open:rotate-90">›</span>
@@ -663,10 +866,30 @@ export default function LivePage() {
                         A conta onde a live vai passar. O e-mail dela não precisa ser o mesmo da sua conta Zaalys: a extensão se liga à Zaalys pela sua chave, não pelo e-mail.
                       </span>
                     </p>
+                    {mobile && (
+                      <p>
+                        <b>A tela de entrar do TikTok mostra um QR code?</b>
+                        <br />
+                        <span className="text-muted-foreground">
+                          O celular não lê o QR da própria tela. Escolha entrar com telefone, e-mail ou nome de usuário, ou com Google ou Apple, do mesmo jeito que você entra no app.
+                        </span>
+                      </p>
+                    )}
+                    {device === "android" && (
+                      <p>
+                        <b>O TikTok mandou abrir o app ou mostrou a versão de celular?</b>
+                        <br />
+                        <span className="text-muted-foreground">No Quetta, toque em ⋮, marque Site para computador e toque em Abrir o TikTok Shop de novo.</span>
+                      </p>
+                    )}
                     <p>
                       <b>O painel Zaalys Live não apareceu?</b>
                       <br />
-                      <span className="text-muted-foreground">Confira em chrome://extensions se a Zaalys Live está ligada e recarregue a página do TikTok (F5).</span>
+                      <span className="text-muted-foreground">
+                        {mobile
+                          ? `A página do TikTok precisa estar aberta no ${browserName}, o mesmo navegador onde a extensão foi instalada. Feche a aba, toque em Abrir o TikTok Shop aqui de novo e espere carregar inteira.`
+                          : "Confira em chrome://extensions se a Zaalys Live está ligada e recarregue a página do TikTok (F5)."}
+                      </span>
                     </p>
                   </div>
                 </details>
@@ -678,13 +901,15 @@ export default function LivePage() {
                 >
                   ↗ Abrir o TikTok Shop
                 </a>
-                <HowTo>
-                  <OpenTikTokDemo />
-                </HowTo>
+                {!mobile && (
+                  <HowTo>
+                    <OpenTikTokDemo />
+                  </HowTo>
+                )}
               </>
             )}
 
-            {current.step === 5 && (
+            {step.key === "preview" && (
               <>
                 <ol className="space-y-3 text-sm">
                   {[
@@ -718,12 +943,12 @@ export default function LivePage() {
                   </summary>
                   <div className="mt-3 space-y-3 text-sm">
                     {[
-                      ["O item Câmera não fica verde?", "Na página do TikTok abra as fontes de vídeo e áudio e escolha Zaalys Live (vídeo) na câmera e Zaalys Live (áudio) no microfone."],
-                      ["“Zaalys Live” não aparece na lista de câmeras?", "Escolha os clipes e a live no painel primeiro: a câmera só existe depois disso. Então recarregue a página do TikTok (F5)."],
+                      ["O item Câmera não fica verde?", mobile ? "Na página do TikTok, na aba Vídeo, abra as fontes de vídeo e áudio e escolha Zaalys Live (vídeo) na câmera e Zaalys Live (áudio) no microfone." : "Na página do TikTok abra as fontes de vídeo e áudio e escolha Zaalys Live (vídeo) na câmera e Zaalys Live (áudio) no microfone."],
+                      ["“Zaalys Live” não aparece na lista de câmeras?", "Escolha os clipes e a live no painel primeiro: a câmera só existe depois disso. Então recarregue a página do TikTok (" + (mobile ? "↻ no navegador" : "F5") + ")."],
                       ["O painel disse “Não consegui abrir a live”?", "O painel já escolheu a câmera e o som da Zaalys; só o clique em iniciar não pegou. Clique em Iniciar LIVE no próprio TikTok e deixe o painel ligado: ele continua comentando, fixando e narrando."],
-                      ["O botão de iniciar LIVE do TikTok está cinza?", "Escolha os clipes no painel primeiro: sem eles não existe câmera para enviar. Se continuar cinza, recarregue a página do TikTok (F5) e ligue de novo. Se aparecer que iniciar LIVE está restrito, o bloqueio é do TikTok na sua conta: veja os avisos de violação no TikTok Shop."],
+                      ["O botão de iniciar LIVE do TikTok está cinza?", "Escolha os clipes no painel primeiro: sem eles não existe câmera para enviar. Se continuar cinza, recarregue a página do TikTok (" + (mobile ? "↻ no navegador" : "F5") + ") e ligue de novo. Se aparecer que iniciar LIVE está restrito, o bloqueio é do TikTok na sua conta: veja os avisos de violação no TikTok Shop."],
                       ["A live está sem som?", "Toque uma vez na página do TikTok e ligue de novo. O navegador só libera o som depois de um toque."],
-                      ["A voz sai cortada ou some depois da primeira frase?", "Atualize a extensão. Pela Chrome Web Store ela se atualiza sozinha; se você instalou pelo .zip, troque pela loja no passo da extensão."],
+                      ["A voz sai cortada ou some depois da primeira frase?", mobile ? `Atualize a extensão: no celular ela não se atualiza sozinha. No menu de extensões do ${browserName}, remova a Zaalys Live, baixe e instale de novo pelo passo da extensão e toque em Conectar neste navegador. Os clipes continuam lá.` : "Atualize a extensão. Pela Chrome Web Store ela se atualiza sozinha; se você instalou pelo .zip, troque pela loja no passo da extensão."],
                     ].map(([q, a]) => (
                       <p key={q}>
                         <b>{q}</b>
@@ -733,9 +958,7 @@ export default function LivePage() {
                     ))}
                   </div>
                 </details>
-                <HowTo>
-                  <PreviewDemo product={current.title} />
-                </HowTo>
+                <HowTo>{mobile ? <MobilePreviewDemo os={os} /> : <PreviewDemo product={current.title} />}</HowTo>
               </>
             )}
           </div>
@@ -743,8 +966,8 @@ export default function LivePage() {
           <div className="flex items-center justify-between border-t border-border px-6 py-4">
             <button
               type="button"
-              disabled={current.step === 0}
-              onClick={() => goTo(current.step - 1)}
+              disabled={stepIdx === 0}
+              onClick={() => goTo(stepIdx - 1)}
               className="h-10 px-2 text-sm font-semibold text-muted-foreground hover:text-foreground disabled:opacity-40 cursor-pointer"
             >
               ← Voltar
@@ -752,13 +975,13 @@ export default function LivePage() {
             <button
               type="button"
               onClick={() => {
-                if (current.step === 0) {
+                if (stepIdx === 0) {
                   try {
                     window.localStorage.setItem(DEVICE_STORAGE, device);
                   } catch {}
                 }
                 if (isLast) setCurrent(null);
-                else goTo(current.step + 1);
+                else goTo(stepIdx + 1);
               }}
               className="h-11 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-xs cursor-pointer"
             >

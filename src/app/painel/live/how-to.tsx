@@ -247,3 +247,394 @@ export function PreviewDemo({ product }: { product: string }) {
     </LiveManagerFrame>
   );
 }
+
+// ---------- Celular (iPhone/Orion e Android/Quetta) ----------
+
+/** Mostra as telas em sequência, cada uma por uma fatia igual do ciclo de 8 s. */
+function Frames({ frames }: { frames: React.ReactNode[] }) {
+  const n = frames.length;
+  const css = frames
+    .map((_, i) => {
+      const a = Math.round((i / n) * 100);
+      const b = Math.round(((i + 1) / n) * 100);
+      const name = `zl-fr-${n}-${i}`;
+      const on = i === 0 ? `0%,${Math.max(b - 3, 1)}%{opacity:1}${b}%,100%{opacity:0}` : `0%,${a}%{opacity:0}${a + 3}%,${i === n - 1 ? 97 : b - 3}%{opacity:1}${i === n - 1 ? "100%{opacity:0}" : `${b}%,100%{opacity:0}`}`;
+      return `@keyframes ${name}{${on}}`;
+    })
+    .join("");
+  return (
+    <div className="relative h-full">
+      <style>{css}</style>
+      {frames.map((f, i) => (
+        <div key={i} className="absolute inset-0" style={{ animationName: `zl-fr-${n}-${i}` }}>
+          {f}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Phone({ url, frames, dark = false }: { url?: string; frames: React.ReactNode[]; dark?: boolean }) {
+  return (
+    <div className="zl-anim w-[150px] rounded-[26px] bg-neutral-900 p-[5px] shadow-xl">
+      <style>{CSS}</style>
+      <div className={`relative h-[300px] overflow-hidden rounded-[22px] ${dark ? "bg-neutral-900 text-white" : "bg-white text-neutral-900"} text-[8px]`}>
+        <div className="flex items-center justify-between px-4 pt-2 text-[7px] font-semibold">
+          <span>9:41</span>
+          <span className="h-3 w-12 rounded-full bg-neutral-900" />
+          <span>▮</span>
+        </div>
+        {url && <div className="mx-2 mt-1 truncate rounded-md bg-neutral-100 px-2 py-0.5 text-[7px] text-neutral-500">{url}</div>}
+        <div className="absolute inset-x-0 bottom-0 top-[34px]">
+          <Frames frames={frames} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const Row = ({ children, check = false }: { children: React.ReactNode; check?: boolean }) => (
+  <div className="flex items-center justify-between border-b border-neutral-100 px-2 py-1.5">
+    <span>{children}</span>
+    {check && <span className="text-[#00a19c]">✓</span>}
+  </div>
+);
+const Toggle = ({ on }: { on: boolean }) => (
+  <span className={`inline-block h-3 w-5 rounded-full ${on ? "bg-[#34c759]" : "bg-neutral-300"} relative`}>
+    <span className={`absolute top-0.5 size-2 rounded-full bg-white ${on ? "left-2.5" : "left-0.5"}`} />
+  </span>
+);
+const Sheet = ({ children }: { children: React.ReactNode }) => (
+  <div className="absolute inset-x-1 bottom-1 rounded-xl bg-white p-2 shadow-[0_-4px_20px_rgba(0,0,0,.15)]">{children}</div>
+);
+const ZRow = ({ v = "3.12.0" }: { v?: string }) => (
+  <div className="flex items-center gap-1.5 px-2 py-1.5">
+    <Z className="size-4 text-[7px]" />
+    <span className="flex-1 font-semibold">Zaalys Live</span>
+    <span className="text-neutral-400">{v}</span>
+    <Toggle on />
+  </div>
+);
+const Crx = () => (
+  <div className="flex items-center gap-1.5 rounded-md border border-neutral-200 p-1.5">
+    <span className="rounded bg-neutral-200 px-1 text-[6px] font-bold">CRX</span>
+    <span className="flex-1">
+      <span className="block font-semibold">zaalys-live.crx</span>
+      <span className="text-[6.5px] text-neutral-400">2,6 MB · agora</span>
+    </span>
+  </div>
+);
+
+export function StoreDemo({ os }: { os: "ios" | "android" }) {
+  const ios = os === "ios";
+  const card = (btn: string, filled: boolean) => (
+    <div className="p-2">
+      {ios && <p className="text-[13px] font-bold">Buscar</p>}
+      <div className="mt-1 flex items-center gap-2 border-b border-neutral-100 pb-2">
+        <span className={`grid size-9 place-items-center rounded-xl ${ios ? "bg-[#5b3fd6]" : "bg-[#2b6cf6]"} text-white`}>{ios ? "✦" : "Q"}</span>
+        <span className="flex-1">
+          <span className="block font-semibold">{ios ? "Orion Browser by Kagi" : "Quetta: Kiwi Alternative&Video"}</span>
+          <span className="block text-[6.5px] text-neutral-500">{ios ? "Utilidades · ★★★★☆ 83" : "Quetta Networks · 4,8 ★ · 1 mi+ downloads"}</span>
+        </span>
+        {ios && <span className={`rounded-full px-2 py-0.5 text-[7px] font-bold ${filled ? "bg-[#007aff] text-white" : "bg-neutral-100 text-[#007aff]"}`}>{btn}</span>}
+      </div>
+      {!ios && <span className={`mt-2 block rounded-full py-1 text-center text-[8px] font-semibold ${filled ? "bg-[#01875f] text-white" : "border border-[#01875f] text-[#01875f]"}`}>{btn}</span>}
+      <div className="mt-2 h-[120px] rounded-lg bg-neutral-100" />
+    </div>
+  );
+  return <Phone frames={ios ? [card("OBTER", false), card("ABRIR", true)] : [card("Instalar", true), card("Abrir", false)]} />;
+}
+
+export function OrionSettingsDemo() {
+  const screen = (chrome: boolean) => (
+    <div className="bg-neutral-50">
+      <p className="px-2 pb-1 text-[12px] font-bold">Ajustes</p>
+      <p className="px-2 pt-1 text-[6.5px] text-neutral-400">EXTENSÕES</p>
+      <div className="bg-white">
+        <div className="flex items-center justify-between px-2 py-1.5">Extensões do Chrome <Toggle on={chrome} /></div>
+        <div className="flex items-center justify-between px-2 py-1.5">Extensões do Firefox <Toggle on={false} /></div>
+      </div>
+      <p className="px-2 pt-2 text-[6.5px] text-neutral-400">SITES</p>
+      <div className="bg-white">
+        <Row check>Modo de compatibilidade · Desligado</Row>
+      </div>
+    </div>
+  );
+  return <Phone frames={[screen(false), screen(true)]} />;
+}
+
+export function DownloadCrxDemo() {
+  const page = (
+    <div className="p-2 text-center">
+      <Z className="mx-auto mt-2 size-8 text-[13px]" />
+      <p className="mt-1 font-semibold">Zaalys Live</p>
+      <p className="text-[6.5px] text-neutral-500">para iPhone, iPad e Android</p>
+      <span className="mt-2 inline-block rounded-md bg-[#ade74e] px-3 py-1 font-semibold">Baixar extensão</span>
+    </div>
+  );
+  return (
+    <Phone
+      url="🔒 zaalys.com/ferramentas"
+      frames={[
+        page,
+        <div key="d" className="relative h-full">
+          {page}
+          <Sheet>
+            <p className="font-semibold">Baixar “zaalys-live.crx”?</p>
+            <p className="text-[6.5px] text-neutral-500">2,6 MB</p>
+            <div className="mt-1.5 flex justify-end gap-3 text-[7px] font-semibold text-[#007aff]">
+              <span>Cancelar</span>
+              <span>Baixar</span>
+            </div>
+          </Sheet>
+        </div>,
+        <div key="ok" className="relative h-full">
+          {page}
+          <Sheet>
+            <p className="flex items-center gap-1 font-semibold">⬇︎ zaalys-live.crx <span className="text-[#00a19c]">✓</span></p>
+          </Sheet>
+        </div>,
+      ]}
+    />
+  );
+}
+
+export function OrionInstallDemo() {
+  const menu = (
+    <div className="relative h-full">
+      <Sheet>
+        {["🧩 Extensões", "☆ Favoritos", "↺ Histórico", "⚙︎ Ajustes"].map((t) => (
+          <p key={t} className="py-1">{t}</p>
+        ))}
+      </Sheet>
+    </div>
+  );
+  const list = (installed: boolean) => (
+    <div>
+      <p className="flex justify-between px-2 text-[11px] font-bold">Extensões <span className="text-[#007aff]">+</span></p>
+      {installed ? <ZRow /> : <p className="px-2 py-6 text-center text-neutral-400">Nenhuma extensão instalada</p>}
+    </div>
+  );
+  return (
+    <Phone
+      url="🔒 shop.tiktok.com"
+      frames={[
+        menu,
+        <div key="s" className="relative h-full">
+          {list(false)}
+          <Sheet>
+            <p className="font-semibold">Adicionar extensão</p>
+            <p className="py-1 text-[#007aff]">Instalar do arquivo</p>
+            <p className="py-1 text-[#007aff]">Chrome Web Store</p>
+            <p className="py-1 text-center text-neutral-500">Cancelar</p>
+          </Sheet>
+        </div>,
+        <div key="f" className="p-2">
+          <p className="text-[10px] font-bold">Recentes</p>
+          <p className="mb-1 text-[6.5px] text-neutral-500">No iPhone › Downloads</p>
+          <Crx />
+        </div>,
+        list(true),
+      ]}
+    />
+  );
+}
+
+export function QuettaCheckDemo() {
+  return (
+    <Phone
+      url="shop.tiktok.com"
+      frames={[
+        <div key="m" className="relative h-full">
+          <Sheet>
+            {["＋ Nova guia", "🧩 Extensões", "⬇︎ Downloads", "🖥 Site para computador", "⚙︎ Configurações"].map((t) => (
+              <p key={t} className="py-1">{t}</p>
+            ))}
+          </Sheet>
+        </div>,
+        <div key="e">
+          <p className="px-2 text-[11px] font-bold">Extensões</p>
+          <p className="px-2 py-1 text-[#01875f]">⚙︎ Opções de desenvolvedor</p>
+          <p className="px-2 py-6 text-center text-neutral-400">Nenhuma extensão ainda</p>
+        </div>,
+        <div key="d" className="p-2">
+          <p className="text-[10px] font-bold">Opções de desenvolvedor</p>
+          <div className="flex items-center justify-between py-1.5">Modo de desenvolvedor <Toggle on /></div>
+          <p className="rounded-md bg-neutral-100 py-1.5 text-center font-semibold">⬆︎ Carregar arquivo .zip/.crx</p>
+          <p className="mt-2 text-[8px] font-semibold">Downloads</p>
+          <Crx />
+        </div>,
+        <div key="ok">
+          <p className="px-2 text-[11px] font-bold">Extensões</p>
+          <ZRow />
+        </div>,
+      ]}
+    />
+  );
+}
+
+export function ConnectDemo({ os }: { os: "ios" | "android" }) {
+  const base = (btn: React.ReactNode, device = false) => (
+    <div className="p-2">
+      <p className="font-semibold">Extensão Zaalys Live</p>
+      <p className="text-[6.5px] text-neutral-500">A chave abre dois aparelhos ao mesmo tempo.</p>
+      <div className="mt-1.5 flex items-center justify-between rounded-md bg-neutral-100 px-1.5 py-1 font-mono text-[7px]">
+        zlv_8f3k•••••••• <span className="font-sans font-semibold">Copiar</span>
+      </div>
+      <p className="mt-1.5 text-[6.5px] text-neutral-500">A extensão está instalada neste navegador. Conecte sem copiar a chave.</p>
+      <div className="mt-1">{btn}</div>
+      {device && (
+        <div className="mt-2 flex items-center gap-1.5 rounded-md border border-neutral-200 p-1.5">
+          📱 <span className="flex-1 font-semibold">{os === "ios" ? "iPhone · Orion" : "Android · Quetta"}</span>
+          <span className="text-[6.5px] text-[#00a19c]">Em uso agora</span>
+        </div>
+      )}
+    </div>
+  );
+  const b = (t: string, cls: string) => <span className={`block rounded-md py-1 text-center font-semibold ${cls}`}>{t}</span>;
+  return (
+    <Phone
+      url={`${os === "ios" ? "🔒 " : ""}zaalys.com/settings`}
+      frames={[
+        base(b("Conectar neste navegador", "bg-[#ade74e]")),
+        base(b("Conectando…", "bg-neutral-200 text-neutral-500")),
+        base(b("✓ Conectado", "bg-[#22c55e] text-white"), true),
+      ]}
+    />
+  );
+}
+
+export function IphoneReadyDemo() {
+  return (
+    <Phone
+      frames={[
+        <div key="a" className="bg-neutral-50">
+          <p className="px-2 pb-1 text-[12px] font-bold">Ajustes</p>
+          <div className="bg-white">
+            <Row>☀︎ Tela e Brilho ›</Row>
+            <Row>🔋 Bateria ›</Row>
+            <Row>✋ Privacidade ›</Row>
+          </div>
+        </div>,
+        <div key="b" className="bg-neutral-50">
+          <p className="px-2 pb-1 text-[11px] font-bold">Tela e Brilho</p>
+          <div className="bg-white">
+            <Row>Bloqueio automático · 30 s ›</Row>
+          </div>
+        </div>,
+        <div key="c" className="bg-neutral-50">
+          <p className="px-2 pb-1 text-[11px] font-bold">Bloqueio automático</p>
+          <div className="bg-white">
+            <Row>30 segundos</Row>
+            <Row>1 minuto</Row>
+            <Row>5 minutos</Row>
+            <Row check>Nunca</Row>
+          </div>
+        </div>,
+        <div key="d" className="grid h-full place-items-center bg-neutral-900 text-center text-white">
+          <span>
+            <span className="text-[22px] text-[#34c759]">⚡︎</span>
+            <span className="block">Deixe carregando na live</span>
+          </span>
+        </div>,
+      ]}
+    />
+  );
+}
+
+function MobileLiveManager({ children, live = false, cam = "Selecionar ▾" }: { children?: React.ReactNode; live?: boolean; cam?: string }) {
+  return (
+    <div className="relative h-full">
+      <div className="flex items-center gap-2 px-2 py-1 font-semibold">☰ LIVE Manager</div>
+      <div className="relative mx-2 grid h-[80px] place-items-center rounded-md bg-neutral-900 text-[7px] text-white/60">
+        Prévia da live
+        {live && <span className="absolute left-1 top-1 rounded bg-[#fe2c55] px-1 text-[6px] font-bold text-white">AO VIVO</span>}
+      </div>
+      <p className="mx-2 mt-1 rounded border border-neutral-300 px-1.5 py-0.5 text-[7px]">Câmera: {cam}</p>
+      {children}
+    </div>
+  );
+}
+
+const PanelSheet = ({ items, btn }: { items: [string, string?][]; btn: React.ReactNode }) => (
+  <Sheet>
+    <p className="mb-1 flex items-center justify-between font-semibold">
+      <span className="flex items-center gap-1">
+        <Z className="size-3 text-[6px]" /> Zaalys Live
+      </span>
+      <span className="text-neutral-400">–</span>
+    </p>
+    {items.map(([t, s]) => (
+      <p key={t} className="flex items-start gap-1 py-0.5">
+        <span className="text-[#22c55e]">✓</span>
+        <span>
+          <span className="block font-semibold">{t}</span>
+          {s && <span className="block text-[6.5px] text-neutral-500">{s}</span>}
+        </span>
+      </p>
+    ))}
+    <div className="mt-1">{btn}</div>
+  </Sheet>
+);
+
+export function MobileOpenDemo({ os }: { os: "ios" | "android" }) {
+  const btn = <span className="block rounded bg-[#ade74e] py-1 text-center font-semibold">Ligar live automática</span>;
+  return (
+    <Phone
+      url={`${os === "ios" ? "🔒 " : ""}shop.tiktok.com/streamer/live`}
+      frames={[
+        <MobileLiveManager key="a" />,
+        <MobileLiveManager key="b">
+          <PanelSheet items={[["Clipes da live"], ["Narração pronta"], ["Câmera Zaalys no TikTok"]]} btn={btn} />
+        </MobileLiveManager>,
+      ]}
+    />
+  );
+}
+
+export function MobilePreviewDemo({ os }: { os: "ios" | "android" }) {
+  const items: [string, string?][] = [
+    ["Clipes da live", "3 clipes em ordem aleatória"],
+    ["Live do Zaalys", "Pronta, com narração"],
+    ["Câmera Zaalys no TikTok", "Recebendo o vídeo e a voz"],
+    ["Produto no carrinho", "Na lista, será fixado"],
+  ];
+  return (
+    <Phone
+      url={`${os === "ios" ? "🔒 " : ""}shop.tiktok.com/streamer/live`}
+      frames={[
+        <MobileLiveManager key="a" />,
+        <MobileLiveManager key="b" cam="Zaalys Live (vídeo)">
+          <PanelSheet items={items} btn={<span className="block rounded bg-[#ade74e] py-1 text-center font-semibold">Ligar live automática</span>} />
+        </MobileLiveManager>,
+        <MobileLiveManager key="c" cam="Zaalys Live (vídeo)" live>
+          <PanelSheet items={items} btn={<span className="block rounded bg-neutral-800 py-1 text-center font-semibold text-white">■ Parar live automática</span>} />
+        </MobileLiveManager>,
+      ]}
+    />
+  );
+}
+
+export function QuettaDesktopSiteDemo() {
+  return (
+    <Phone
+      url="shop.tiktok.com/streamer"
+      frames={[
+        <div key="a" className="grid h-full place-items-center text-center text-neutral-500">
+          <span>
+            📱
+            <span className="block">Versão para celular</span>
+          </span>
+        </div>,
+        <div key="b" className="relative h-full">
+          <Sheet>
+            {["＋ Nova guia", "🧩 Extensões", "⬇︎ Downloads", "🖥 Site para computador ✓", "⚙︎ Configurações"].map((t) => (
+              <p key={t} className={`py-1 ${t.includes("✓") ? "font-semibold text-[#01875f]" : ""}`}>{t}</p>
+            ))}
+          </Sheet>
+        </div>,
+        <MobileLiveManager key="c" />,
+      ]}
+    />
+  );
+}
