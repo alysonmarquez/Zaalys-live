@@ -87,7 +87,8 @@ export async function getAccess(): Promise<Access | null> {
     (user.user_metadata?.name as string | undefined) ||
     handleOf(email);
 
-  return { userId: user.id, email, name, handle: handleOf(email), active: plan !== null, plan, expiresAt };
+  const handle = ((user.user_metadata?.handle as string | undefined) || handleOf(email)).replace(/^@/, "");
+  return { userId: user.id, email, name, handle, active: plan !== null, plan, expiresAt };
 }
 
 /** Topo das páginas do painel: sem login → /login; sem plano → checkout com o e-mail. */
