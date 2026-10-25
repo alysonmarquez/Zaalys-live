@@ -22,31 +22,31 @@ import { Brand, cn } from "@/components/brand";
 type Item = { label: string; href?: string; icon?: LucideIcon };
 type Group = { label: string; icon: LucideIcon; items: Item[] };
 
-// Mesma organização, ordem e nomes do menu do original. No original, só Console e Desempenho
-// abrem uma página; os demais itens são apenas visuais (aqui também).
+// Mesma organização, ordem e nomes do menu do original. No original só Console e Desempenho têm
+// tela; no clone os demais abrem uma página com estado vazio (src/lib/estudio-secoes.ts).
 const NAV: (Item | Group)[] = [
   { label: "Início", href: "/painel", icon: House },
   {
     label: "Ferramentas da LIVE",
     icon: MonitorPlay,
     items: [
-      { label: "Eventos LIVE" },
+      { label: "Eventos LIVE", href: "/estudio/eventos" },
       { label: "Console de LIVE", href: "/estudio/console" },
-      { label: "Kit de produtos da LIVE" },
-      { label: "Recompensa da LIVE" },
-      { label: "Campanhas de vídeo curto e LIVE" },
+      { label: "Kit de produtos da LIVE", href: "/estudio/kit-de-produtos" },
+      { label: "Recompensa da LIVE", href: "/estudio/recompensa" },
+      { label: "Campanhas de vídeo curto e LIVE", href: "/estudio/campanhas" },
     ],
   },
-  { label: "Vitrine", icon: Store, items: [{ label: "Produtos da vitrine" }] },
+  { label: "Vitrine", icon: Store, items: [{ label: "Produtos da vitrine", href: "/estudio/vitrine" }] },
   {
     label: "Escopo de dados",
     icon: BarChart3,
-    items: [{ label: "Desempenho da LIVE", href: "/estudio/desempenho" }, { label: "Histórico de LIVE" }, { label: "Análise de mercado" }],
+    items: [{ label: "Desempenho da LIVE", href: "/estudio/desempenho" }, { label: "Histórico de LIVE", href: "/estudio/historico" }, { label: "Análise de mercado", href: "/estudio/analise-de-mercado" }],
   },
   {
     label: "Integridade da conta",
     icon: UserRound,
-    items: [{ label: "Pontos de qualidade das promoções" }, { label: "Classificação de integridade do criador" }],
+    items: [{ label: "Pontos de qualidade das promoções", href: "/estudio/pontos-de-qualidade" }, { label: "Classificação de integridade do criador", href: "/estudio/classificacao-de-integridade" }],
   },
 ];
 
