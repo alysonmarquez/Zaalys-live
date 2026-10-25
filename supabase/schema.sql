@@ -23,6 +23,8 @@ end; $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+-- Só o gatilho usa a função: não fica exposta na API.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
 
 -- ---------- Acesso pago ----------
 create type public.plan_kind as enum ('monthly', 'lifetime');
@@ -88,7 +90,7 @@ create table public.product_snapshots (
 create index on public.product_snapshots (product_id, read_at desc);
 
 -- Radar: compara as duas leituras mais recentes de cada produto
-create or replace view public.product_changes as
+create or replace view public.product_changes with (security_invoker = true) as
 with ranked as (
   select s.*, row_number() over (partition by product_id order by read_at desc) as rn
   from public.product_snapshots s
