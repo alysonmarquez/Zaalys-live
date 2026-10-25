@@ -17,6 +17,7 @@ import {
   LIVE_SALE_EVENT,
   LIVE_SALES_RELOAD_EVENT,
   hasCustomMetrics,
+  loadLiveSales,
   loadMetrics,
   loadTodaySales,
   type BaseMetrics,
@@ -572,7 +573,29 @@ function DashboardView() {
     };
   }, []);
 
-  const builtIn = SERIES_BY_PERIOD[period];
+  // Com as Vendas ao Vivo ligadas, o "Hoje" segue o dia simulado: só as vendas ao vivo, sem valores base
+  // (como no original). Os outros períodos somam as vendas de hoje aos valores base.
+  const [engineOn, setEngineOn] = useState(true);
+  useEffect(() => {
+    const load = () => setEngineOn(loadLiveSales().enabled);
+    load();
+    window.addEventListener(DEMO_CONFIG_EVENT, load);
+    return () => window.removeEventListener(DEMO_CONFIG_EVENT, load);
+  }, []);
+  const simulatedDay = engineOn && period === "today";
+  const builtIn = simulatedDay
+    ? {
+        gmvCents: 0,
+        commissionCents: 0,
+        orders: 0,
+        ticketCents: 0,
+        items: 0,
+        views: 0,
+        clicks: 0,
+        commissionBaseCents: 0,
+        series: ["00h", "04h", "08h", "12h", "16h", "20h"].map((label) => ({ label, gmvCents: 0, orders: 0 })),
+      }
+    : SERIES_BY_PERIOD[period];
   const override = custom?.[period];
   const data =
     override && hasCustomMetrics(override)
@@ -600,7 +623,12 @@ function DashboardView() {
         })()
       : builtIn;
   // As vendas ao vivo entram no último ponto do gráfico (o momento atual).
-  const series = data.series.map((s, i, arr) => (i === arr.length - 1 ? { ...s, gmvCents: s.gmvCents + liveSales.reduce((a, x) => a + x.amountCents, 0), orders: s.orders + liveSales.length } : s));
+  const series = simulatedDay
+    ? data.series.map((s, i) => {
+        const inBucket = liveSales.filter((x) => Math.floor(new Date(x.at).getHours() / 4) === i);
+        return { ...s, gmvCents: s.gmvCents + inBucket.reduce((a, x) => a + x.amountCents, 0), orders: s.orders + inBucket.length };
+      })
+    : data.series.map((s, i, arr) => (i === arr.length - 1 ? { ...s, gmvCents: s.gmvCents + liveSales.reduce((a, x) => a + x.amountCents, 0), orders: s.orders + liveSales.length } : s));
   const maxVal = Math.max(1, ...series.map((s) => s.gmvCents));
   const width = 760;
   const xs = series.map((_, i) =>
@@ -646,12 +674,12 @@ function DashboardView() {
     },
     {
       label: "Visualizações",
-      value: compactNumber(data.views),
+      value: compactNumber(data.views + liveSales.length * 47),
       sub: "Em tempo real",
     },
     {
       label: "Cliques no produto",
-      value: compactNumber(data.clicks),
+      value: compactNumber(data.clicks + liveSales.length * 9),
       sub: "Em tempo real",
     },
     {

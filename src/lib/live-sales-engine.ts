@@ -6,7 +6,7 @@
 // Cada venda é uma peça de roupa barata do catálogo. As vendas seguem o dia inteiro:
 // ao abrir o painel, as que "aconteceram" com ele fechado são preenchidas.
 
-import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
+import rows from "@/data/vendas-ao-vivo.json";
 import { loadTodaySales, recordLiveSalesBatch, type LiveSale } from "@/lib/demo-config";
 
 const DAY_TARGET = 68000; // R$ 680 de comissão até as 21h
@@ -14,10 +14,16 @@ const DAY_CAP = 70000; // nunca muito além de R$ 700
 const OPEN_H = 7;
 const CLOSE_H = 21;
 
-export const ENGINE_PRODUCTS = (() => {
-  const cheapClothes = CATALOGO_ORIGINAL.filter((p) => p.categoryKey === "moda" && p.earningCents > 0 && p.priceCents <= 3000);
-  return cheapClothes.length ? cheapClothes : CATALOGO_ORIGINAL.filter((p) => p.earningCents > 0);
-})();
+// As mesmas peças que o motor do original vende (lidas do dashboard dele em 25/10/2026):
+// roupas e acessórios de R$ 12 a R$ 38, com comissão de R$ 0,12 a R$ 1,75.
+type Row = [string, number, number, string];
+export const ENGINE_PRODUCTS = (rows as Row[]).map(([title, priceCents, earningCents, imageUrl]) => ({
+  title,
+  priceCents,
+  earningCents,
+  imageUrl,
+  category: "Moda",
+}));
 
 const hours = (d: Date) => d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
 
