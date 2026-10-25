@@ -47,7 +47,7 @@ function NavLink({ item, nested }: { item: Item; nested?: boolean }) {
   const cls = cn(
     "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[14px] transition-colors",
     nested && "pl-10",
-    active ? "bg-primary/12 font-semibold text-foreground" : item.href ? "text-foreground/80 hover:bg-foreground/[0.05]" : "cursor-default text-muted-foreground/70",
+    active ? "bg-muted font-medium text-primary" : item.href ? "text-foreground hover:bg-muted" : "cursor-default text-foreground",
   );
   return item.href ? (
     <Link href={item.href} className={cls} aria-current={active ? "page" : undefined}>
@@ -69,7 +69,7 @@ function NavGroup({ group }: { group: Group }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-[14px] text-foreground/80 hover:bg-foreground/[0.05] cursor-pointer"
+        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-[14px] text-foreground hover:bg-muted cursor-pointer"
       >
         <span className="flex items-center gap-2.5">
           <group.icon size={16} />
@@ -98,11 +98,15 @@ export function StudioShell({ handle, children }: { handle: string; children: Re
         </div>
         <div className="flex items-center gap-4 text-sm">
           <Bell size={18} className="text-white/80" />
+          <span className="h-4 w-px bg-white/30" />
           <span className="flex items-center gap-2">
             <span className="grid size-7 place-items-center rounded-full bg-primary/20 text-xs font-bold text-primary">
               {handle.slice(0, 1).toUpperCase()}
             </span>
-            <span className="hidden font-medium sm:inline">{handle}</span>
+            <span className="hidden font-semibold sm:inline">{handle}</span>
+          </span>
+          <span className="hidden items-center gap-1 font-semibold sm:flex">
+            Português do Brasil <ChevronDown size={14} />
           </span>
         </div>
       </header>

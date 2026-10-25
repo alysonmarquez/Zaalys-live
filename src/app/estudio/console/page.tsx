@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeftRight,
   ChevronDown,
@@ -9,19 +9,18 @@ import {
   Gift,
   Pencil,
   Pin,
+  Send,
   Plus,
   RefreshCw,
   Search,
   ScanLine,
   Settings,
-  ShoppingBag,
   Smartphone,
   Sparkles,
   Briefcase,
   Ticket,
   Trash2,
   TriangleAlert,
-  Video,
   X,
   Zap,
 } from "lucide-react";
@@ -69,7 +68,20 @@ export default function ConsolePage() {
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [onAir, setOnAir] = useState(false);
-  const [tip, setTip] = useState(true);
+  const [tip, setTip] = useState(false);
+  useEffect(() => {
+    try {
+      setTip(localStorage.getItem("zaalys_console_tip") !== "1");
+    } catch {
+      setTip(true);
+    }
+  }, []);
+  function dismissTip() {
+    setTip(false);
+    try {
+      localStorage.setItem("zaalys_console_tip", "1");
+    } catch {}
+  }
   const [chatSize, setChatSize] = useState(14);
   const [suggestOpen, setSuggestOpen] = useState(true);
 
@@ -101,11 +113,11 @@ export default function ConsolePage() {
   }
 
   return (
-    <div className="flex h-[calc(100svh-5.5rem)] min-h-[620px] flex-col gap-3">
+    <div className="flex h-[calc(100svh-5.5rem)] min-h-[620px] flex-col overflow-hidden rounded-xl bg-card">
       {/* Barra do console */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold">Console de LIVE</h1>
+          <h1 className="text-[17px] font-semibold">Console de LIVE</h1>
           <div className="relative">
             <select
               value={mode}
@@ -116,22 +128,42 @@ export default function ConsolePage() {
               <option value="agendada">Evento agendado</option>
             </select>
             <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-2.5" />
+            {tip && (
+              <div className="absolute left-1/2 top-11 z-20 w-80 -translate-x-1/2 rounded-xl bg-primary p-5 text-primary-foreground shadow-lg">
+                <span className="absolute -top-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-primary" />
+                <p className="text-[17px] font-semibold leading-snug">Gerencie diferentes transmissões ao vivo em um só lugar</p>
+                <p className="mt-3 text-sm leading-relaxed opacity-90">
+                  Alterne entre eventos agendados e transmissões ao vivo rápidas diretamente no console de LIVE.
+                </p>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={dismissTip}
+                    className="h-10 rounded-md border border-current px-5 text-sm font-semibold cursor-pointer"
+                  >
+                    Entendi
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <button type="button" className="flex h-8 items-center gap-1.5 rounded-full border border-foreground/60 px-3 text-xs font-semibold text-foreground">
+        <div className="flex items-center gap-3 text-foreground/80">
+          <button type="button" className="flex h-7 items-center gap-1.5 rounded-full border border-foreground/70 px-3 text-xs font-semibold text-foreground">
             Alternar modo <ArrowLeftRight size={13} />
           </button>
-          <ScanLine size={17} />
-          <Settings size={17} />
-          <TriangleAlert size={17} />
+          <span className="h-5 w-px bg-border" />
+          <ScanLine size={19} />
+          <Settings size={19} />
+          <span className="h-5 w-px bg-border" />
+          <TriangleAlert size={19} />
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border border-border/60 bg-card lg:grid-cols-[1.05fr_0.95fr_0.95fr] lg:divide-x lg:divide-border/60">
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[1.12fr_1fr_1fr] lg:divide-x lg:divide-border/60">
         {/* Coluna 1: produtos */}
         <section className="relative flex min-h-0 flex-col">
-          <div className="grid grid-cols-4 gap-1.5 border-b border-border/60 p-3">
+          <div className="flex flex-wrap gap-2.5 border-b border-border/60 p-4 pb-3">
             {[
               [Zap, "Oferta relâmpago"],
               [Gift, "Recompensa"],
@@ -144,33 +176,43 @@ export default function ConsolePage() {
                   key={l as string}
                   type="button"
                   title={l as string}
-                  className="relative flex h-10 items-center justify-center gap-1 truncate rounded-md bg-muted/70 px-1.5 text-[13px] font-semibold hover:bg-muted cursor-pointer"
+                  className="relative flex h-10 w-[120px] items-center justify-center gap-1.5 rounded-md bg-muted px-3 text-[14px] font-semibold hover:bg-accent cursor-pointer"
                 >
-                  <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-red-500" />
-                  <I size={13} className="shrink-0" />
+                  <span className="absolute right-2.5 top-1.5 size-2 rounded-full bg-red-500" />
+                  <I size={15} className="shrink-0" fill="currentColor" />
                   <span className="truncate">{l as string}</span>
                 </button>
               );
             })}
           </div>
-          <div className="flex items-center justify-between px-3 pt-3">
-            <span className="flex items-center gap-2 border-b-2 border-primary pb-1.5 text-sm font-semibold">
-              Produto <RefreshCw size={13} className="text-muted-foreground" />
+          <div className="flex items-start justify-between px-4 pt-4">
+            <span className="flex items-center gap-4">
+              <span className="border-b-2 border-primary pb-2.5 text-[17px] font-semibold">Produto</span>
+              <span className="mb-2.5 flex items-center border-l border-border pl-4">
+                <RefreshCw size={15} className="text-muted-foreground" />
+              </span>
             </span>
-            <button type="button" onClick={() => setPickerOpen(true)} className="flex items-center gap-1 text-sm font-semibold text-primary cursor-pointer">
+            <button type="button" onClick={() => setPickerOpen(true)} className="flex items-center gap-1 text-[15px] font-semibold text-primary cursor-pointer">
               <Plus size={15} /> Adicionar
             </button>
           </div>
 
           {products.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
-              <ShoppingBag size={56} className="text-primary" strokeWidth={1.6} />
-              <p className="font-semibold">Ainda não há produtos</p>
-              <p className="text-xs text-muted-foreground">Os produtos adicionados aparecerão aqui</p>
+              <svg viewBox="0 0 64 64" className="mb-2 size-16" aria-hidden="true">
+                <circle cx="10" cy="8" r="2.5" className="fill-primary" />
+                <circle cx="56" cy="10" r="2" className="fill-red-500" />
+                <path d="M22 22v-4a10 10 0 0 1 20 0v4" fill="none" className="stroke-red-400" strokeWidth="3" strokeLinecap="round" />
+                <path d="M12 24h40l-3 32H15z" className="fill-primary/70" />
+                <circle cx="25" cy="36" r="2.6" className="fill-white" />
+                <circle cx="39" cy="36" r="2.6" className="fill-white" />
+              </svg>
+              <p className="text-[17px] font-semibold">Ainda não há produtos</p>
+              <p className="text-sm text-muted-foreground">Os produtos adicionados aparecerão aqui</p>
               <button
                 type="button"
                 onClick={() => setPickerOpen(true)}
-                className="mt-2 h-9 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground cursor-pointer"
+                className="mt-4 h-10 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground cursor-pointer"
               >
                 Adicionar produtos
               </button>
@@ -213,25 +255,10 @@ export default function ConsolePage() {
             </ul>
           )}
 
-          <p className="border-t border-border/60 px-3 py-2 text-center text-[11px] text-muted-foreground">
+          <p className="px-4 py-4 text-center text-xs text-muted-foreground">
             LIVE com produtos estarão disponíveis apenas para espectadores com 18 anos ou mais.
           </p>
 
-          {tip && (
-            <div className="absolute left-3 right-3 top-14 z-10 rounded-xl bg-primary p-4 text-primary-foreground shadow-lg">
-              <p className="font-semibold">Gerencie diferentes transmissões ao vivo em um só lugar</p>
-              <p className="mt-1.5 text-sm opacity-90">
-                Alterne entre eventos agendados e transmissões ao vivo rápidas diretamente no console de LIVE.
-              </p>
-              <button
-                type="button"
-                onClick={() => setTip(false)}
-                className="mt-3 h-8 rounded-lg border border-current px-4 text-xs font-semibold cursor-pointer"
-              >
-                Entendi
-              </button>
-            </div>
-          )}
         </section>
 
         {/* Coluna 2: prévia + chat */}
@@ -264,10 +291,7 @@ export default function ConsolePage() {
               {videoOn && pinnedProduct && onAir ? (
                 <img src={pinnedProduct.imageUrl} alt="" className="absolute inset-0 size-full object-contain opacity-80" />
               ) : (
-                <div className="flex flex-col items-center gap-2 text-sm">
-                  <Video size={28} />
-                  Sem feed de vídeo
-                </div>
+                <div className="-mt-10 text-xs text-white/25">Sem feed de vídeo</div>
               )}
               {scriptOn && (
                 <div className="absolute inset-x-4 bottom-4">
@@ -316,12 +340,13 @@ export default function ConsolePage() {
           </div>
 
           <div className="flex min-h-[200px] flex-1 flex-col">
-            <div className="flex items-center justify-between px-3 py-2">
-              <span className="text-sm font-semibold">Chat</span>
-              <span className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center justify-between px-4 pt-3 pb-1">
+              <span className="text-[15px] font-semibold">Chat</span>
+              <span className="flex items-center gap-3 text-sm text-muted-foreground/70">
                 <button type="button" onClick={() => setChatSize((z) => Math.min(z + 1, 18))} className="cursor-pointer">A+</button>
                 <button type="button" onClick={() => setChatSize((z) => Math.max(z - 1, 12))} className="cursor-pointer">A−</button>
-                <Settings size={14} />
+                <span className="h-4 w-px bg-border" />
+                <Settings size={16} className="text-foreground/70" />
               </span>
             </div>
             <div className="flex gap-1.5 px-3 pt-2">
@@ -354,15 +379,20 @@ export default function ConsolePage() {
                 <p className="py-8 text-center text-sm text-muted-foreground">Os comentários dos espectadores aparecerão aqui durante sua LIVE.</p>
               )}
             </div>
-            <form onSubmit={sendChat} className="flex items-center gap-2 border-t border-border/60 p-2">
-              <input
-                value={chatInput}
-                maxLength={100}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Digite algo..."
-                className="h-9 flex-1 rounded-lg bg-muted/60 px-3 text-sm outline-none"
-              />
-              <span className="text-xs tabular-nums text-muted-foreground">{chatInput.length}/100</span>
+            <form onSubmit={sendChat} className="p-3">
+              <label className="flex h-10 items-center gap-2 rounded-md border border-border bg-muted/40 px-3">
+                <input
+                  value={chatInput}
+                  maxLength={100}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Digite algo..."
+                  className="flex-1 bg-transparent text-sm outline-none"
+                />
+                <span className="text-xs tabular-nums text-muted-foreground/70">{chatInput.length}/100</span>
+                <button type="submit" aria-label="Enviar" className="text-muted-foreground/70 cursor-pointer">
+                  <Send size={15} />
+                </button>
+              </label>
             </form>
           </div>
         </section>
@@ -397,16 +427,20 @@ export default function ConsolePage() {
             </div>
           </div>
 
-          <div className="flex min-h-[180px] flex-1 flex-col p-3">
-            <h2 className="text-sm font-semibold">Atividade</h2>
-            <p className="flex-1 py-6 text-center text-sm text-muted-foreground">Os pedidos feitos durante a sua LIVE aparecerão aqui</p>
-            <p className="pb-1 text-center text-[11px] text-muted-foreground/70">Arraste para redimensionar</p>
-            <span className="mx-auto mb-2 h-0.5 w-10 rounded bg-border" />
-            <div className="border-t border-border/60 pt-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-xs font-semibold">
+          <div className="flex min-h-[180px] flex-1 flex-col">
+            <div className="flex h-44 shrink-0 flex-col px-4 pt-4">
+              <h2 className="text-[15px] font-semibold">Atividade</h2>
+              <p className="flex flex-1 items-center justify-center text-center text-sm text-muted-foreground">Os pedidos feitos durante a sua LIVE aparecerão aqui</p>
+              <p className="pb-1 text-center text-xs text-muted-foreground/70">Arraste para redimensionar</p>
+            </div>
+            <span className="relative border-t border-border/60">
+              <span className="absolute -top-px left-1/2 h-0.5 w-9 -translate-x-1/2 rounded bg-muted-foreground/40" />
+            </span>
+            <div className="flex flex-1 flex-col px-4 pt-3">
+              <span className="inline-flex self-start items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-xs font-semibold">
                 Todas as atividades <ChevronDown size={12} />
               </span>
-              <p className="py-6 text-center text-sm text-muted-foreground">As atividades dos espectadores aparecerão aqui durante sua LIVE.</p>
+              <p className="flex flex-1 items-center justify-center text-center text-sm text-muted-foreground">As atividades dos espectadores aparecerão aqui durante sua LIVE.</p>
             </div>
           </div>
         </section>
