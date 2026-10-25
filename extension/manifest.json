@@ -1,27 +1,30 @@
 {
   "manifest_version": 3,
   "name": "Zaalys Live",
-  "version": "0.1.0",
-  "description": "Live infinita no TikTok Shop: clipes em loop, comentários, produto fixado e respostas ao chat.",
+  "short_name": "Zaalys Live",
+  "version": "3.17.0",
+  "description": "Automatiza sua live no TikTok Shop: clipes em loop como câmera, comentários, produto fixado e respostas ao chat.",
+  "icons": { "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
   "permissions": ["storage", "alarms"],
-  "host_permissions": ["https://*.tiktok.com/*", "http://localhost:3000/*"],
-  "optional_host_permissions": ["https://*/*"],
+  "host_permissions": ["http://localhost:3000/*"],
   "background": { "service_worker": "background.js" },
   "action": { "default_popup": "popup.html", "default_title": "Zaalys Live" },
-  "icons": { "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
   "content_scripts": [
     {
-      "matches": ["https://*.tiktok.com/*"],
-      "js": ["inject.js"],
-      "run_at": "document_start",
+      "matches": ["https://shop.tiktok.com/streamer/*", "http://localhost:3000/estudio/*"],
+      "js": ["main-world.js"],
       "world": "MAIN",
-      "all_frames": false
+      "run_at": "document_start"
     },
     {
-      "matches": ["https://*.tiktok.com/*"],
-      "js": ["content.js"],
-      "run_at": "document_idle",
-      "all_frames": false
+      "matches": ["https://shop.tiktok.com/streamer/*", "http://localhost:3000/estudio/*"],
+      "js": ["panel.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["http://localhost:3000/*"],
+      "js": ["site-connect.js"],
+      "run_at": "document_idle"
     }
   ]
 }

@@ -7,6 +7,7 @@ export const OPTIONS = () => new Response(null, { status: 204 });
 export async function GET(req: Request) {
   const auth = await licenseAuth(req);
   if (!auth) return json({ error: "Licença inválida ou usada em outro computador" }, 401);
+  if ("demo" in auth) return json({ selectors: {} }); // a extensão usa os seletores padrão dela
   const { data } = await createAdminClient().from("extension_config").select("selectors").eq("id", 1).single();
   return json({ selectors: data?.selectors ?? {} });
 }

@@ -63,6 +63,7 @@ create table public.licenses (
   user_id uuid not null unique references auth.users on delete cascade,
   key text not null unique default upper(encode(gen_random_bytes(12), 'hex')),
   device_id text,           -- um computador por vez
+  device_label text,        -- "Chrome · Windows", "Orion · iPhone"...
   activated_at timestamptz,
   created_at timestamptz not null default now()
 );
@@ -301,15 +302,11 @@ insert into public.templates (name, niche, scene, camera_motion) values
   ('Rotina de skincare', 'Beleza', 'Pia de banheiro iluminada, produto na mão', 'Close no rosto e no frasco, alternando');
 
 insert into public.extension_config (selectors) values ('{
-  "commentInput": "[data-e2e=\"comment-input\"] [contenteditable=true]",
-  "commentSend": "[data-e2e=\"comment-post\"]",
-  "chatList": "[data-e2e=\"chat-list\"]",
-  "chatItem": "[data-e2e=\"chat-message\"]",
-  "chatUser": "[data-e2e=\"message-owner-name\"]",
-  "chatText": "[data-e2e=\"message-text\"]",
-  "joinItem": "[data-e2e=\"enter-message\"]",
-  "pinButton": "[data-e2e=\"pin-product\"]",
-  "liveEndedMarker": "[data-e2e=\"live-ended\"]"
+  "commentInput": "[data-tid=\"m4b_input_textarea\"]",
+  "pinText": "^(fixar|pin)$",
+  "unpinText": "fixado|desfixar|desafixar|pinned|unpin",
+  "startText": "^iniciar live$|^go live$",
+  "systemText": "entrou|joined|curtiu|enviou|liked|seguiu|começou a seguir|comecou a seguir|started following|compartilhou|shared|boas-vindas|welcome to tiktok|diretrizes da comunidade|community guidelines|comprou|adicionou o produto"
 }');
 
 -- ---------- Preparações de live ("Continuar uma preparação") ----------

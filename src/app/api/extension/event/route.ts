@@ -24,6 +24,7 @@ export async function POST(req: Request) {
   if (!auth) return json({ error: "Licença inválida" }, 401);
   try {
     const body = Body.parse(await req.json());
+    if ("demo" in auth) return json(body.kind === "start" ? { sessionId: crypto.randomUUID() } : { ok: true });
     const admin = createAdminClient();
 
     if (body.kind === "start") {

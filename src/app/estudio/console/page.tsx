@@ -68,6 +68,27 @@ export default function ConsolePage() {
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [onAir, setOnAir] = useState(false);
+  const [camStream, setCamStream] = useState<MediaStream | null>(null);
+  const [camError, setCamError] = useState<string | null>(null);
+
+  // Iniciar LIVE pede câmera e microfone, como o TikTok: com a extensão Zaalys Live ligada,
+  // quem responde é a câmera virtual dela (os clipes do produto).
+  async function toggleLive() {
+    if (onAir) {
+      camStream?.getTracks().forEach((t) => t.stop());
+      setCamStream(null);
+      setOnAir(false);
+      return;
+    }
+    setCamError(null);
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setCamStream(s);
+    } catch {
+      setCamError("Sem câmera: a prévia mostra a foto do produto fixado.");
+    }
+    setOnAir(true);
+  }
   const [tip, setTip] = useState(false);
   useEffect(() => {
     try {
@@ -104,9 +125,10 @@ export default function ConsolePage() {
     setPickerOpen(false);
   }
 
-  function sendChat(e: React.FormEvent) {
+  // Lê o texto do próprio campo: quem digita pode ser a extensão, antes de o React atualizar o estado.
+  function sendChat(e: React.FormEvent, value?: string) {
     e.preventDefault();
-    const text = chatInput.trim();
+    const text = (value ?? chatInput).trim();
     if (!text) return;
     setChat((c) => [...c, { id: Date.now(), text }]);
     setChatInput("");
@@ -273,7 +295,7 @@ export default function ConsolePage() {
                 <button
                   type="button"
                   disabled={products.length === 0}
-                  onClick={() => setOnAir((v) => !v)}
+                  onClick={toggleLive}
                   className={cn(
                     "h-8 rounded-md px-4 text-xs font-semibold cursor-pointer disabled:cursor-not-allowed disabled:bg-[#9fdcd9] disabled:text-white",
                     onAir ? "bg-red-500 text-white" : "bg-primary text-primary-foreground",
@@ -288,7 +310,17 @@ export default function ConsolePage() {
             </div>
 
             <div className="relative mx-2 flex flex-1 items-center justify-center rounded-lg bg-neutral-800 text-center text-white/70">
-              {videoOn && pinnedProduct && onAir ? (
+              {videoOn && onAir && camStream ? (
+                <video
+                  autoPlay
+                  muted
+                  playsInline
+                  ref={(v) => {
+                    if (v && v.srcObject !== camStream) v.srcObject = camStream;
+                  }}
+                  className="absolute inset-0 size-full rounded-lg object-contain"
+                />
+              ) : videoOn && pinnedProduct && onAir ? (
                 <img src={pinnedProduct.imageUrl} alt="" className="absolute inset-0 size-full object-contain opacity-80" />
               ) : (
                 <div className="-mt-10 text-xs text-white/25">Sem feed de vídeo</div>
@@ -331,6 +363,7 @@ export default function ConsolePage() {
                 <span className="absolute left-3 top-1 rounded bg-red-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">Prévia</span>
               )}
             </div>
+            {camError && <p className="px-4 pt-1 text-[11px] text-amber-300/80">{camError}</p>}
             <p className="flex items-start gap-1.5 px-4 py-2 text-[11px] text-white/45">
               <Smartphone size={12} className="mt-0.5 shrink-0" />
               <span>
@@ -381,12 +414,21 @@ export default function ConsolePage() {
             </div>
             <form onSubmit={sendChat} className="p-3">
               <label className="flex h-10 items-center gap-2 rounded-md border border-border bg-muted/40 px-3">
-                <input
+                <textarea
+                  data-tid="m4b_input_textarea"
+                  rows={1}
                   value={chatInput}
                   maxLength={100}
+                  disabled={!onAir}
                   onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendChat(e as unknown as React.FormEvent, e.currentTarget.value);
+                    }
+                  }}
                   placeholder="Digite algo..."
-                  className="flex-1 bg-transparent text-sm outline-none"
+                  className="h-5 flex-1 resize-none bg-transparent text-sm outline-none disabled:cursor-not-allowed"
                 />
                 <span className="text-xs tabular-nums text-muted-foreground/70">{chatInput.length}/100</span>
                 <button type="submit" aria-label="Enviar" className="text-muted-foreground/70 cursor-pointer">

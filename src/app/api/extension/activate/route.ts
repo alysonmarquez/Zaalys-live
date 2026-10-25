@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { fail, json } from "@/lib/http";
 import { createAdminClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/access";
 
 const Body = z.object({
   key: z.string().regex(/^[A-F0-9]{24}$/i, "Chave inválida"),
   deviceId: z.string().regex(/^[\w-]{8,64}$/),
+  label: z.string().max(60).optional(),
 });
 
 export const OPTIONS = () => new Response(null, { status: 204 });
@@ -15,7 +17,8 @@ export const OPTIONS = () => new Response(null, { status: 204 });
  */
 export async function POST(req: Request) {
   try {
-    const { key, deviceId } = Body.parse(await req.json());
+    const { key, deviceId, label } = Body.parse(await req.json());
+    if (isDemoMode()) return json({ ok: true, replacedOtherDevice: false });
     const admin = createAdminClient();
     const { data: lic } = await admin
       .from("licenses")
@@ -37,7 +40,7 @@ export async function POST(req: Request) {
     const replaced = Boolean(lic.device_id && lic.device_id !== deviceId);
     await admin
       .from("licenses")
-      .update({ device_id: deviceId, activated_at: new Date().toISOString() })
+      .update({ device_id: deviceId, device_label: label ?? null, activated_at: new Date().toISOString() })
       .eq("id", lic.id);
 
     return json({ ok: true, replacedOtherDevice: replaced });

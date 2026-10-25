@@ -7,6 +7,7 @@ import { RaisedButton, cn } from "@/components/brand";
 import { formatBRL, type ZaalysProduct } from "@/lib/zaalys-data";
 import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
 import { useIsDemo } from "@/lib/use-demo";
+import { useExtension } from "@/lib/use-extension";
 import { LiveTools } from "./live-tools";
 import {
   ChromeStoreDemo,
@@ -1011,12 +1012,13 @@ function KeyBox({ demo }: { demo: boolean }) {
   const [key, setKey] = useState<string | null>(null);
   const [show, setShow] = useState(false);
   const [copied, setCopied] = useState(false);
+  const ext = useExtension();
   useEffect(() => {
     if (demo) {
-      setKey("zlv_FCtW7q2mPd9xLk4vHs81");
+      setKey("FC7A9E2D41B8C063D5E9A1F4");
       return;
     }
-    fetch("/api/license/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
+    fetch("/api/license/reset")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setKey(d?.key ?? null))
       .catch(() => {});
@@ -1025,7 +1027,7 @@ function KeyBox({ demo }: { demo: boolean }) {
     <div className="space-y-3">
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
         <span className="text-muted-foreground">⚿</span>
-        <span className="flex-1 truncate font-mono text-sm">{key ? (show ? key : `${key.slice(0, 8)}${"•".repeat(16)}`) : "Carregando…"}</span>
+        <span className="flex-1 truncate font-mono text-sm">{key ? (show ? key : `${key.slice(0, 4)}${"•".repeat(16)}`) : "Carregando…"}</span>
         <button type="button" onClick={() => setShow((v) => !v)} className="text-muted-foreground cursor-pointer" aria-label="Mostrar chave">
           👁
         </button>
@@ -1042,6 +1044,24 @@ function KeyBox({ demo }: { demo: boolean }) {
           {copied ? "Copiada" : "⧉ Copiar chave"}
         </button>
       </div>
+      {ext.installed && key && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/[0.06] p-3 text-sm">
+          <p className="min-w-0 flex-1">
+            {ext.status === "connected" ? "✓ Extensão conectada neste navegador" : "A extensão está instalada neste navegador. Conecte sem copiar a chave."}
+            {ext.error && <span className="block text-xs text-destructive">{ext.error}</span>}
+          </p>
+          {ext.status !== "connected" && (
+            <button
+              type="button"
+              disabled={ext.status === "connecting"}
+              onClick={() => ext.connect(key)}
+              className="h-9 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-60 cursor-pointer"
+            >
+              {ext.status === "connecting" ? "Conectando…" : "Conectar neste navegador"}
+            </button>
+          )}
+        </div>
+      )}
       <p className="text-sm text-muted-foreground">Copiar a chave não ativa a extensão. Conecte aqui ou cole e ative no painel do TikTok.</p>
     </div>
   );

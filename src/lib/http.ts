@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { AIError } from "@/lib/ai";
 import { createAdminClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/access";
 
 export const json = (data: unknown, status = 200) => NextResponse.json(data, { status });
 
@@ -23,6 +24,8 @@ export async function licenseAuth(req: Request) {
   const header = req.headers.get("authorization") ?? "";
   const match = header.match(/^License ([A-F0-9]+):([\w-]{8,64})$/i);
   if (!match) return null;
+  // Modo demonstração (sem banco): qualquer chave no formato certo vale para o usuário de exemplo.
+  if (isDemoMode()) return { userId: "00000000-0000-0000-0000-000000000000", demo: true as const };
   const [, key, deviceId] = match;
   const admin = createAdminClient();
   const { data: lic } = await admin

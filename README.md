@@ -125,7 +125,7 @@ Como funciona:
 Instalar para teste: `chrome://extensions` → Modo do desenvolvedor → Carregar sem compactação → pasta `extension/`. Para produção, gere o zip já apontando para o domínio real (troca `DEFAULT_API` e a permissão de `localhost` no manifest):
 
 ```bash
-NEXT_PUBLIC_APP_URL=https://www.zaalys.com npm run extension:zip   # gera public/zaalys-extensao.zip
+NEXT_PUBLIC_APP_URL=https://mediaflow-gamma.vercel.app npm run extension:zip   # gera public/downloads/zaalys-live.zip e .crx
 ```
 
 Atenção: `public/downloads/zaalys-live.zip` e `.crx` (v3.17.0, linkados em Live e Configurações) são outro pacote, que fala com `www.zaalys.com`, não com este código.

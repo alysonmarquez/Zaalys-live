@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useIsDemo } from "@/lib/use-demo";
+import { useExtension } from "@/lib/use-extension";
 import Link from "next/link";
 import {
   Eye,
@@ -21,19 +23,51 @@ export default function SettingsPage() {
   const [themePref, setThemePref] = useState<"light" | "dark" | "system">("light");
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  const [licenseKey, setLicenseKey] = useState("zlys_live_9f4a8c2e71b03d5e8a1c4f9b2026");
+  const demo = useIsDemo();
+  const ext = useExtension();
+  const [licenseKey, setLicenseKey] = useState("FC7A9E2D41B8C063D5E9A1F4");
   const [showKey, setShowKey] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [zipGuideOpen, setZipGuideOpen] = useState(false);
 
-  const [devices, setDevices] = useState([
-    {
-      deviceId: "dev-1",
-      label: "Chrome no computador",
-      idle: false,
-      lastSeenAt: "Em uso agora",
-    },
+  const [devices, setDevices] = useState<{ deviceId: string; label: string; idle: boolean; lastSeenAt: string }[]>([
+    { deviceId: "dev-1", label: "Chrome · Windows", idle: false, lastSeenAt: "Em uso agora" },
   ]);
+
+  // Conta real: chave e aparelho vêm do banco (o modo demonstração mostra os de exemplo).
+  type Lic = { key: string | null; device: { label: string; activatedAt: string | null } | null };
+  function applyLicense(d: Lic | null) {
+    if (!d?.key) return;
+    setLicenseKey(d.key);
+    setDevices(
+      d.device
+        ? [
+            {
+              deviceId: "real",
+              label: d.device.label,
+              idle: false,
+              lastSeenAt: d.device.activatedAt
+                ? `Conectado em ${new Date(d.device.activatedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}`
+                : "Conectado",
+            },
+          ]
+        : [],
+    );
+  }
+  useEffect(() => {
+    if (demo) return;
+    fetch("/api/license/reset")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(applyLicense)
+      .catch(() => {});
+  }, [demo]);
+  useEffect(() => {
+    if (demo || ext.status !== "connected") return;
+    fetch("/api/license/reset")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(applyLicense)
+      .catch(() => {});
+  }, [ext.status, demo]);
 
   const [pushSubscribed, setPushSubscribed] = useState(true);
   const [pushTestSent, setPushTestSent] = useState(false);
@@ -58,10 +92,20 @@ export default function SettingsPage() {
     } catch {}
   }
 
-  function rotateKey() {
-    const rand = () => Math.random().toString(16).slice(2, 10);
-    setLicenseKey(`zlys_live_${rand()}${rand()}`);
+  async function rotateKey() {
+    if (demo) {
+      const hex = () => Math.random().toString(16).slice(2, 10).toUpperCase().padEnd(8, "0");
+      setLicenseKey(`${hex()}${hex()}${hex()}`);
+    } else {
+      const r = await fetch("/api/license/reset?rotate=1", { method: "POST" });
+      if (r.ok) applyLicense(await r.json());
+    }
     setShowKey(true);
+  }
+
+  async function unbindDevice(id: string) {
+    if (!demo) await fetch("/api/license/reset?unbind=1", { method: "POST" }).catch(() => {});
+    setDevices((prev) => prev.filter((x) => x.deviceId !== id));
   }
 
   const maskedKey = showKey
@@ -208,6 +252,27 @@ export default function SettingsPage() {
           </button>
         </div>
 
+        {ext.installed && (
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/[0.06] p-3 text-sm">
+            <p className="min-w-0 flex-1">
+              {ext.status === "connected"
+                ? "Extensão conectada neste navegador."
+                : "A extensão está instalada neste navegador. Conecte sem copiar a chave."}
+              {ext.error && <span className="block text-xs text-destructive">{ext.error}</span>}
+            </p>
+            {ext.status !== "connected" && (
+              <button
+                type="button"
+                disabled={ext.status === "connecting"}
+                onClick={() => ext.connect(licenseKey)}
+                className="h-9 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-60 cursor-pointer"
+              >
+                {ext.status === "connecting" ? "Conectando…" : "Conectar neste navegador"}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Connected Devices */}
         {devices.length > 0 ? (
           <ul className="mt-4 space-y-2">
@@ -223,11 +288,7 @@ export default function SettingsPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() =>
-                    setDevices((prev) =>
-                      prev.filter((x) => x.deviceId !== d.deviceId)
-                    )
-                  }
+                  onClick={() => unbindDevice(d.deviceId)}
                   className="h-8 rounded-xl border border-border bg-background px-3 text-xs font-semibold hover:bg-muted cursor-pointer"
                 >
                   Desconectar
@@ -257,7 +318,7 @@ export default function SettingsPage() {
             download
             className="text-xs font-medium text-primary underline underline-offset-4"
           >
-            Baixar extensão (.zip v3.17.0)
+            Baixar extensão (.zip v3.17.0){ext.installed ? ` · instalada: v${ext.version}` : ""}
           </a>
         </div>
 
