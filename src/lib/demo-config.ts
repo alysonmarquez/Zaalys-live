@@ -116,8 +116,8 @@ export function loadTodaySales(): LiveSale[] {
   }
 }
 
-export function recordLiveSale(sale: Omit<LiveSale, "id" | "at">): LiveSale {
-  const full: LiveSale = { ...sale, id: `ls-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, at: new Date().toISOString() };
+export function recordLiveSale(sale: Omit<LiveSale, "id" | "at">, at = new Date()): LiveSale {
+  const full: LiveSale = { ...sale, id: `ls-${at.getTime()}-${Math.random().toString(36).slice(2, 6)}`, at: at.toISOString() };
   try {
     const list = loadTodaySales();
     list.push(full);
@@ -128,3 +128,15 @@ export function recordLiveSale(sale: Omit<LiveSale, "id" | "at">): LiveSale {
   window.dispatchEvent(new CustomEvent<LiveSale>(LIVE_SALE_EVENT, { detail: full }));
   return full;
 }
+
+/** Grava de uma vez as vendas que aconteceram com o painel fechado (sem mostrar notificação). */
+export function recordLiveSalesBatch(sales: Omit<LiveSale, "id">[]) {
+  if (!sales.length) return;
+  const full = sales.map((x) => ({ ...x, id: `ls-${Date.parse(x.at)}-${Math.random().toString(36).slice(2, 6)}` }));
+  try {
+    const list = loadTodaySales();
+    localStorage.setItem(dayKey(), JSON.stringify([...list, ...full].slice(-1500)));
+  } catch {}
+  window.dispatchEvent(new Event(LIVE_SALES_RELOAD_EVENT));
+}
+export const LIVE_SALES_RELOAD_EVENT = "zaalys:live-sales-reload";

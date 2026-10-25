@@ -15,6 +15,7 @@ import {
   DEMO_CONFIG_EVENT,
   FIRE_SALE_EVENT,
   LIVE_SALE_EVENT,
+  LIVE_SALES_RELOAD_EVENT,
   hasCustomMetrics,
   loadMetrics,
   loadTodaySales,
@@ -549,8 +550,13 @@ function DashboardView() {
   useEffect(() => {
     setLiveSales(loadTodaySales());
     const onSale = (e: Event) => setLiveSales((prev) => [...prev, (e as CustomEvent<LiveSale>).detail]);
+    const reload = () => setLiveSales(loadTodaySales());
     window.addEventListener(LIVE_SALE_EVENT, onSale);
-    return () => window.removeEventListener(LIVE_SALE_EVENT, onSale);
+    window.addEventListener(LIVE_SALES_RELOAD_EVENT, reload);
+    return () => {
+      window.removeEventListener(LIVE_SALE_EVENT, onSale);
+      window.removeEventListener(LIVE_SALES_RELOAD_EVENT, reload);
+    };
   }, []);
 
   // Valores-base do Painel do Afiliado (aba Métricas), quando preenchidos, substituem os de exemplo.

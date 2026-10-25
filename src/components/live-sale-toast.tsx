@@ -2,32 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatBRL } from "@/lib/zaalys-data";
-import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
 import { DEMO_CONFIG_EVENT, FIRE_SALE_EVENT, loadLiveSales, recordLiveSale } from "@/lib/demo-config";
+import { catchUp, makeSale, nextDelayMs, shouldSell } from "@/lib/live-sales-engine";
 
-// Só produtos com venda e comissão registradas, como no original.
-const SALES = CATALOGO_ORIGINAL.filter((p) => p.salesCount > 0 && p.earningCents > 0);
-
-// Notificação "Venda ao vivo" que alterna no canto (dados de exemplo, como no original).
 const SHOW_MS = 5500;
-const GAP_MS = 4500;
+type Shown = { title: string; imageUrl: string; amountCents: number; commissionCents: number; category: string };
 
-// Registra a venda mostrada para o dashboard somar.
-function record(i: number) {
-  const p = SALES[i];
-  if (p) recordLiveSale({ title: p.title, imageUrl: p.imageUrl, amountCents: p.priceCents, commissionCents: p.earningCents });
-}
-
+// Notificação "Venda ao vivo": mostra cada venda do motor (live-sales-engine) e a registra para o dashboard.
 export function LiveSaleToast() {
-  const [idx, setIdx] = useState(0);
-  const idxRef = useRef(0);
-  const go = (n: number) => {
-    idxRef.current = n;
-    setIdx(n);
-  };
+  const [sale, setSale] = useState<Shown | null>(null);
   const [visible, setVisible] = useState(false);
   // "Modo de disparo" do Painel do Afiliado (aba Vendas ao Vivo).
   const [enabled, setEnabled] = useState(true);
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     const load = () => setEnabled(loadLiveSales().enabled);
@@ -40,44 +27,37 @@ export function LiveSaleToast() {
     };
   }, []);
 
-  // "Disparar venda agora": mostra a próxima venda na hora, mesmo com o motor desligado.
+  function sell() {
+    const { product, ...s } = makeSale();
+    recordLiveSale(s);
+    setSale({ ...s, category: product.category });
+    setVisible(true);
+    clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setVisible(false), SHOW_MS);
+  }
+
+  // "Disparar venda agora" / "Simular venda ao vivo": uma venda na hora, mesmo com o motor desligado.
   useEffect(() => {
-    let t: ReturnType<typeof setTimeout>;
-    const fire = () => {
-      const n = (idxRef.current + 1) % SALES.length;
-      go(n);
-      record(n);
-      setVisible(true);
-      clearTimeout(t);
-      t = setTimeout(() => setVisible(false), SHOW_MS);
-    };
+    const fire = () => sell();
     window.addEventListener(FIRE_SALE_EVENT, fire);
-    return () => {
-      window.removeEventListener(FIRE_SALE_EVENT, fire);
-      clearTimeout(t);
-    };
+    return () => window.removeEventListener(FIRE_SALE_EVENT, fire);
   }, []);
 
+  // Motor ligado: completa o dia e segue vendendo no ritmo do original.
   useEffect(() => {
     if (!enabled) return;
+    catchUp();
     let timer: ReturnType<typeof setTimeout>;
-    const show = () => {
-      record(idxRef.current);
-      setVisible(true);
-      timer = setTimeout(hide, SHOW_MS);
+    const tick = () => {
+      if (shouldSell()) sell();
+      timer = setTimeout(tick, nextDelayMs());
     };
-    const hide = () => {
-      setVisible(false);
-      timer = setTimeout(() => {
-        go((idxRef.current + 1) % SALES.length);
-        show();
-      }, GAP_MS);
-    };
-    timer = setTimeout(show, 2500);
+    timer = setTimeout(tick, nextDelayMs());
     return () => clearTimeout(timer);
   }, [enabled]);
 
-  const p = SALES[idx]!;
+  if (!sale) return null;
+  const p = { ...sale, priceCents: sale.amountCents, earningCents: sale.commissionCents };
 
   return (
     <div
