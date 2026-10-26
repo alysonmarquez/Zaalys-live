@@ -126,7 +126,8 @@ export default function PainelDeLivePage() {
   const topGmv = Math.max(1, ...ranking.map((r) => r.gmv));
 
   const feed = [...orders].reverse().slice(0, 9);
-  const customers = new Set(orders.map((o) => o.buyer)).size + Math.round(Math.max(0, t.orders - orders.length) * 0.92);
+  // Alguns clientes compram mais de uma vez na mesma LIVE.
+  const customers = Math.round(t.orders * 0.94);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0b0b12] text-white">

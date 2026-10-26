@@ -32,7 +32,7 @@ export const DEFAULT_LIVE_SIM: LiveSimConfig = {
   enabled: true,
   pace: "normal",
   title: "LIVE de achadinhos com desconto",
-  viewers: 480,
+  viewers: 60,
   baseGmv: 0,
   baseItems: 0,
   baseViews: 0,
@@ -71,10 +71,28 @@ export function saveLiveSim(cfg: LiveSimConfig) {
   window.dispatchEvent(new Event(LIVE_SIM_CONFIG_EVENT));
 }
 
-const dayKey = () => {
+const today = () => {
   const d = new Date();
-  return `zaalys_estudio_live_orders_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
+const dayKey = () => `zaalys_estudio_live_orders_${today()}`;
+const startKey = () => `zaalys_estudio_live_start_${today()}`;
+
+/** Hora em que a LIVE de hoje começou (o primeiro momento em que o motor rodou no dia). */
+export function loadLiveStart(): Date | null {
+  try {
+    const raw = localStorage.getItem(startKey());
+    return raw ? new Date(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function markLiveStart() {
+  try {
+    if (!localStorage.getItem(startKey())) localStorage.setItem(startKey(), new Date().toISOString());
+  } catch {}
+}
 
 export function loadLiveOrders(): LiveOrder[] {
   try {
@@ -88,12 +106,15 @@ export function loadLiveOrders(): LiveOrder[] {
 export function resetLiveOrders() {
   try {
     localStorage.removeItem(dayKey());
+    localStorage.removeItem(startKey());
   } catch {}
   window.dispatchEvent(new Event(LIVE_SIM_CONFIG_EVENT));
 }
 
-// Os produtos mais vendidos do catálogo são os que "caem" na LIVE.
-const LIVE_PRODUCTS = [...CATALOGO_ORIGINAL].sort((a, b) => b.salesCount - a.salesCount).slice(0, 8);
+// Os produtos mais vendidos do catálogo até R$ 80 são os que "caem" na LIVE (ticket de LIVE de afiliado).
+const LIVE_PRODUCTS = CATALOGO_ORIGINAL.filter((p) => p.priceCents >= 1500 && p.priceCents <= 8000)
+  .sort((a, b) => b.salesCount - a.salesCount)
+  .slice(0, 8);
 const NAMES = ["ana", "bruna", "carla", "daniela", "eduarda", "fernanda", "gabi", "helena", "isa", "julia", "karol", "leticia", "mariana", "natalia", "paula", "rafa", "sabrina", "thais", "vitoria", "joao", "lucas", "pedro", "gustavo", "matheus"];
 
 // Nome mascarado como no TikTok: primeira e última letra.
@@ -103,7 +124,7 @@ export function makeOrder(at = new Date()): LiveOrder {
   // Os primeiros produtos da lista vendem mais (como no ranking de uma LIVE real).
   const i = Math.min(LIVE_PRODUCTS.length - 1, Math.floor(Math.random() ** 1.8 * LIVE_PRODUCTS.length));
   const p = LIVE_PRODUCTS[i]!;
-  const qty = Math.random() < 0.85 ? 1 : 2;
+  const qty = Math.random() < 0.92 ? 1 : 2;
   return {
     id: `lo-${at.getTime()}-${Math.random().toString(36).slice(2, 6)}`,
     at: at.toISOString(),
@@ -165,6 +186,7 @@ export function useLiveSimEngine() {
   const cfg = useLiveSimConfig();
   useEffect(() => {
     if (!cfg.enabled) return;
+    markLiveStart();
     const [min, max] = PACE_LABELS.find((p) => p.v === cfg.pace)!.ms;
     let timer: ReturnType<typeof setTimeout>;
     const tick = () => {
@@ -176,12 +198,12 @@ export function useLiveSimEngine() {
   }, [cfg.enabled, cfg.pace]);
 }
 
-/** Espectadores atuais: oscilam em torno do configurado e sobem um pouco a cada pedido. */
+/** Espectadores atuais: oscilam em torno do configurado (±15%), como numa LIVE de verdade. */
 export function useCurrentViewers(base: number, orders: number) {
   const [v, setV] = useState(base);
   useEffect(() => {
-    const t = setInterval(() => setV(Math.max(1, Math.round(base * (0.9 + Math.random() * 0.2) + orders * 0.4))), 2500);
-    setV(Math.round(base + orders * 0.4));
+    const t = setInterval(() => setV(Math.max(1, Math.round(base * (0.85 + Math.random() * 0.3) + Math.min(orders, 20) * 0.1))), 4000);
+    setV(base);
     return () => clearInterval(t);
   }, [base, orders]);
   return v;
