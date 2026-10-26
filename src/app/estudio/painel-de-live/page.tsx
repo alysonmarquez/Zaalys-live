@@ -8,7 +8,8 @@ import { useEffect, useRef, useState } from "react";
 import { Eye, MousePointerClick, Pause, Play, Settings2, ShoppingBag, Timer, Users, X } from "lucide-react";
 import { formatBRL } from "@/lib/zaalys-data";
 import { isoDay, metricByLabel, metricValue, totalsOf, useLiveSessions, useOverrides } from "@/lib/estudio-lives";
-import { loadLiveSim, saveLiveSim, useCurrentViewers, useLiveOrders, useLiveSimConfig, type LiveOrder } from "@/lib/estudio-live-sim";
+import { loadLiveSim, saveLiveSim, useCurrentViewers, useLiveFeed, useLiveSimConfig, type LiveOrder } from "@/lib/estudio-live-sim";
+import { useShowcase } from "@/lib/showcase";
 
 const CYAN = "#25f4ee";
 const PINK = "#fe2c55";
@@ -66,8 +67,9 @@ function Kpi({ icon: Icon, label, value, accent }: { icon: typeof Eye; label: st
 }
 
 export default function PainelDeLivePage() {
+  const showcase = useShowcase();
   const cfg = useLiveSimConfig();
-  const orders = useLiveOrders();
+  const orders = useLiveFeed();
   const sessions = useLiveSessions();
   const now = useNow();
   const today = now ? sessions.find((s) => s.day === isoDay(now)) : undefined;
@@ -147,12 +149,14 @@ export default function PainelDeLivePage() {
             <span className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wider" style={{ background: PINK }}>
               <span className="size-1.5 animate-pulse rounded-full bg-white" /> Ao vivo
             </span>
-            <h1 className="truncate text-lg font-semibold sm:text-xl">{cfg.title}</h1>
+            <h1 className="truncate text-lg font-semibold sm:text-xl">{showcase ? cfg.title : "Sua LIVE de hoje"}</h1>
           </div>
           <div className="flex items-center gap-2 text-sm text-white/70">
             <span className="flex items-center gap-1.5 rounded-md bg-white/[0.06] px-3 py-1.5 tabular-nums">
               <Timer size={14} /> {clock(elapsed)}
             </span>
+            {showcase && (
+            <>
             <button
               type="button"
               onClick={() => saveLiveSim({ ...loadLiveSim(), enabled: !cfg.enabled })}
@@ -163,6 +167,8 @@ export default function PainelDeLivePage() {
             <Link href="/painel/live?desempenho=1" className="flex items-center gap-1.5 rounded-md bg-white/[0.06] px-3 py-1.5 hover:bg-white/10">
               <Settings2 size={14} /> Editar desempenho
             </Link>
+            </>
+            )}
             <Link href="/estudio/desempenho" aria-label="Sair da tela cheia" className="grid size-8 place-items-center rounded-md bg-white/[0.06] hover:bg-white/10">
               <X size={16} />
             </Link>
@@ -196,7 +202,7 @@ export default function PainelDeLivePage() {
 
         {/* Indicadores */}
         <section className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
-          <Kpi icon={Users} label="Espectadores atuais" value={int(viewers)} accent={PINK} />
+          <Kpi icon={Users} label="Espectadores atuais" value={showcase ? int(viewers) : "--"} accent={PINK} />
           <Kpi icon={Eye} label="Visualizações" value={int(t.views)} accent={CYAN} />
           <Kpi icon={ShoppingBag} label="Clientes" value={int(customers)} accent={CYAN} />
           <Kpi icon={MousePointerClick} label="Cliques no produto" value={int(t.clicks)} accent={CYAN} />
@@ -274,7 +280,7 @@ export default function PainelDeLivePage() {
             </div>
             {feed.length === 0 ? (
               <p className="flex flex-1 items-center justify-center py-10 text-center text-sm text-white/45">
-                {cfg.enabled ? "Aguardando o primeiro pedido…" : "Pedidos pausados."}
+                {!showcase ? "As vendas da sua LIVE de hoje aparecem aqui." : cfg.enabled ? "Aguardando o primeiro pedido…" : "Pedidos pausados."}
               </p>
             ) : (
               <ul className="mt-4 space-y-2.5">

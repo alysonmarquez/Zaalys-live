@@ -28,12 +28,14 @@ import { cn } from "@/components/brand";
 import { CATALOGO_ORIGINAL, CATEGORY_LABELS } from "@/lib/catalogo-original";
 import { formatBRL } from "@/lib/zaalys-data";
 import { isoDay, metricByLabel, metricValue, totalsOf, useLiveSessions, useOverrides } from "@/lib/estudio-lives";
-import { useCurrentViewers, useLiveOrders, useLiveSimConfig } from "@/lib/estudio-live-sim";
+import { useCurrentViewers, useLiveFeed, useLiveSimConfig } from "@/lib/estudio-live-sim";
+import { useShowcase } from "@/lib/showcase";
 
 // Indicadores do painel lateral, com a LIVE de hoje (inclusive os pedidos que caem em tempo real).
 function useConsoleMetrics() {
+  const showcase = useShowcase();
   const cfg = useLiveSimConfig();
-  const orders = useLiveOrders();
+  const orders = useLiveFeed();
   const sessions = useLiveSessions();
   const overrides = useOverrides();
   const viewers = useCurrentViewers(cfg.viewers, orders.length);
@@ -48,7 +50,7 @@ function useConsoleMetrics() {
     metrics: [
       ["GMV atribuído", formatBRL(t.gmvCents)],
       ["Itens atribuídos vendidos", n(t.items)],
-      ["Espectadores atuais", n(viewers)],
+      ["Espectadores atuais", showcase ? n(viewers) : "--"],
       ["Duração média de visualização", rate("Duração média de visualização")],
       ["Cliques no produto", n(t.clicks)],
       ["Porcentagem de visitantes", rate("Porcentagem de visitantes")],

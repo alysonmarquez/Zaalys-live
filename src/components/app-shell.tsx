@@ -26,12 +26,15 @@ import {
 import { ZAALYS_NOTIFICATIONS, formatBRL } from "@/lib/zaalys-data";
 import { BottomDock } from "@/components/bottom-dock";
 import { LiveSaleToast } from "@/components/live-sale-toast";
+import { ShowcaseProvider } from "@/lib/showcase";
 
 type AppShellProps = {
   userEmail: string;
   userName?: string;
   /** Painel em modo demonstração (sem Supabase, fora de produção). */
   demo?: boolean;
+  /** Conta de demonstração: dados de exemplo, vendas ao vivo simuladas e Painel do Afiliado. */
+  showcase?: boolean;
   children: React.ReactNode;
 };
 
@@ -119,7 +122,7 @@ export function BrandLogo() {
   );
 }
 
-export function AppShell({ userEmail, userName, demo, children }: AppShellProps) {
+export function AppShell({ userEmail, userName, demo, showcase = false, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -190,7 +193,8 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
     }
   }
 
-  const [notifications, setNotifications] = useState(ZAALYS_NOTIFICATIONS);
+  // Notificações de venda de exemplo só na conta de demonstração.
+  const [notifications, setNotifications] = useState(showcase ? ZAALYS_NOTIFICATIONS : []);
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   // Zaal Mascot Assistant state
@@ -392,13 +396,16 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
                     ))}
                   </ul>
 
-                  <Link
+                  {notifications.length === 0 && (
+                    <p className="px-4 py-8 text-center text-xs text-muted-foreground">As vendas das suas LIVEs aparecem aqui.</p>
+                  )}
+                  {showcase && <Link
                     href="/painel/afiliado"
                     onClick={() => setNotifOpen(false)}
                     className="block border-t border-border/60 py-2.5 text-center text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
                   >
                     Ver painel de atividades
-                  </Link>
+                  </Link>}
                 </div>
               )}
             </div>
@@ -492,14 +499,14 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
                     <Wallet size={15} className="text-muted-foreground" />
                     Saque de comissões
                   </Link>
-                  <Link
+                  {showcase && <Link
                     href="/painel/afiliado"
                     onClick={() => setUserMenuOpen(false)}
                     className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
                     <ShieldCheck size={15} className="text-muted-foreground" />
                     Painel do Afiliado
-                  </Link>
+                  </Link>}
 
                   <div className="my-1 h-px bg-border/60" />
                   <button
@@ -519,7 +526,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
 
       {/* Main Content */}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-6 sm:px-6 sm:pt-8">
-        {children}
+        <ShowcaseProvider value={showcase}>{children}</ShowcaseProvider>
       </main>
 
       {/* Acesso Creator 3-Step Modal (matching 3jz1kpdvh_75d.js) */}
@@ -812,7 +819,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
 
       {/* Menu flutuante e notificação de venda ao vivo (como no original) */}
       <BottomDock />
-      {!zaalDrawerOpen && <LiveSaleToast />}
+      {showcase && !zaalDrawerOpen && <LiveSaleToast />}
 
       {/* Floating "Zaal" 3D Mascot Assistant Widget (matching Screenshot 1 & 3jz1kpdvh_75d.js) */}
       {!zaalDrawerOpen && (

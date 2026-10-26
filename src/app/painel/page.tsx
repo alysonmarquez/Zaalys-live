@@ -23,7 +23,9 @@ import {
   type BaseMetrics,
   type LiveSale,
 } from "@/lib/demo-config";
-import { SERIES_BY_PERIOD } from "@/lib/dashboard-demo";
+import { SERIES_BY_PERIOD, type DashboardSeries } from "@/lib/dashboard-demo";
+import { useShowcase } from "@/lib/showcase";
+import { useRealLives, type RealLive } from "@/lib/real-lives";
 
 type PeriodKey = "today" | "week" | "d7" | "d15" | "month" | "d30";
 
@@ -421,13 +423,84 @@ function CentralView() {
   );
 }
 
+/** Início de cada período (00h do primeiro dia). */
+function periodStart(p: PeriodKey, now = new Date()) {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  if (p === "week") d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  else if (p === "d7") d.setDate(d.getDate() - 6);
+  else if (p === "d15") d.setDate(d.getDate() - 14);
+  else if (p === "month") d.setDate(1);
+  else if (p === "d30") d.setDate(d.getDate() - 29);
+  return d;
+}
+
+/**
+ * Faturamento real da conta no período (vendas registradas nas LIVEs). As vendas de hoje ficam de fora de
+ * `data` e voltam como `todaySales`, que o dashboard soma em todos os períodos, como as vendas ao vivo.
+ */
+function realDashboard(lives: RealLive[], period: PeriodKey): { data: DashboardSeries; todaySales: LiveSale[] } {
+  const now = new Date();
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const start = periodStart(period, now);
+  const sales = lives.flatMap((l) => l.sales);
+  const past = sales.filter((x) => Date.parse(x.at) >= start.getTime() && Date.parse(x.at) < today.getTime());
+  const todaySales: LiveSale[] = sales
+    .filter((x) => Date.parse(x.at) >= today.getTime())
+    .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
+    .map((x, i) => ({ id: `real-${x.at}-${i}`, title: x.title, imageUrl: x.imageUrl, amountCents: x.amountCents, commissionCents: x.commissionCents, at: x.at }));
+
+  // Gráfico: hoje em blocos de 4 h; os demais períodos em até 8 blocos de dias, o último terminando hoje.
+  let series: DashboardSeries["series"];
+  if (period === "today") {
+    series = ["00h", "04h", "08h", "12h", "16h", "20h"].map((label) => ({ label, gmvCents: 0, orders: 0 }));
+  } else {
+    const days = Math.round((today.getTime() - start.getTime()) / 86400000) + 1;
+    const size = Math.ceil(days / 8);
+    series = [];
+    for (let first = 0; first < days; first += size) {
+      const from = new Date(start);
+      from.setDate(from.getDate() + first);
+      const to = new Date(from);
+      to.setDate(to.getDate() + size);
+      const inside = past.filter((x) => Date.parse(x.at) >= from.getTime() && Date.parse(x.at) < to.getTime());
+      series.push({
+        label: to > today ? "Hoje" : `${String(from.getDate()).padStart(2, "0")}/${String(from.getMonth() + 1).padStart(2, "0")}`,
+        gmvCents: inside.reduce((a, x) => a + x.amountCents, 0),
+        orders: inside.length,
+      });
+    }
+  }
+  const gmvCents = past.reduce((a, x) => a + x.amountCents, 0);
+  return {
+    data: {
+      gmvCents,
+      commissionCents: past.reduce((a, x) => a + x.commissionCents, 0),
+      orders: past.length,
+      ticketCents: 0,
+      items: past.reduce((a, x) => a + x.qty, 0),
+      // Visualizações e cliques ainda não chegam da extensão.
+      views: 0,
+      clicks: 0,
+      commissionBaseCents: gmvCents,
+      series,
+    },
+    todaySales,
+  };
+}
+
 function DashboardView() {
+  // Conta de demonstração: números de exemplo e vendas ao vivo simuladas. Demais contas: o faturamento real.
+  const showcase = useShowcase();
+  const real = useRealLives(!showcase);
   const [period, setPeriod] = useState<PeriodKey>("today");
   const [chartType, setChartType] = useState<"area" | "bars">("area");
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   // Vendas ao vivo de hoje: cada notificação "Venda ao vivo" entra aqui e soma nos números.
-  const [liveSales, setLiveSales] = useState<LiveSale[]>([]);
+  const [simSales, setLiveSales] = useState<LiveSale[]>([]);
   useEffect(() => {
+    if (!showcase) return;
     setLiveSales(loadTodaySales());
     const onSale = (e: Event) => setLiveSales((prev) => [...prev, (e as CustomEvent<LiveSale>).detail]);
     const reload = () => setLiveSales(loadTodaySales());
@@ -437,7 +510,9 @@ function DashboardView() {
       window.removeEventListener(LIVE_SALE_EVENT, onSale);
       window.removeEventListener(LIVE_SALES_RELOAD_EVENT, reload);
     };
-  }, []);
+  }, [showcase]);
+  const realView = showcase ? null : realDashboard(real.lives, period);
+  const liveSales = realView ? realView.todaySales : simSales;
 
   // Valores-base do Painel do Afiliado (aba Métricas), quando preenchidos, substituem os de exemplo.
   const [custom, setCustom] = useState<Record<PeriodKey, BaseMetrics> | null>(null);
@@ -461,7 +536,7 @@ function DashboardView() {
     window.addEventListener(DEMO_CONFIG_EVENT, load);
     return () => window.removeEventListener(DEMO_CONFIG_EVENT, load);
   }, []);
-  const simulatedDay = engineOn && period === "today";
+  const simulatedDay = (realView ? true : engineOn) && period === "today";
   const builtIn = simulatedDay
     ? {
         gmvCents: 0,
@@ -475,7 +550,7 @@ function DashboardView() {
         series: ["00h", "04h", "08h", "12h", "16h", "20h"].map((label) => ({ label, gmvCents: 0, orders: 0 })),
       }
     : SERIES_BY_PERIOD[period];
-  const override = custom?.[period];
+  const override = showcase ? custom?.[period] : undefined;
   const data =
     override && hasCustomMetrics(override)
       ? (() => {
@@ -500,7 +575,9 @@ function DashboardView() {
             })),
           };
         })()
-      : builtIn;
+      : realView
+        ? realView.data
+        : builtIn;
   // As vendas ao vivo entram no último ponto do gráfico (o momento atual).
   const series = simulatedDay
     ? data.series.map((s, i) => {
@@ -527,7 +604,7 @@ function DashboardView() {
     {
       label: "GMV",
       value: formatBRL(totalGmv),
-      sub: "Base + vendas ao vivo",
+      sub: showcase ? "Base + vendas ao vivo" : "No período",
       accent: true,
     },
     {
@@ -748,7 +825,7 @@ function DashboardView() {
           </svg>
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Valores base definidos no painel administrativo, somados às vendas ao vivo.
+          {showcase ? "Valores base definidos no painel administrativo, somados às vendas ao vivo." : "Vendas registradas nas suas LIVEs."}
         </p>
       </div>
 
@@ -763,13 +840,15 @@ function DashboardView() {
             <span className="text-sm font-semibold">Vendas ao Vivo</span>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new Event(FIRE_SALE_EVENT))}
-              className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/20 cursor-pointer"
-            >
-              + Simular venda ao vivo
-            </button>
+            {showcase && (
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event(FIRE_SALE_EVENT))}
+                className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/20 cursor-pointer"
+              >
+                + Simular venda ao vivo
+              </button>
+            )}
             <span className="tabular text-lg font-bold text-primary">
               {formatBRL(liveTotalCents)}
             </span>

@@ -16,6 +16,7 @@ export async function GET() {
       active: access.active,
       plan: access.plan,
       demo: Boolean(access.demo),
+      showcase: Boolean(access.showcase),
     },
   });
 }

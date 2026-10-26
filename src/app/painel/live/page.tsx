@@ -7,6 +7,7 @@ import { RaisedButton, cn } from "@/components/brand";
 import { formatBRL, type ZaalysProduct } from "@/lib/zaalys-data";
 import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
 import { useIsDemo } from "@/lib/use-demo";
+import { useShowcase } from "@/lib/showcase";
 import { useExtension } from "@/lib/use-extension";
 import { LiveTools } from "./live-tools";
 import { LivePerformance } from "./live-performance";
@@ -185,6 +186,8 @@ const readPreps = (): Prep[] => {
 
 export default function LivePage() {
   const demo = useIsDemo();
+  // Estúdio de LIVE, comentários automáticos, OBS e "Editar desempenho" só na conta de demonstração.
+  const showcase = useShowcase();
   const [preps, setPreps] = useState<Prep[]>([]);
   const [current, setCurrent] = useState<Prep | null>(null);
   const [query, setQuery] = useState("");
@@ -492,7 +495,7 @@ export default function LivePage() {
             {!product && <p className="text-xs text-muted-foreground">Escolha um produto acima para criar a live.</p>}
           </div>
         </section>
-        {extras}
+        {showcase && extras}
       </div>
     );
   }
@@ -1014,7 +1017,7 @@ export default function LivePage() {
           </div>
         </section>
       </div>
-      {extras}
+      {showcase && extras}
     </div>
   );
 }

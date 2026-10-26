@@ -11,7 +11,21 @@ export type Access = {
   plan: "monthly" | "lifetime" | null;
   expiresAt: string | null;
   demo?: boolean;
+  /** Conta de demonstração (vitrine): só ela vê os dados de exemplo e as ferramentas de demonstração. */
+  showcase?: boolean;
 };
+
+/**
+ * Contas de demonstração. Só elas veem os números de exemplo (dashboard, vendas ao vivo, Estúdio de LIVE,
+ * comissões) e as opções de demonstração; as demais veem só o próprio faturamento.
+ * SHOWCASE_EMAILS (separados por vírgula) substitui a lista.
+ */
+const SHOWCASE_EMAILS = (process.env.SHOWCASE_EMAILS || "nathalyahoff@gmail.com")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+export const isShowcaseEmail = (email: string) => SHOWCASE_EMAILS.includes(email.trim().toLowerCase());
 
 export function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -38,6 +52,8 @@ const DEMO: Access = {
   plan: "lifetime",
   expiresAt: null,
   demo: true,
+  // Sem banco (desenvolvimento local), o usuário fictício também mostra os dados de exemplo.
+  showcase: true,
 };
 
 const handleOf = (email: string) =>
@@ -88,7 +104,7 @@ export async function getAccess(): Promise<Access | null> {
     handleOf(email);
 
   const handle = ((user.user_metadata?.handle as string | undefined) || handleOf(email)).replace(/^@/, "");
-  return { userId: user.id, email, name, handle, active: plan !== null, plan, expiresAt };
+  return { userId: user.id, email, name, handle, active: plan !== null, plan, expiresAt, showcase: isShowcaseEmail(email) };
 }
 
 /** Topo das páginas do painel: sem login → /login; sem plano → checkout com o e-mail. */

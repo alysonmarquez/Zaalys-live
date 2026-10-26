@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
 import { cn } from "@/components/brand";
 import { formatBRL } from "@/lib/zaalys-data";
-import { useIsDemo } from "@/lib/use-demo";
+import { useShowcase } from "@/lib/showcase";
 import { COMISSOES_DEMO, COMMISSION_RATE } from "@/lib/comissoes-demo";
 
 const INPUT_CLASS =
@@ -53,7 +53,8 @@ export default function ComissoesPage() {
 }
 
 function ComissoesContent() {
-  const demo = useIsDemo();
+  // Comissões de exemplo só na conta de demonstração.
+  const demo = useShowcase();
   const data = demo ? COMISSOES_DEMO : EMPTY;
   const router = useRouter();
   const pathname = usePathname() || "/comissoes";

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Brand, cn } from "@/components/brand";
 import { useLiveSimEngine } from "@/lib/estudio-live-sim";
+import { ShowcaseProvider } from "@/lib/showcase";
 
 type Item = { label: string; href?: string; icon?: LucideIcon };
 type Group = { label: string; icon: LucideIcon; items: Item[] };
@@ -110,10 +111,10 @@ function NavGroup({ group }: { group: Group }) {
   );
 }
 
-export function StudioShell({ handle, children }: { handle: string; children: React.ReactNode }) {
+export function StudioShell({ handle, showcase, children }: { handle: string; showcase: boolean; children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
-  // Pedidos da LIVE simulada caem enquanto o Estúdio estiver aberto.
-  useLiveSimEngine();
+  // Pedidos da LIVE simulada caem enquanto o Estúdio estiver aberto (só na conta de demonstração).
+  useLiveSimEngine(showcase);
 
   return (
     <div className="studio-light flex h-svh flex-col bg-background text-foreground">
@@ -181,7 +182,9 @@ export function StudioShell({ handle, children }: { handle: string; children: Re
               <PanelLeftOpen size={16} />
             </button>
           )}
-          <main className="p-4">{children}</main>
+          <main className="p-4">
+            <ShowcaseProvider value={showcase}>{children}</ShowcaseProvider>
+          </main>
         </div>
       </div>
     </div>

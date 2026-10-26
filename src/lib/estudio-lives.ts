@@ -9,6 +9,8 @@ import { SERIES_BY_PERIOD } from "@/lib/dashboard-demo";
 import { DEMO_CONFIG_EVENT, hasCustomMetrics, loadMetrics, type BaseMetrics } from "@/lib/demo-config";
 import { LIVE_ORDER_EVENT, LIVE_SIM_CONFIG_EVENT, loadLiveOrders, loadLiveSim, loadLiveStart } from "@/lib/estudio-live-sim";
 import { formatBRL } from "@/lib/zaalys-data";
+import { useShowcase } from "@/lib/showcase";
+import { useRealLives, type RealLive } from "@/lib/real-lives";
 
 export type LiveSession = {
   id: string;
@@ -157,10 +159,39 @@ export function buildLiveSessions(now = new Date()): LiveSession[] {
   return sessions; // mais recente primeiro
 }
 
-/** Transmissões de exemplo, atualizadas a cada pedido da LIVE simulada e a cada mudança de configuração. */
+/** LIVEs reais da conta, no mesmo formato. Só há o que a extensão registra: vendas, início e fim. */
+function fromReal(lives: RealLive[], now = new Date()): LiveSession[] {
+  return lives.map((l) => {
+    const startAt = new Date(l.startedAt);
+    const end = l.endedAt ? new Date(l.endedAt) : now;
+    return {
+      id: l.id,
+      day: isoDay(startAt),
+      title: `LIVE de ${WEEKDAYS[startAt.getDay()]}`,
+      startAt,
+      durationMin: Math.max(1, Math.round((end.getTime() - startAt.getTime()) / 60000)),
+      gmvCents: l.sales.reduce((a, x) => a + x.amountCents, 0),
+      orders: l.sales.length,
+      items: l.sales.reduce((a, x) => a + x.qty, 0),
+      views: 0,
+      impressions: 0,
+      clicks: 0,
+      newFollowers: 0,
+      avgWatchSec: 0,
+    };
+  });
+}
+
+/**
+ * Transmissões do Estúdio. Conta de demonstração: as de exemplo, atualizadas a cada pedido da LIVE simulada
+ * e a cada mudança de configuração. Demais contas: as LIVEs reais.
+ */
 export function useLiveSessions() {
+  const showcase = useShowcase();
+  const real = useRealLives(!showcase);
   const [sessions, setSessions] = useState<LiveSession[]>([]);
   useEffect(() => {
+    if (!showcase) return;
     const load = () => setSessions(buildLiveSessions());
     load();
     // A duração e as visualizações da LIVE de hoje andam com o relógio.
@@ -171,8 +202,8 @@ export function useLiveSessions() {
       clearInterval(t);
       for (const e of events) window.removeEventListener(e, load);
     };
-  }, []);
-  return sessions;
+  }, [showcase]);
+  return showcase ? sessions : fromReal(real.lives);
 }
 
 export const inRange = (s: LiveSession, from: string, to: string) => Boolean(from && to) && s.day >= from && s.day <= to;
@@ -259,8 +290,11 @@ export function saveOverrides(o: MetricOverrides) {
 }
 
 export function useOverrides() {
+  const showcase = useShowcase();
   const [o, setO] = useState<MetricOverrides>({});
   useEffect(() => {
+    // Números editados são da conta de demonstração; as demais veem só o calculado.
+    if (!showcase) return;
     const load = () => setO(loadOverrides());
     load();
     window.addEventListener(OVERRIDES_EVENT, load);
@@ -269,8 +303,8 @@ export function useOverrides() {
       window.removeEventListener(OVERRIDES_EVENT, load);
       window.removeEventListener("storage", load);
     };
-  }, []);
-  return o;
+  }, [showcase]);
+  return showcase ? o : {};
 }
 
 /** Valor do indicador no período: o editado, se houver, senão o calculado. */
