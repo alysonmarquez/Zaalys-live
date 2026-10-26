@@ -16,10 +16,17 @@ export type LiveSimConfig = {
   title: string;
   /** Espectadores simultâneos (a tela oscila em torno deste número). */
   viewers: number;
-  /** Valores com que a LIVE de hoje já começa, somados aos pedidos que caem. */
+  /**
+   * Ajustes da LIVE de hoje, somados ao que os pedidos que caem geram. "Editar desempenho da LIVE" grava aqui
+   * a diferença entre o número digitado e o atual (pode ser negativa).
+   */
   baseGmv: number;
+  baseOrders: number;
   baseItems: number;
   baseViews: number;
+  baseClicks: number;
+  /** Duração média de visualização em segundos (0 = automática). */
+  avgWatchSec: number;
 };
 
 export const PACE_LABELS: { v: LivePace; l: string; ms: [number, number] }[] = [
@@ -34,8 +41,11 @@ export const DEFAULT_LIVE_SIM: LiveSimConfig = {
   title: "LIVE de achadinhos com desconto",
   viewers: 60,
   baseGmv: 0,
+  baseOrders: 0,
   baseItems: 0,
   baseViews: 0,
+  baseClicks: 0,
+  avgWatchSec: 0,
 };
 
 export type LiveOrder = {
@@ -108,7 +118,8 @@ export function resetLiveOrders() {
     localStorage.removeItem(dayKey());
     localStorage.removeItem(startKey());
   } catch {}
-  window.dispatchEvent(new Event(LIVE_SIM_CONFIG_EVENT));
+  // Os ajustes de números também voltam a zero: a LIVE recomeça do início.
+  saveLiveSim({ ...loadLiveSim(), baseGmv: 0, baseOrders: 0, baseItems: 0, baseViews: 0, baseClicks: 0 });
 }
 
 // Os produtos mais vendidos do catálogo até R$ 80 são os que "caem" na LIVE (ticket de LIVE de afiliado).

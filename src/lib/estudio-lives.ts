@@ -88,25 +88,28 @@ function pastDays(now: Date, custom: BaseMetrics | undefined): DayTotals[] {
   });
 }
 
-/** LIVE de hoje: só a LIVE simulada do Estúdio (valores iniciais + pedidos que caíram), desde que ela começou. */
-function todayTotals(now: Date): DayTotals & { startAt: Date } {
+/**
+ * LIVE de hoje: só a LIVE simulada do Estúdio, desde que ela começou. Os ajustes de "Editar desempenho da LIVE"
+ * (base*) somam aos pedidos que caíram, então a tela mostra o número digitado e segue subindo a partir dele.
+ */
+export function todayTotals(now = new Date()): DayTotals & { startAt: Date } {
   const sim = loadLiveSim();
   const orders = loadLiveOrders();
   const startAt = loadLiveStart() ?? now;
   const minutes = Math.max(0, (now.getTime() - startAt.getTime()) / 60000);
   // ~0,5% das visualizações viram pedido, como nos dias anteriores.
-  const views = sim.baseViews + Math.round(minutes * 12 + orders.length * 180);
+  const views = Math.max(0, sim.baseViews + Math.round(minutes * 12 + orders.length * 180));
   return {
     startAt,
-    gmvCents: Math.round(sim.baseGmv * 100) + orders.reduce((a, o) => a + o.amountCents, 0),
-    orders: orders.length,
-    items: sim.baseItems + orders.reduce((a, o) => a + o.qty, 0),
+    gmvCents: Math.max(0, Math.round(sim.baseGmv * 100) + orders.reduce((a, o) => a + o.amountCents, 0)),
+    orders: Math.max(0, sim.baseOrders + orders.length),
+    items: Math.max(0, sim.baseItems + orders.reduce((a, o) => a + o.qty, 0)),
     views,
-    clicks: Math.round(views * 0.05),
+    clicks: Math.max(0, sim.baseClicks + Math.round(views * 0.05)),
   };
 }
 
-function toSession(day: Date, t: DayTotals, now: Date, todayStart?: Date): LiveSession {
+function toSession(day: Date, t: DayTotals, now: Date, todayStart?: Date, avgWatchSec?: number): LiveSession {
   const r = rng(daySeed(day) * 7 + 3);
   let startAt = new Date(day);
   let durationMin: number;
@@ -132,7 +135,7 @@ function toSession(day: Date, t: DayTotals, now: Date, todayStart?: Date): LiveS
     impressions: Math.round(views * (3.6 + r() * 1.4)),
     clicks: Math.max(t.clicks, t.orders),
     newFollowers: Math.round(views * (0.004 + r() * 0.006)),
-    avgWatchSec: 25 + Math.round(r() * 25),
+    avgWatchSec: avgWatchSec || 25 + Math.round(r() * 25),
   };
 }
 
@@ -146,10 +149,10 @@ export function buildLiveSessions(now = new Date()): LiveSession[] {
   });
   const sim = loadLiveSim();
   const today = todayTotals(now);
-  if (loadLiveStart() || today.orders > 0 || sim.baseGmv > 0 || sim.baseViews > 0) {
+  if (loadLiveStart() || today.orders > 0 || today.gmvCents > 0 || today.views > 0) {
     const d = new Date(now);
     d.setHours(0, 0, 0, 0);
-    sessions.unshift(toSession(d, today, now, today.startAt));
+    sessions.unshift(toSession(d, today, now, today.startAt, sim.avgWatchSec));
   }
   return sessions; // mais recente primeiro
 }
