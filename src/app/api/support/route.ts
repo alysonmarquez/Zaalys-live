@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       ticketId = data.id;
     }
 
-    const inbox = process.env.SUPPORT_INBOX ?? "suporte@zaalys.com";
+    const inbox = process.env.SUPPORT_INBOX ?? "suporte@mediaflowmz.com";
     const ref = ticketId ? ` #${ticketId.slice(0, 8)}` : "";
     await sendEmail({
       to: inbox,

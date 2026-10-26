@@ -13,7 +13,7 @@ const DEMO = [
 
 const urlFor = (productId: number) => CATALOGO_ORIGINAL.find((p) => p.id === productId)?.affiliateUrl ?? null;
 
-// Lives preparadas no Assistente de Live, para escolher em "Live do Zaalys" no painel da extensão.
+// Lives preparadas no Assistente de Live, para escolher em "Live do MediaFlowMZ" no painel da extensão.
 export async function GET(req: Request) {
   const auth = await licenseAuth(req);
   if (!auth) return json({ error: "Licença inválida" }, 401);

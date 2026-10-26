@@ -15,7 +15,7 @@ export function confirmEmail(base: string, token: string) {
   const link = `${base}/api/radar/confirm?token=${token}`;
   return {
     subject: "Confirme seu e-mail para receber o Radar",
-    text: `Falta um clique: confirme seu e-mail para receber o Radar da Zaalys toda segunda.\n\n${link}\n\nSe não foi você, ignore esta mensagem.`,
+    text: `Falta um clique: confirme seu e-mail para receber o Radar da MediaFlowMZ toda segunda.\n\n${link}\n\nSe não foi você, ignore esta mensagem.`,
     html: emailLayout(
       "Falta um clique",
       `<p>Confirme seu e-mail para receber, toda segunda, os produtos do TikTok Shop que mais pagam por venda.</p>
@@ -85,7 +85,7 @@ export function weeklyEmail(base: string, token: string, radar: Awaited<ReturnTy
       `${highlight ? `<p>Destaque da semana: <strong>${escapeHtml(highlight.name)}</strong>, ${formatBRL(highlight.perSale)} por venda.</p>` : ""}
 <table role="presentation" width="100%" style="font-size:14px;border-collapse:collapse">${rows}</table>
 ${changesHtml}
-<p style="padding-top:16px"><a href="${base}/#acesso" style="color:#c6f36b">Ver o catálogo completo na Zaalys</a></p>`,
+<p style="padding-top:16px"><a href="${base}/#acesso" style="color:#c6f36b">Ver o catálogo completo na MediaFlowMZ</a></p>`,
       `Você recebe porque pediu o Radar. <a href="${unsubscribeUrl}" style="color:#8b9282">Sair da lista com um clique</a>.<br>`,
     ),
   };

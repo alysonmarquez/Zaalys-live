@@ -9,7 +9,7 @@ const INPUT_CLASS =
 export default function DepoimentoPage() {
   const [quote, setQuote] = useState("");
   const [result, setResult] = useState("");
-  const [displayName, setDisplayName] = useState("Criador Zaalys");
+  const [displayName, setDisplayName] = useState("Criador MediaFlowMZ");
   const [handle, setHandle] = useState("@criador");
   const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -37,7 +37,7 @@ export default function DepoimentoPage() {
           Conte como está sendo
         </h1>
         <p className="mt-1 text-pretty text-muted-foreground">
-          Quem está decidindo se entra na Zaalys lê o que outros afiliados
+          Quem está decidindo se entra na MediaFlowMZ lê o que outros afiliados
           escreveram. Escreva do seu jeito, em uma ou duas frases.
         </p>
       </header>
@@ -46,7 +46,7 @@ export default function DepoimentoPage() {
         <div className="flex items-start gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] p-4 text-sm">
           <Check size={18} className="mt-0.5 shrink-0 text-primary" />
           <p>
-            Recebemos seu depoimento! Obrigado por compartilhar como a Zaalys
+            Recebemos seu depoimento! Obrigado por compartilhar como a MediaFlowMZ
             ajuda no seu dia a dia.
           </p>
         </div>
@@ -58,7 +58,7 @@ export default function DepoimentoPage() {
       >
         <label className="block space-y-1.5">
           <span className="text-sm font-medium">
-            O que a Zaalys mudou no seu trabalho?
+            O que a MediaFlowMZ mudou no seu trabalho?
           </span>
           <textarea
             required
@@ -119,7 +119,7 @@ export default function DepoimentoPage() {
             className="mt-0.5 size-4 rounded accent-primary"
           />
           <span>
-            Autorizo a Zaalys a publicar este depoimento no site, com o nome e o @ acima.
+            Autorizo a MediaFlowMZ a publicar este depoimento no site, com o nome e o @ acima.
             <span className="mt-0.5 block">Sem a marcação, o texto chega só para o time, como sugestão.</span>
           </span>
         </label>

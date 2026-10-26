@@ -387,7 +387,7 @@ function LoginScreen() {
                   href="/painel"
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline-offset-4 hover:underline"
                 >
-                  Entrar direto na Central Zaalys (Demo) →
+                  Entrar direto na Central MediaFlowMZ (Demo) →
                 </Link>
               </div>
             </form>

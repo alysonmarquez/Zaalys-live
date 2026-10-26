@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./landing.css";
 
-const name = process.env.NEXT_PUBLIC_APP_NAME ?? "Zaalys";
+const name = process.env.NEXT_PUBLIC_APP_NAME ?? "MediaFlowMZ";
 
 export const metadata: Metadata = {
   title: {
@@ -11,16 +11,16 @@ export const metadata: Metadata = {
   },
   description:
     "Deixe sua live do TikTok Shop no ar — com você na câmera ou em loop com seus clipes — e crie vídeos de produto sem aparecer.",
-  applicationName: "Zaalys",
+  applicationName: "MediaFlowMZ",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [{ url: "/favicon/favicon.svg", type: "image/svg+xml" }],
   },
   openGraph: {
-    title: "Zaalys — Faça live e vídeos para o TikTok Shop",
+    title: "MediaFlowMZ — Faça live e vídeos para o TikTok Shop",
     description:
       "Deixe sua live do TikTok Shop no ar — com você na câmera ou em loop com seus clipes — e crie vídeos de produto sem aparecer.",
-    siteName: "Zaalys",
+    siteName: "MediaFlowMZ",
     locale: "pt_BR",
     type: "website",
   },

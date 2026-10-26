@@ -55,7 +55,7 @@ const ZAAL_QUESTIONS_BY_ROUTE: Record<string, ZaalQA[]> = {
     },
     {
       q: "Por que o Dashboard está vazio?",
-      a: "Os números de vendas ao vivo e atividades aparecem assim que você conecta a extensão **Zaalys Live** na sua primeira transmissão do TikTok Shop ou compartilha seu link de indicação em **Indique e ganhe**.",
+      a: "Os números de vendas ao vivo e atividades aparecem assim que você conecta a extensão **MediaFlowMZ Live** na sua primeira transmissão do TikTok Shop ou compartilha seu link de indicação em **Indique e ganhe**.",
       video: "/zaal/zaal-waving.mp4",
     },
   ],
@@ -79,7 +79,7 @@ const ZAAL_QUESTIONS_BY_ROUTE: Record<string, ZaalQA[]> = {
   "/painel/live": [
     {
       q: "Como funciona a Live Infinita?",
-      a: "1. Escolha o produto aqui no **Assistente de Live**.\n2. Gere ou baixe os clipes curtos.\n3. Instale a extensão **Zaalys Live** no navegador.\n4. Abra a página de LIVE do TikTok Shop: a extensão mantém seus clipes em loop, fixa o produto e responde o chat sozinha!",
+      a: "1. Escolha o produto aqui no **Assistente de Live**.\n2. Gere ou baixe os clipes curtos.\n3. Instale a extensão **MediaFlowMZ Live** no navegador.\n4. Abra a página de LIVE do TikTok Shop: a extensão mantém seus clipes em loop, fixa o produto e responde o chat sozinha!",
       video: "/zaal/zaal-presenting.mp4",
     },
     {
@@ -109,12 +109,12 @@ export function BrandLogo() {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M25 25H75L25 75H75" />
-            <path d="M75 25V51" />
+            <path d="M25 75V25L50 55L75 25" />
+            <path d="M75 25V75" />
           </g>
         </svg>
       </span>
-      <span>Zaalys</span>
+      <span>MediaFlowMZ</span>
     </Link>
   );
 }
@@ -133,7 +133,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
   const initial = displayName.charAt(0).toUpperCase();
 
 
-  // Theme state (default light matching zaalys.com studio, toggleable to dark)
+  // Theme state (default light matching mediaflowmz.com studio, toggleable to dark)
   const [theme, setTheme] = useState<"light" | "dark">("light");
   useEffect(() => {
     try {
@@ -184,7 +184,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
       setSupportSent(true);
       setSupportMessage("");
     } catch {
-      setSupportError("Não conseguimos enviar agora. Escreva para suporte@zaalys.com.");
+      setSupportError("Não conseguimos enviar agora. Escreva para suporte@mediaflowmz.com.");
     } finally {
       setSupportSending(false);
     }
@@ -203,7 +203,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
   >([
     {
       role: "zaal",
-      text: `Oi, ${displayName.split(" ")[0]}! Sou o **Zaal** 👋\nEscolha uma dúvida abaixo ou escreva sua pergunta sobre a Zaalys.`,
+      text: `Oi, ${displayName.split(" ")[0]}! Sou o **Zaal** 👋\nEscolha uma dúvida abaixo ou escreva sua pergunta sobre a MediaFlowMZ.`,
     },
   ]);
   const [zaalInput, setZaalInput] = useState("");
@@ -248,7 +248,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
       "Você pode acessar todas as ferramentas pela **Central**: comece escolhendo um item em **Produtos Virais**, gere seus vídeos em **Templates Virais** ou configure sua transmissão em **Assistente de Live**.";
     if (lower.includes("live") || lower.includes("extens")) {
       reply =
-        "Para usar a **Live Infinita**, abra o **Assistente de Live**, escolha seu produto, baixe os clipes e instale a extensão **Zaalys Live** no Chrome. A chave de ativação fica em **Configurações**.";
+        "Para usar a **Live Infinita**, abra o **Assistente de Live**, escolha seu produto, baixe os clipes e instale a extensão **MediaFlowMZ Live** no Chrome. A chave de ativação fica em **Configurações**.";
     } else if (lower.includes("flow") || lower.includes("video") || lower.includes("vídeo") || lower.includes("template")) {
       reply =
         "Em **Templates Virais**, escolha um movimento de cena, selecione o produto e o modelo de IA e clique em **Gerar roteiro**. Depois é só abrir o **Google Flow** no modo *Ingredientes para vídeo*, subir as 2 fotos e colar o prompt!";
@@ -272,7 +272,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
     router.refresh();
   }
 
-  const creatorInviteLink = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.zaalys.com"}/convite/creator-${displayName
+  const creatorInviteLink = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.mediaflowmz.com"}/convite/creator-${displayName
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
     .slice(0, 10) || "vip"}-${creatorUses}x`;
@@ -790,10 +790,10 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
                   <span className="text-[11px] text-muted-foreground">
                     Ou escreva para{" "}
                     <a
-                      href="mailto:suporte@zaalys.com"
+                      href="mailto:suporte@mediaflowmz.com"
                       className="underline hover:text-foreground"
                     >
-                      suporte@zaalys.com
+                      suporte@mediaflowmz.com
                     </a>
                   </span>
                   <button
@@ -895,7 +895,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
                   Zaal
                 </span>
                 <span className="text-xs text-[#A7A29C]">
-                  · Assistente da Zaalys
+                  · Assistente da MediaFlowMZ
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -907,7 +907,7 @@ export function AppShell({ userEmail, userName, demo, children }: AppShellProps)
                     setZaalMessages([
                       {
                         role: "zaal",
-                        text: `Oi, ${displayName.split(" ")[0]}! Sou o **Zaal** 👋\nEscolha uma dúvida abaixo ou escreva sua pergunta sobre a Zaalys.`,
+                        text: `Oi, ${displayName.split(" ")[0]}! Sou o **Zaal** 👋\nEscolha uma dúvida abaixo ou escreva sua pergunta sobre a MediaFlowMZ.`,
                       },
                     ]);
                   }}

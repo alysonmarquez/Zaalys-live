@@ -214,10 +214,10 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Extensão Zaalys Live */}
+      {/* Extensão MediaFlowMZ Live */}
       <section className={CARD_CLASS}>
         <h2 className="font-display text-lg font-bold tracking-tight">
-          Extensão Zaalys Live
+          Extensão MediaFlowMZ Live
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Cole esta chave no painel da extensão, na página de live do TikTok. Ela
@@ -314,7 +314,7 @@ export default function SettingsPage() {
             Gerar chave nova
           </button>
           <a
-            href="/downloads/zaalys-live.zip"
+            href="/downloads/mediaflowmz-live.zip"
             download
             className="text-xs font-medium text-primary underline underline-offset-4"
           >
@@ -363,7 +363,7 @@ export default function SettingsPage() {
                   <code className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
                     chrome://extensions
                   </code>{" "}
-                  e remova a <strong className="text-foreground">Zaalys Live</strong>{" "}
+                  e remova a <strong className="text-foreground">MediaFlowMZ Live</strong>{" "}
                   que tem o botão <strong>↻</strong> (recarregar). É a do .zip.
                 </li>
                 <li>
@@ -389,7 +389,7 @@ export default function SettingsPage() {
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
               Se a live cair, receber um aviso de violação ou encerrar sozinha, o
-              Zaalys avisa neste aparelho — mesmo com o site fechado. Vendas não
+              MediaFlowMZ avisa neste aparelho — mesmo com o site fechado. Vendas não
               avisam: numa live boa seria a cada poucos minutos.
             </p>
           </div>

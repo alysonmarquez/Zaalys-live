@@ -1,6 +1,6 @@
-// Zaalys Live — painel na página de LIVE (mundo isolado).
-// Itens iguais aos do passo a passo do site: Conta conectada, Clipes da live, Live do Zaalys,
-// Câmera Zaalys no TikTok, Produto no carrinho e o botão Ligar/Parar live automática.
+// MediaFlowMZ Live — painel na página de LIVE (mundo isolado).
+// Itens iguais aos do passo a passo do site: Conta conectada, Clipes da live, Live do MediaFlowMZ,
+// Câmera MediaFlowMZ no TikTok, Produto no carrinho e o botão Ligar/Parar live automática.
 (() => {
   if (window.__zaalysPanel) return;
   window.__zaalysPanel = true;
@@ -88,7 +88,7 @@
     if (e.source !== window || e.data?.source !== "zaalys-cam") return;
     if (e.data.type === "cam-requested" && e.data.detail?.video) {
       S.cam = true;
-      log("A página escolheu a câmera Zaalys Live.");
+      log("A página escolheu a câmera MediaFlowMZ Live.");
       render();
     }
     if (e.data.type === "cam-ended" && S.running) {
@@ -166,7 +166,7 @@
   function setClips(files) {
     S.clips = [...files].filter((f) => f.type.startsWith("video/"));
     toPage("set-clips", { files: S.clips });
-    log(S.clips.length ? `${S.clips.length} clipes carregados. A câmera Zaalys Live já aparece na lista do TikTok.` : "Nenhum vídeo escolhido.");
+    log(S.clips.length ? `${S.clips.length} clipes carregados. A câmera MediaFlowMZ Live já aparece na lista do TikTok.` : "Nenhum vídeo escolhido.");
     render();
   }
 
@@ -244,7 +244,7 @@
   async function start() {
     if (!S.account) return log("Conecte a extensão à sua conta primeiro.", true);
     if (!S.clips.length) return log("Escolha os clipes da live.", true);
-    if (!S.live) return log("Escolha a live do Zaalys.", true);
+    if (!S.live) return log("Escolha a live do MediaFlowMZ.", true);
     try {
       S.sessionId = (await api("/api/extension/event", { method: "POST", body: { kind: "start", products: [{ name: S.live.title.slice(0, 120) }] } })).sessionId;
     } catch (err) {
@@ -339,7 +339,7 @@
     host.setAttribute("data-zaalys-panel", "");
     host.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:2147483647";
     const root = host.attachShadow({ mode: "open" });
-    root.innerHTML = `<style>${CSS}</style><div class="box"><div class="head"><span class="brand"><span class="z">Z</span>Zaalys Live</span><button class="min" title="Minimizar">–</button></div><div class="body"></div></div>`;
+    root.innerHTML = `<style>${CSS}</style><div class="box"><div class="head"><span class="brand"><span class="z">M</span>MediaFlowMZ Live</span><button class="min" title="Minimizar">–</button></div><div class="body"></div></div>`;
     document.documentElement.appendChild(host);
     ui = { root, box: root.querySelector(".box"), body: root.querySelector(".body"), preview: null };
     root.querySelector(".head").onclick = () => ui.box.classList.toggle("collapsed");
@@ -359,7 +359,7 @@
       item(
         S.account,
         "Conta conectada",
-        S.account ? esc(S.deviceLabel || "Este navegador") : "Cole a chave das Configurações do Zaalys",
+        S.account ? esc(S.deviceLabel || "Este navegador") : "Cole a chave das Configurações do MediaFlowMZ",
         S.account ? "" : `<input class="k" placeholder="Sua chave (24 letras e números)" spellcheck="false"><button class="b connect">Conectar</button>`,
       ) +
       item(
@@ -370,13 +370,13 @@
       ) +
       item(
         !!S.live,
-        "Live do Zaalys",
+        "Live do MediaFlowMZ",
         S.live ? esc(S.live.title) + (S.live.comments.length ? " · pronta" : " · preparando…") : S.account ? "Escolha a live" : "Conecte a conta para ver suas lives",
         S.account
           ? `<select class="live"><option value="">Live ▾</option>${S.lives.map((l) => `<option value="${l.id}" ${S.live?.id === l.id ? "selected" : ""}>${esc(l.title.slice(0, 70))}</option>`).join("")}</select>`
           : "",
       ) +
-      item(S.cam, "Câmera Zaalys no TikTok", S.cam ? "Recebendo o vídeo e a voz" : "Escolha “Zaalys Live (vídeo)” e “Zaalys Live (áudio)” no TikTok") +
+      item(S.cam, "Câmera MediaFlowMZ no TikTok", S.cam ? "Recebendo o vídeo e a voz" : "Escolha “MediaFlowMZ Live (vídeo)” e “MediaFlowMZ Live (áudio)” no TikTok") +
       item(
         S.productListed,
         "Produto no carrinho",

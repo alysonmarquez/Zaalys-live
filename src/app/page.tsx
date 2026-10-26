@@ -77,11 +77,11 @@ function AstroBrand({ mark = 24 }: { mark?: number }) {
           strokeLinejoin="round"
           data-astro-cid-6bctqxxv=""
         >
-          <path d="M25 25H75L25 75H75" data-astro-cid-6bctqxxv="" />
-          <path d="M75 25V51" data-astro-cid-6bctqxxv="" />
+          <path d="M25 75V25L50 55L75 25" data-astro-cid-6bctqxxv="" />
+          <path d="M75 25V75" data-astro-cid-6bctqxxv="" />
         </g>
       </svg>
-      <span data-astro-cid-6bctqxxv="">Zaalys</span>
+      <span data-astro-cid-6bctqxxv="">MediaFlowMZ</span>
     </span>
   );
 }
@@ -579,7 +579,7 @@ export default function HomePage() {
 
       <header className="_header_1pscc_22">
         <nav className="_nav_1pscc_23" aria-label="Navegação principal">
-          <a href="/" aria-label="Zaalys, início">
+          <a href="/" aria-label="MediaFlowMZ, início">
             <AstroBrand mark={24} />
           </a>
           <div className="_navLinks_1pscc_24">
@@ -1066,7 +1066,7 @@ export default function HomePage() {
                       <div className="_previewBar_1pscc_169">
                         <span className="_previewBrand_1pscc_171">
                           <AstroBrand mark={16} />
-                          <span>Zaalys Live</span>
+                          <span>MediaFlowMZ Live</span>
                         </span>
                         <span>Exemplo ilustrativo</span>
                       </div>
@@ -1118,13 +1118,13 @@ export default function HomePage() {
                 <li>
                   <strong>Gere os clipes</strong>
                   <span>
-                    No Google Flow, com os prompts que a Zaalys escreve para o seu produto.
+                    No Google Flow, com os prompts que a MediaFlowMZ escreve para o seu produto.
                   </span>
                 </li>
                 <li>
                   <strong>Instale a extensão</strong>
                   <span>
-                    A Zaalys Live, no Chrome do computador. Um passo a passo mostra cada clique.
+                    A MediaFlowMZ Live, no Chrome do computador. Um passo a passo mostra cada clique.
                   </span>
                 </li>
                 <li>
@@ -1366,7 +1366,7 @@ export default function HomePage() {
               </li>
             </ul>
             <a href="/checkout/vitalicio?from=creator" className="_textLink_1pscc_30">
-              Criar com a Zaalys
+              Criar com a MediaFlowMZ
             </a>
           </div>
         </section>
@@ -1452,7 +1452,7 @@ export default function HomePage() {
           <div className="_sectionHeading_1pscc_139">
             <h2 id="proof-title">
               Quem já usa
-              <br />a Zaalys.
+              <br />a MediaFlowMZ.
             </h2>
             <p>Nas palavras de quem comprou.</p>
           </div>
@@ -1579,7 +1579,7 @@ export default function HomePage() {
             </h2>
             <p>
               Toda segunda, por e-mail: os produtos do TikTok Shop que mais pagam por venda, com
-              preço, comissão e o destaque da semana. Tirado do catálogo da Zaalys.
+              preço, comissão e o destaque da semana. Tirado do catálogo da MediaFlowMZ.
             </p>
           </div>
           <form method="post" action="/api/webhooks/leads" data-radar-form="">
@@ -1629,9 +1629,9 @@ export default function HomePage() {
               </dd>
             </div>
             <div className="_question_1pscc_372 reveal">
-              <dt>A Zaalys entrega o vídeo final?</dt>
+              <dt>A MediaFlowMZ entrega o vídeo final?</dt>
               <dd>
-                Na Zaalys, você prepara o personagem, o roteiro e o prompt de animação. Para
+                Na MediaFlowMZ, você prepara o personagem, o roteiro e o prompt de animação. Para
                 renderizar o vídeo, leve o material para uma ferramenta como Flow ou Veo. O acesso
                 e os créditos dessas ferramentas são separados.
               </dd>
@@ -1647,16 +1647,16 @@ export default function HomePage() {
             <div className="_question_1pscc_372 reveal">
               <dt>Como funciona a live infinita?</dt>
               <dd>
-                A extensão Zaalys Live, no Chrome do computador, usa seus clipes do produto como
+                A extensão MediaFlowMZ Live, no Chrome do computador, usa seus clipes do produto como
                 câmera e a narração como microfone. Ela comenta, fixa o produto, dá oi para quem
                 entra e responde perguntas. Você ativa com a chave da sua conta, em um computador
                 por vez.
               </dd>
             </div>
             <div className="_question_1pscc_372 reveal">
-              <dt>Preciso de quê para fazer live com a Zaalys?</dt>
+              <dt>Preciso de quê para fazer live com a MediaFlowMZ?</dt>
               <dd>
-                Para apresentar com roteiro e chat, basta abrir a Zaalys em qualquer tela. Para a
+                Para apresentar com roteiro e chat, basta abrir a MediaFlowMZ em qualquer tela. Para a
                 live infinita, um computador com Google Chrome e acesso à página de LIVE do TikTok
                 Shop no navegador. Os clipes você gera no Google Flow, com créditos à parte.
               </dd>
@@ -1687,7 +1687,7 @@ export default function HomePage() {
             <div className="_question_1pscc_372 reveal">
               <dt>E se eu travar em alguma etapa?</dt>
               <dd>
-                Escreva para suporte@zaalys.com ou responda qualquer e-mail nosso. Uma pessoa do
+                Escreva para suporte@mediaflowmz.com ou responda qualquer e-mail nosso. Uma pessoa do
                 time lê e responde, e cada ferramenta tem um passo a passo na própria tela.
               </dd>
             </div>
@@ -1750,16 +1750,16 @@ export default function HomePage() {
 
       <footer className="_footer_1pscc_30 reveal">
         <p className="_footerSupport_1pscc_380">
-          Para dúvidas, contate: <a href="mailto:suporte@zaalys.com">suporte@zaalys.com</a>
+          Para dúvidas, contate: <a href="mailto:suporte@mediaflowmz.com">suporte@mediaflowmz.com</a>
         </p>
         <AstroBrand mark={24} />
-        <p>Zaalys é uma plataforma independente, sem vínculo com o TikTok.</p>
+        <p>MediaFlowMZ é uma plataforma independente, sem vínculo com o TikTok.</p>
         <p className="_footerLegal_1pscc_385">
           <a href="/termos">Termos de Uso</a>
           <span aria-hidden="true">·</span>
           <a href="/privacidade">Política de Privacidade</a>
         </p>
-        <a href="/login">Entrar na Zaalys</a>
+        <a href="/login">Entrar na MediaFlowMZ</a>
       </footer>
     </div>
   );

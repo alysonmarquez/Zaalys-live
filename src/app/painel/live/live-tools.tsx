@@ -67,7 +67,7 @@ export function LiveTools() {
         <LiveAssistant saved={[]} />
       ) : (
         <div className="space-y-6">
-          {/* Zaalys Live Extension Bar */}
+          {/* MediaFlowMZ Live Extension Bar */}
           <section className="apple-card p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-start gap-3.5">
@@ -87,7 +87,7 @@ export function LiveTools() {
                 </span>
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-display text-lg font-bold">Zaalys Live · Extensão Oficial</h2>
+                    <h2 className="font-display text-lg font-bold">MediaFlowMZ Live · Extensão Oficial</h2>
                     <span className="rounded-full bg-primary/15 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-primary">
                       v3.17.0
                     </span>
@@ -101,18 +101,18 @@ export function LiveTools() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <a
-                  href="/downloads/zaalys-live.zip"
+                  href="/downloads/mediaflowmz-live.zip"
                   download
                   className="btn-ghost py-2 text-xs"
                 >
                   ⬇ Baixar extensão (.zip)
                 </a>
                 <a
-                  href="/downloads/zaalys-live.crx"
+                  href="/downloads/mediaflowmz-live.crx"
                   download
                   className="btn-primary py-2 text-xs"
                 >
-                  ⬇ Baixar zaalys-live.crx
+                  ⬇ Baixar mediaflowmz-live.crx
                 </a>
               </div>
             </div>
@@ -141,7 +141,7 @@ export function LiveTools() {
                 <div className="min-w-0 flex-1 text-xs">
                   <p className="font-semibold text-foreground">Android · Quetta Browser</p>
                   <p className="text-muted-foreground">
-                    Instale o pacote .crx/.zip e abra zaalys.com/ferramentas/live.
+                    Instale o pacote .crx/.zip e abra mediaflowmz.com/ferramentas/live.
                   </p>
                 </div>
               </div>
@@ -381,7 +381,7 @@ export function LiveTools() {
                 </p>
                 <p>
                   2. Adicione uma fonte de <strong>Navegador (Browser Source)</strong> em 1080x1920
-                  (9:16) com a URL da sua saída Zaalys Live.
+                  (9:16) com a URL da sua saída MediaFlowMZ Live.
                 </p>
                 <p>
                   3. Cole a chave de transmissão do TikTok Live Studio e inicie a transmissão.

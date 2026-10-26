@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 /**
- * Conversa com a extensão Zaalys Live instalada neste navegador (ponte site-connect.js).
+ * Conversa com a extensão MediaFlowMZ Live instalada neste navegador (ponte site-connect.js).
  * `version` vem preenchida quando a extensão está instalada; `connect(key)` ativa sem copiar a chave.
  */
 export function useExtension() {

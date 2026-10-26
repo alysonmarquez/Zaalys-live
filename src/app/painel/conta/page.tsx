@@ -45,9 +45,9 @@ function FieldLabel({
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [name, setName] = useState("Criador Zaalys");
+  const [name, setName] = useState("Criador MediaFlowMZ");
   const [handle, setHandle] = useState("criador");
-  const [email, setEmail] = useState("criador@zaalys.com");
+  const [email, setEmail] = useState("criador@mediaflowmz.com");
   const [savedProfile, setSavedProfile] = useState(false);
 
   const [currPass, setCurrPass] = useState("");
@@ -69,7 +69,7 @@ export default function ProfilePage() {
   async function handleSaveProfile() {
     if (isSupabaseConfigured()) {
       const { error } = await createClient().auth.updateUser({
-        data: { full_name: name.trim() || "Criador Zaalys", handle: handle.trim().toLowerCase() || "criador" },
+        data: { full_name: name.trim() || "Criador MediaFlowMZ", handle: handle.trim().toLowerCase() || "criador" },
       });
       if (error) return;
     }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Brand } from "@/components/brand";
 
 export const metadata = {
-  title: "Radar da Zaalys",
+  title: "Radar da MediaFlowMZ",
   description: "Os produtos do TikTok Shop que mais pagam por venda, toda segunda no seu e-mail.",
 };
 
@@ -17,7 +17,7 @@ const MESSAGES: Record<string, { title: string; body: string }> = {
   },
   invalido: {
     title: "Link inválido ou expirado",
-    body: "Não encontramos esta inscrição. Peça o Radar de novo na página inicial ou fale com suporte@zaalys.com.",
+    body: "Não encontramos esta inscrição. Peça o Radar de novo na página inicial ou fale com suporte@mediaflowmz.com.",
   },
 };
 
@@ -42,7 +42,7 @@ export default async function RadarPage({
               href="/"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-background/60 px-4 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
             >
-              Voltar para a Zaalys
+              Voltar para a MediaFlowMZ
             </Link>
           </div>
         </div>

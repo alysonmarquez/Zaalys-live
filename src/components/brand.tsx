@@ -10,8 +10,8 @@ export function Mark({ className = "size-6 text-primary" }: { className?: string
   return (
     <svg viewBox="0 0 100 100" fill="none" aria-hidden="true" className={className}>
       <g stroke="currentColor" strokeWidth="10.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M25 25H75L25 75H75" />
-        <path d="M75 25V51" />
+        <path d="M25 75V25L50 55L75 25" />
+        <path d="M75 25V75" />
       </g>
     </svg>
   );
@@ -29,7 +29,7 @@ export function Brand({
       <Mark className="size-6 text-primary" />
       {showText && (
         <span className="font-display text-[1.35rem] font-extrabold leading-none tracking-[-0.035em] text-foreground">
-          Zaalys
+          MediaFlowMZ
         </span>
       )}
     </span>
@@ -39,8 +39,8 @@ export function Brand({
 const brandLoaderCss = `
 .zl-mark { --draw: cubic-bezier(0.23, 1, 0.32, 1); }
 .zl-mark path { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); }
-.zl-mark path:nth-child(1) { --len: 172; animation: zl-draw 620ms var(--draw) forwards, zl-breathe 1.9s ease-in-out 900ms infinite; }
-.zl-mark path:nth-child(2) { --len: 26; animation: zl-draw 220ms var(--draw) 520ms forwards, zl-breathe 1.9s ease-in-out 900ms infinite; }
+.zl-mark path:nth-child(1) { --len: 130; animation: zl-draw 620ms var(--draw) forwards, zl-breathe 1.9s ease-in-out 900ms infinite; }
+.zl-mark path:nth-child(2) { --len: 52; animation: zl-draw 220ms var(--draw) 520ms forwards, zl-breathe 1.9s ease-in-out 900ms infinite; }
 
 @keyframes zl-draw { to { stroke-dashoffset: 0; } }
 @keyframes zl-breathe {

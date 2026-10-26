@@ -1,4 +1,4 @@
-// Zaalys Live — ponte com o site do Zaalys.
+// MediaFlowMZ Live — ponte com o site do MediaFlowMZ.
 // Marca a página com a versão instalada (o site mostra "Conectar neste navegador") e,
 // quando a pessoa toca no botão, ativa a extensão com a chave da conta, sem copiar nada.
 (() => {

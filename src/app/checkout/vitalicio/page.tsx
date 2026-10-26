@@ -392,7 +392,7 @@ function CheckoutContent() {
         return;
       }
       setCheckoutError(
-        "Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com suporte@zaalys.com.",
+        "Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com suporte@mediaflowmz.com.",
       );
     } catch {
       setCheckoutError("Sem conexão com o servidor. Confira sua internet e tente de novo.");
@@ -446,7 +446,7 @@ function CheckoutContent() {
                   </span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">
-                      Zaalys · Acesso {planParam === "monthly" ? "Mensal" : "Vitalício"}
+                      MediaFlowMZ · Acesso {planParam === "monthly" ? "Mensal" : "Vitalício"}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {planParam === "monthly"
@@ -702,7 +702,7 @@ function CheckoutContent() {
                 <div className="rounded-2xl border border-border/60 bg-card/70 p-5">
                   <h3 className="text-sm font-semibold tracking-tight">Parcelamento no cartão</h3>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Você digita o cartão na página segura do Mercado Pago, no próximo passo. A Zaalys não recebe nem guarda os dados do cartão.
+                    Você digita o cartão na página segura do Mercado Pago, no próximo passo. A MediaFlowMZ não recebe nem guarda os dados do cartão.
                   </p>
                   <div className="mt-4 grid gap-4 sm:grid-cols-6">
                     <div className="min-w-0 sm:col-span-6">
@@ -987,7 +987,7 @@ function CheckoutContent() {
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Sem cobrança extra: as duas ferramentas abrem assim que seu acesso ao Zaalys
+                  Sem cobrança extra: as duas ferramentas abrem assim que seu acesso ao MediaFlowMZ
                   estiver ativo.
                 </p>
               </section>

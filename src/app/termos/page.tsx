@@ -5,7 +5,7 @@ import { Brand } from "@/components/brand";
 export const metadata: Metadata = {
   title: "Termos de Uso",
   description:
-    "As regras de uso da Zaalys: o que a plataforma entrega, como funcionam a assinatura e o cancelamento, e o que você é responsável por ao publicar o que gera aqui.",
+    "As regras de uso da MediaFlowMZ: o que a plataforma entrega, como funcionam a assinatura e o cancelamento, e o que você é responsável por ao publicar o que gera aqui.",
 };
 
 export default function TermosPage() {
@@ -33,9 +33,9 @@ export default function TermosPage() {
           Termos de Uso
         </h1>
         <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
-          Estas são as regras do uso da Zaalys. Em resumo: você assina um plano,
+          Estas são as regras do uso da MediaFlowMZ. Em resumo: você assina um plano,
           usa as ferramentas para pesquisar produtos e gerar roteiros e vídeos,
-          e o que você publica é seu — e de sua responsabilidade. A Zaalys não é
+          e o que você publica é seu — e de sua responsabilidade. A MediaFlowMZ não é
           o TikTok e não garante venda nenhuma.
         </p>
 
@@ -43,10 +43,10 @@ export default function TermosPage() {
           <section id="quem-somos">
             <h2>
               <span className="mr-2 tabular-nums text-primary">1.</span>Quem
-              somos e o que é a Zaalys
+              somos e o que é a MediaFlowMZ
             </h2>
             <p>
-              A Zaalys é uma plataforma independente de pesquisa e criação de
+              A MediaFlowMZ é uma plataforma independente de pesquisa e criação de
               conteúdo para afiliados do TikTok Shop Brasil. Ela reúne um
               catálogo de produtos com preço e comissão, modelos de vídeo,
               geração de roteiros e prompts por inteligência artificial, um
@@ -54,7 +54,7 @@ export default function TermosPage() {
             </p>
             <p>
               <strong>
-                A Zaalys não tem vínculo, parceria, patrocínio ou aprovação do
+                A MediaFlowMZ não tem vínculo, parceria, patrocínio ou aprovação do
                 TikTok, da TikTok Shop, da ByteDance ou de qualquer uma de suas
                 afiliadas.
               </strong>{" "}
@@ -64,7 +64,7 @@ export default function TermosPage() {
             </p>
             <p>
               Contato para qualquer assunto tratado aqui:{" "}
-              <a href="mailto:suporte@zaalys.com">suporte@zaalys.com</a>.
+              <a href="mailto:suporte@mediaflowmz.com">suporte@mediaflowmz.com</a>.
               Escrevemos de volta por esse mesmo endereço.
             </p>
           </section>
@@ -78,7 +78,7 @@ export default function TermosPage() {
               Ao criar uma conta, assinar um plano ou usar qualquer parte da
               plataforma, você declara que leu e concorda com estes Termos e com
               a <Link href="/privacidade">Política de Privacidade</Link>. Se não
-              concordar, não use a Zaalys.
+              concordar, não use a MediaFlowMZ.
             </p>
             <p>
               Você declara ainda ter pelo menos 18 anos e capacidade civil para
@@ -122,7 +122,7 @@ export default function TermosPage() {
               preços e pagamento
             </h2>
             <p>
-              A Zaalys é oferecida em dois planos, e todas as ferramentas —
+              A MediaFlowMZ é oferecida em dois planos, e todas as ferramentas —
               incluindo o Raio-X de Vídeo e o Assistente de Live — estão
               incluídas em ambos, sem cobrança adicional:
             </p>
@@ -160,7 +160,7 @@ export default function TermosPage() {
             <h3>Liberação imediata do acesso</h3>
             <p>
               Ao concluir a compra, você aceita estes Termos e pede, de forma
-              expressa, que o acesso à Zaalys seja{" "}
+              expressa, que o acesso à MediaFlowMZ seja{" "}
               <strong>
                 liberado imediatamente após a confirmação do pagamento
               </strong>
@@ -174,7 +174,7 @@ export default function TermosPage() {
               49 do Código de Defesa do Consumidor para compras à distância, é
               assegurado e contado da confirmação do pagamento. Para exercê-lo,
               escreva para{" "}
-              <a href="mailto:suporte@zaalys.com">suporte@zaalys.com</a> ou use
+              <a href="mailto:suporte@mediaflowmz.com">suporte@mediaflowmz.com</a> ou use
               o formulário de Suporte dentro da plataforma, dentro do prazo.
               Confirmamos o recebimento na hora, por e-mail, e respondemos em
               até 5 dias.
@@ -183,7 +183,7 @@ export default function TermosPage() {
             <p>
               Conta como uso{" "}
               <strong>
-                qualquer ferramenta ou funcionalidade da Zaalys usada depois da
+                qualquer ferramenta ou funcionalidade da MediaFlowMZ usada depois da
                 confirmação do pagamento
               </strong>
               , por exemplo:
@@ -196,7 +196,7 @@ export default function TermosPage() {
               </li>
               <li>usar o Raio-X de vídeo, o remake de vídeo ou o Trend Boost;</li>
               <li>
-                ativar a extensão Zaalys Live ou os alertas da live no celular;
+                ativar a extensão MediaFlowMZ Live ou os alertas da live no celular;
               </li>
               <li>fazer uma live com a extensão, por qualquer tempo.</li>
             </ul>
@@ -220,12 +220,12 @@ export default function TermosPage() {
             </p>
             <h3>Falha técnica</h3>
             <p>
-              Um uso que não funcionou por falha da Zaalys (por exemplo, uma
+              Um uso que não funcionou por falha da MediaFlowMZ (por exemplo, uma
               live que não transmitiu por erro nosso) não conta como uso.
               Responda ao nosso e-mail contando o que aconteceu, e uma pessoa
               revisa o seu caso. Restrições, avisos ou bloqueios aplicados pelo
               TikTok à sua conta seguem as regras do TikTok e não são falha da
-              Zaalys (cláusula 1).
+              MediaFlowMZ (cláusula 1).
             </p>
             <h3>Registros de uso</h3>
             <p>
@@ -317,7 +317,7 @@ export default function TermosPage() {
             </p>
             <p>
               Em relação a esses dados,{" "}
-              <strong>você é o controlador e a Zaalys é operadora</strong>: nós
+              <strong>você é o controlador e a MediaFlowMZ é operadora</strong>: nós
               tratamos essas informações apenas para executar a funcionalidade
               que você pediu. Você é responsável por usar o que aparece no chat
               de acordo com a lei e com as regras da plataforma de origem.
@@ -345,7 +345,7 @@ export default function TermosPage() {
                 conta Applyfy) estarem corretos e no seu nome.
               </li>
               <li>
-                É proibido divulgar a Zaalys com spam, promessas de ganho
+                É proibido divulgar a MediaFlowMZ com spam, promessas de ganho
                 garantido, marcas de terceiros, anúncios sobre nossa própria
                 marca ou qualquer prática enganosa. Nesses casos a comissão pode
                 ser cancelada e o acesso encerrado.
@@ -358,7 +358,7 @@ export default function TermosPage() {
               <span className="mr-2 tabular-nums text-primary">10.</span>Uso
               proibido
             </h2>
-            <p>Não use a Zaalys para:</p>
+            <p>Não use a MediaFlowMZ para:</p>
             <ul>
               <li>
                 Produzir conteúdo ilegal, enganoso, difamatório, discriminatório
@@ -416,7 +416,7 @@ export default function TermosPage() {
               prejuízo dos direitos que o Código de Defesa do Consumidor
               assegura a você, nossa responsabilidade total por qualquer
               reclamação relacionada à plataforma fica limitada ao valor que
-              você pagou à Zaalys nos 12 meses anteriores ao fato.
+              você pagou à MediaFlowMZ nos 12 meses anteriores ao fato.
             </p>
             <p>
               Não respondemos por lucros cessantes, perda de oportunidade,
@@ -452,7 +452,7 @@ export default function TermosPage() {
               Podemos atualizar estes Termos. A data de atualização fica no topo
               desta página, e mudanças relevantes serão comunicadas por e-mail
               ou dentro da plataforma antes de entrarem em vigor. Continuar
-              usando a Zaalys depois disso significa aceitar a nova versão.
+              usando a MediaFlowMZ depois disso significa aceitar a nova versão.
             </p>
             <p>
               Se alguma cláusula for considerada inválida, as demais continuam
@@ -467,10 +467,10 @@ export default function TermosPage() {
           <p>
             Dúvidas sobre este documento:{" "}
             <a
-              href="mailto:suporte@zaalys.com"
+              href="mailto:suporte@mediaflowmz.com"
               className="font-medium text-foreground underline underline-offset-4 decoration-primary/50"
             >
-              suporte@zaalys.com
+              suporte@mediaflowmz.com
             </a>
             .
           </p>

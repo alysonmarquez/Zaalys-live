@@ -271,7 +271,7 @@ function CentralView() {
         </div>
       </div>
 
-      {/* Bento Grid (Exact Zaalys 3-col layout) */}
+      {/* Bento Grid (Exact MediaFlowMZ 3-col layout) */}
       <div className="grid gap-3 md:auto-rows-[190px] md:grid-cols-3">
         <BentoCard
           href="/painel/catalogo"

@@ -27,7 +27,7 @@ import {
 import { cn } from "@/components/brand";
 import { CATALOGO_ORIGINAL, CATEGORY_LABELS } from "@/lib/catalogo-original";
 import { formatBRL } from "@/lib/zaalys-data";
-import { isoDay, totalsOf, useLiveSessions } from "@/lib/estudio-lives";
+import { isoDay, metricByLabel, metricValue, totalsOf, useLiveSessions, useOverrides } from "@/lib/estudio-lives";
 import { useCurrentViewers, useLiveOrders, useLiveSimConfig } from "@/lib/estudio-live-sim";
 
 // Indicadores do painel lateral, com a LIVE de hoje (inclusive os pedidos que caem em tempo real).
@@ -35,10 +35,13 @@ function useConsoleMetrics() {
   const cfg = useLiveSimConfig();
   const orders = useLiveOrders();
   const sessions = useLiveSessions();
+  const overrides = useOverrides();
   const viewers = useCurrentViewers(cfg.viewers, orders.length);
   const today = sessions.find((s) => s.day === isoDay(new Date()));
   if (!today) return { orders, metrics: METRIC_LABELS.map((l) => [l, "--"] as const) };
   const t = totalsOf([today]);
+  // Taxas de "Hoje" editadas no Desempenho valem aqui também.
+  const rate = (label: string) => metricByLabel(label).format(metricValue(overrides, "hoje", metricByLabel(label), t));
   const n = (v: number) => Math.round(v).toLocaleString("pt-BR");
   return {
     orders,
@@ -46,9 +49,9 @@ function useConsoleMetrics() {
       ["GMV atribuído", formatBRL(t.gmvCents)],
       ["Itens atribuídos vendidos", n(t.items)],
       ["Espectadores atuais", n(viewers)],
-      ["Duração média de visualização", `${Math.round(t.watchSec / Math.max(1, t.views))}s`],
+      ["Duração média de visualização", rate("Duração média de visualização")],
       ["Cliques no produto", n(t.clicks)],
-      ["Porcentagem de visitantes", `${((t.views / Math.max(1, t.impressions)) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`],
+      ["Porcentagem de visitantes", rate("Porcentagem de visitantes")],
     ] as const,
   };
 }
@@ -94,7 +97,7 @@ export default function ConsolePage() {
   const [camStream, setCamStream] = useState<MediaStream | null>(null);
   const [camError, setCamError] = useState<string | null>(null);
 
-  // Iniciar LIVE pede câmera e microfone, como o TikTok: com a extensão Zaalys Live ligada,
+  // Iniciar LIVE pede câmera e microfone, como o TikTok: com a extensão MediaFlowMZ Live ligada,
   // quem responde é a câmera virtual dela (os clipes do produto).
   async function toggleLive() {
     if (onAir) {

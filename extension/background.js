@@ -1,4 +1,4 @@
-// Zaalys Live — service worker.
+// MediaFlowMZ Live — service worker.
 // Fala com a API do painel (evita CORS no content script), guarda a ativação e vigia a live.
 
 const DEFAULT_API = "http://localhost:3000";

@@ -112,7 +112,7 @@ function CatalogoInner() {
         affiliateUrl: newLink.trim().startsWith("http") ? newLink.trim() : "https://www.tiktok.com/",
         proofGoal: "use",
         reasons: [
-          "Produto importado pelo link do TikTok Shop e analisado pela Zaalys.",
+          "Produto importado pelo link do TikTok Shop e analisado pela MediaFlowMZ.",
           "Pronto para gerar vídeo nos Templates Virais ou rodar na Live Infinita.",
         ],
         facts: [
@@ -398,7 +398,7 @@ function CatalogoInner() {
         </div>
       )}
 
-      {/* Product Detail Modal (Exact Zaalys Flow) */}
+      {/* Product Detail Modal (Exact MediaFlowMZ Flow) */}
       {selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <div className="apple-card grid max-h-[90dvh] w-full max-w-2xl overflow-hidden shadow-2xl sm:grid-cols-[220px_1fr]">

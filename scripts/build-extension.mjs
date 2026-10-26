@@ -1,7 +1,7 @@
-// Empacota a extensão Zaalys Live apontando para o domínio do painel.
+// Empacota a extensão MediaFlowMZ Live apontando para o domínio do painel.
 // Uso: NEXT_PUBLIC_APP_URL=https://mediaflow-gamma.vercel.app npm run extension:zip
-// Gera public/downloads/zaalys-live.zip (pasta zaalys-live/, para "Carregar sem compactação")
-// e public/downloads/zaalys-live.crx (para Orion e Quetta no celular), se houver a chave de assinatura
+// Gera public/downloads/mediaflowmz-live.zip (pasta mediaflowmz-live/, para "Carregar sem compactação")
+// e public/downloads/mediaflowmz-live.crx (para Orion e Quetta no celular), se houver a chave de assinatura
 // em EXTENSION_KEY_PATH (padrão: .extension-key.pem, fora do git).
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -15,7 +15,7 @@ if (!/^https:\/\/[^/]+$/.test(api)) {
 }
 
 const tmp = join(root, ".extension-build");
-const out = join(tmp, "zaalys-live");
+const out = join(tmp, "mediaflowmz-live");
 rmSync(tmp, { recursive: true, force: true });
 mkdirSync(tmp);
 cpSync(join(root, "extension"), out, { recursive: true });
@@ -28,17 +28,17 @@ for (const f of ["background.js", "manifest.json"]) {
 
 const dl = join(root, "public", "downloads");
 mkdirSync(dl, { recursive: true });
-const zip = join(dl, "zaalys-live.zip");
+const zip = join(dl, "mediaflowmz-live.zip");
 rmSync(zip, { force: true });
-execFileSync("zip", ["-r", "-q", "-X", zip, "zaalys-live"], { cwd: tmp });
-console.log(`zip: public/downloads/zaalys-live.zip → ${api}`);
+execFileSync("zip", ["-r", "-q", "-X", zip, "mediaflowmz-live"], { cwd: tmp });
+console.log(`zip: public/downloads/mediaflowmz-live.zip → ${api}`);
 
 const keyPath = process.env.EXTENSION_KEY_PATH || join(root, ".extension-key.pem");
-const crx = join(dl, "zaalys-live.crx");
+const crx = join(dl, "mediaflowmz-live.crx");
 if (existsSync(keyPath)) {
   rmSync(crx, { force: true });
   execFileSync("npx", ["-y", "crx3@2.0.0", "-p", keyPath, "-o", crx, "--", out], { stdio: "inherit" });
-  console.log("crx: public/downloads/zaalys-live.crx");
+  console.log("crx: public/downloads/mediaflowmz-live.crx");
 } else {
   console.warn(`Sem chave em ${keyPath}: o .crx não foi gerado.`);
 }

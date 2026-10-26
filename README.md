@@ -1,4 +1,4 @@
-# Zaalys
+# MediaFlowMZ
 
 Plataforma para vendedores e afiliados do TikTok Shop: live infinita com clipes em loop, assistente de live apresentada, catálogo com comissões, influencers de IA, roteiros e prompts de vídeo e Raio-X de vídeos.
 
@@ -125,10 +125,10 @@ Como funciona:
 Instalar para teste: `chrome://extensions` → Modo do desenvolvedor → Carregar sem compactação → pasta `extension/`. Para produção, gere o zip já apontando para o domínio real (troca `DEFAULT_API` e a permissão de `localhost` no manifest):
 
 ```bash
-NEXT_PUBLIC_APP_URL=https://mediaflow-gamma.vercel.app npm run extension:zip   # gera public/downloads/zaalys-live.zip e .crx
+NEXT_PUBLIC_APP_URL=https://mediaflow-gamma.vercel.app npm run extension:zip   # gera public/downloads/mediaflowmz-live.zip e .crx
 ```
 
-Atenção: `public/downloads/zaalys-live.zip` e `.crx` (v3.17.0, linkados em Live e Configurações) são outro pacote, que fala com `www.zaalys.com`, não com este código.
+Atenção: `public/downloads/mediaflowmz-live.zip` e `.crx` (v3.17.0, linkados em Live e Configurações) são outro pacote, que fala com `www.zaalys.com`, não com este código.
 
 ### O que precisa ser validado na página real do TikTok
 
@@ -137,7 +137,7 @@ Estes pontos dependem da página de LIVE do TikTok Shop, que não pôde ser test
 1. **Seletores.** Os seletores em `extension_config` (tabela do banco) são **provisórios**. Abra a página de LIVE com o DevTools, identifique o campo de comentário, o botão de enviar, os itens do chat, as entradas de quem chega, o botão de fixar produto e o aviso de fim da live, e atualize a tabela. Como ficam no banco, dá para corrigir sem nova versão da extensão.
 2. **Câmera virtual.** Confirme que a página de LIVE no navegador pede a câmera por `getUserMedia`. Se a transmissão usar outro caminho (por exemplo, exigir o LIVE Studio ou uma chave de stream RTMP), a câmera virtual precisa ser trocada por envio via OBS/RTMP.
 3. **Aba visível.** O Chrome reduz o ritmo de abas em segundo plano. Deixe a aba da live visível numa janela própria.
-4. **Termos do TikTok.** Automação de comentários pode ser restrita pelos termos da plataforma. Deixe o ritmo conservador e avise isso nos termos de uso da Zaalys.
+4. **Termos do TikTok.** Automação de comentários pode ser restrita pelos termos da plataforma. Deixe o ritmo conservador e avise isso nos termos de uso da MediaFlowMZ.
 
 ## Dados de exemplo lidos do sistema original
 

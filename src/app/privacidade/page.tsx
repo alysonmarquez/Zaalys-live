@@ -5,7 +5,7 @@ import { Brand } from "@/components/brand";
 export const metadata: Metadata = {
   title: "Política de Privacidade",
   description:
-    "Quais dados a Zaalys coleta, com que base legal trata cada um, com quem compartilha, por quanto tempo guarda e como você exerce seus direitos sob a LGPD.",
+    "Quais dados a MediaFlowMZ coleta, com que base legal trata cada um, com quem compartilha, por quanto tempo guarda e como você exerce seus direitos sob a LGPD.",
 };
 
 export default function PrivacidadePage() {
@@ -33,7 +33,7 @@ export default function PrivacidadePage() {
           Política de Privacidade
         </h1>
         <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
-          Esta página explica quais dados a Zaalys coleta, por que trata cada
+          Esta página explica quais dados a MediaFlowMZ coleta, por que trata cada
           um, com quem compartilha, por quanto tempo guarda e como você exerce
           seus direitos. Está escrita para ser lida — o resumo abaixo cobre o
           essencial, e as seções seguintes dão o detalhe que a LGPD exige.
@@ -67,8 +67,8 @@ export default function PrivacidadePage() {
                 <li>
                   Você pode pedir acesso, correção ou exclusão dos seus dados a
                   qualquer momento em{" "}
-                  <a href="mailto:privacidade@zaalys.com">
-                    privacidade@zaalys.com
+                  <a href="mailto:privacidade@mediaflowmz.com">
+                    privacidade@mediaflowmz.com
                   </a>
                   .
                 </li>
@@ -82,25 +82,25 @@ export default function PrivacidadePage() {
               controlador dos seus dados
             </h2>
             <p>
-              O controlador é a Zaalys — quem decide como e por que seus dados
+              O controlador é a MediaFlowMZ — quem decide como e por que seus dados
               são tratados.
             </p>
             <ul>
               <li>
                 <strong>Contato geral:</strong>{" "}
-                <a href="mailto:suporte@zaalys.com">suporte@zaalys.com</a>
+                <a href="mailto:suporte@mediaflowmz.com">suporte@mediaflowmz.com</a>
               </li>
               <li>
                 <strong>Encarregado pelo tratamento de dados (DPO):</strong>{" "}
-                <a href="mailto:privacidade@zaalys.com">
-                  privacidade@zaalys.com
+                <a href="mailto:privacidade@mediaflowmz.com">
+                  privacidade@mediaflowmz.com
                 </a>
               </li>
             </ul>
             <p>
               Há um caso em que os papéis se invertem: no Assistente de Live,{" "}
               <strong>você é o controlador</strong> dos dados de quem comenta na
-              sua transmissão e a Zaalys atua como <strong>operadora</strong>,
+              sua transmissão e a MediaFlowMZ atua como <strong>operadora</strong>,
               tratando essas mensagens apenas para executar a funcionalidade que
               você acionou. Veja a seção 4.
             </p>
@@ -123,7 +123,7 @@ export default function PrivacidadePage() {
                 <strong>Compra:</strong> os dados que você informa no checkout.
                 O e-mail é guardado assim que você o digita, antes do pagamento,
                 para lembrarmos você de uma compra não concluída e enviarmos
-                novidades da Zaalys — você pode sair dessa lista pelo link de
+                novidades da MediaFlowMZ — você pode sair dessa lista pelo link de
                 qualquer e-mail. Os dados completos do cartão são tratados pela
                 processadora de pagamento (AmploPay ou Applyfy);{" "}
                 <strong>
@@ -352,7 +352,7 @@ export default function PrivacidadePage() {
               conteúdo é processado durante a sessão para a exibição em tela e{" "}
               <strong>não é arquivado</strong> depois que a sessão termina.
             </p>
-            <h3 id="extensao">A extensão Zaalys Live</h3>
+            <h3 id="extensao">A extensão MediaFlowMZ Live</h3>
             <p>
               A extensão do Chrome só funciona na página de transmissão do
               TikTok Shop (shop.tiktok.com/streamer). Lá, ela lê o que a
@@ -360,13 +360,13 @@ export default function PrivacidadePage() {
               TikTok e o contador de vendas — e não lê nenhum outro site.
             </p>
             <p>
-              Ela envia à Zaalys a sua chave de ativação, um identificador
+              Ela envia à MediaFlowMZ a sua chave de ativação, um identificador
               aleatório do computador (para contar as vagas da chave), o
               navegador e o sistema, a versão da extensão, o seu @ do TikTok, as
               perguntas do chat que ela vai responder e os eventos da live
               (início, fim, vendas e avisos). Os clipes de vídeo e as
               configurações ficam só no seu computador, e o som do seu microfone
-              vai para a live no TikTok, não para a Zaalys.
+              vai para a live no TikTok, não para a MediaFlowMZ.
             </p>
           </section>
 
@@ -640,7 +640,7 @@ export default function PrivacidadePage() {
             </ul>
             <p>
               Escreva para{" "}
-              <a href="mailto:privacidade@zaalys.com">privacidade@zaalys.com</a>
+              <a href="mailto:privacidade@mediaflowmz.com">privacidade@mediaflowmz.com</a>
               . Respondemos em até 15 dias. Podemos pedir uma confirmação de
               identidade antes de atender — é para proteger a sua conta. Se não
               ficar satisfeito, você pode reclamar à{" "}
@@ -690,10 +690,10 @@ export default function PrivacidadePage() {
           <p>
             Dúvidas sobre este documento:{" "}
             <a
-              href="mailto:suporte@zaalys.com"
+              href="mailto:suporte@mediaflowmz.com"
               className="font-medium text-foreground underline underline-offset-4 decoration-primary/50"
             >
-              suporte@zaalys.com
+              suporte@mediaflowmz.com
             </a>
             .
           </p>

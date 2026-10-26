@@ -10,6 +10,7 @@ import { useIsDemo } from "@/lib/use-demo";
 import { useExtension } from "@/lib/use-extension";
 import { LiveTools } from "./live-tools";
 import { LivePerformance } from "./live-performance";
+import { DesempenhoEditor } from "@/components/desempenho-editor";
 import {
   ChromeStoreDemo,
   ConnectDemo,
@@ -90,17 +91,17 @@ const MOBILE: Partial<Record<StepKey, { desc: string; list?: string[]; action?: 
     action: { label: "Abrir a App Store", href: "https://apps.apple.com/app/orion-browser-by-kagi/id1484498200" },
   },
   "orion-ext": {
-    desc: "Uma vez só. Sem isso o Orion não aceita a Zaalys Live.",
+    desc: "Uma vez só. Sem isso o Orion não aceita a MediaFlowMZ Live.",
     list: ["No Orion, toque em **•••** e depois em **Ajustes**.", "Em **Extensões**, ligue **Extensões do Chrome**.", "Em **Sites**, deixe o **Modo de compatibilidade** desligado."],
   },
   "orion-download": {
     desc: "Abra esta página no Orion, já logada na sua conta, e baixe o arquivo.",
-    list: ["No Orion, entre em **zaalys.com** e abra este passo.", "Toque em **Baixar extensão** e confirme em **Baixar**.", "Se ele cair no iCloud Drive, mova para **No iPhone** no app Arquivos."],
-    action: { label: "Baixar extensão (.crx)", href: "/downloads/zaalys-live.crx", download: true },
+    list: ["No Orion, entre em **mediaflowmz.com** e abra este passo.", "Toque em **Baixar extensão** e confirme em **Baixar**.", "Se ele cair no iCloud Drive, mova para **No iPhone** no app Arquivos."],
+    action: { label: "Baixar extensão (.crx)", href: "/downloads/mediaflowmz-live.crx", download: true },
   },
   "orion-file": {
     desc: "Quatro toques no menu do Orion.",
-    list: ["Toque em **•••** e depois em **Extensões**.", "Toque em **+** e escolha **Instalar do arquivo**.", "Escolha **zaalys-live.crx**. A Zaalys Live aparece na lista, ligada."],
+    list: ["Toque em **•••** e depois em **Extensões**.", "Toque em **+** e escolha **Instalar do arquivo**.", "Escolha **mediaflowmz-live.crx**. A MediaFlowMZ Live aparece na lista, ligada."],
   },
   "quetta-install": {
     desc: "É o navegador de Android que aceita extensões do Chrome. Grátis, na Play Store.",
@@ -109,12 +110,12 @@ const MOBILE: Partial<Record<StepKey, { desc: string; list?: string[]; action?: 
   },
   "quetta-crx": {
     desc: "Abra esta página no Quetta, já logada na sua conta. O Quetta instala o arquivo na hora.",
-    list: ["No Quetta, entre em **zaalys.com** e abra este passo.", "Toque em **Baixar extensão (.crx)**.", "O Quetta pergunta **Adicionar “Zaalys Live”?**. Toque em **Adicionar** (ou OK)."],
-    action: { label: "Baixar extensão (.crx)", href: "/downloads/zaalys-live.crx", download: true },
+    list: ["No Quetta, entre em **mediaflowmz.com** e abra este passo.", "Toque em **Baixar extensão (.crx)**.", "O Quetta pergunta **Adicionar “MediaFlowMZ Live”?**. Toque em **Adicionar** (ou OK)."],
+    action: { label: "Baixar extensão (.crx)", href: "/downloads/mediaflowmz-live.crx", download: true },
   },
   "quetta-check": {
     desc: "Se o Quetta não perguntou nada ao baixar, instale pelo menu. Os nomes podem mudar um pouco de uma versão para outra.",
-    list: ["Toque em **⋮** e depois em **Extensões**.", "Abra as **opções de desenvolvedor** e toque em **carregar arquivo .zip/.crx**.", "Escolha **zaalys-live.crx** em Downloads."],
+    list: ["Toque em **⋮** e depois em **Extensões**.", "Abra as **opções de desenvolvedor** e toque em **carregar arquivo .zip/.crx**.", "Escolha **mediaflowmz-live.crx** em Downloads."],
   },
   "ios-ready": {
     desc: "A live roda dentro do Orion: ele precisa ficar aberto, na frente, e o celular carregando.",
@@ -346,8 +347,9 @@ export default function LivePage() {
         </button>
         <p className="text-xs text-muted-foreground">Pedidos caindo em tempo real no Painel de LIVE do Estúdio, no padrão do TikTok.</p>
         {showPerf && (
-          <div className="pt-3">
+          <div className="space-y-3 pt-3">
             <LivePerformance />
+            <DesempenhoEditor initial="hoje" />
           </div>
         )}
       </div>
@@ -647,7 +649,7 @@ export default function LivePage() {
                       Na Chrome Web Store, clique em <b className="text-foreground">Usar no Chrome</b> e depois em <b className="text-foreground">Adicionar extensão</b>. Ela se atualiza sozinha.
                     </>
                   ) : (
-                    `No ${dev.browser}, abra a página da extensão Zaalys Live e toque em Adicionar.`
+                    `No ${dev.browser}, abra a página da extensão MediaFlowMZ Live e toque em Adicionar.`
                   )}
                 </p>
               )}
@@ -656,12 +658,12 @@ export default function LivePage() {
                   Você já concluiu a configuração ou tem um aparelho registrado. Se o painel do TikTok pedir a chave novamente, copie aqui e ative por lá.
                 </p>
               )}
-              {step.key === "videos" && <p className="mt-1 text-sm text-muted-foreground">Escolha uma opção. Você seleciona os arquivos no painel Zaalys, dentro do TikTok.</p>}
+              {step.key === "videos" && <p className="mt-1 text-sm text-muted-foreground">Escolha uma opção. Você seleciona os arquivos no painel MediaFlowMZ, dentro do TikTok.</p>}
               {step.key === "open" && (
                 <p className="mt-1 text-sm text-muted-foreground">
                   {mobile
-                    ? "Toque no botão abaixo pelo navegador do celular. O painel Zaalys Live sobe da parte de baixo da tela."
-                    : "O painel Zaalys Live aparece no canto da página do TikTok."}
+                    ? "Toque no botão abaixo pelo navegador do celular. O painel MediaFlowMZ Live sobe da parte de baixo da tela."
+                    : "O painel MediaFlowMZ Live aparece no canto da página do TikTok."}
                 </p>
               )}
               {mob && <p className="mt-1 text-sm text-muted-foreground">{mob.desc}</p>}
@@ -715,7 +717,7 @@ export default function LivePage() {
                     Baixar o Chrome
                   </a>{" "}
                   ·{" "}
-                  <a href="/downloads/zaalys-live.zip" download className="underline underline-offset-2">
+                  <a href="/downloads/mediaflowmz-live.zip" download className="underline underline-offset-2">
                     Sem acesso à loja? Baixe o .zip
                   </a>{" "}
                   e carregue a pasta em
@@ -740,7 +742,7 @@ export default function LivePage() {
                   <ol className="mt-4 space-y-3 text-sm">
                     <li className="flex gap-3"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">1</span>Na Chrome Web Store, clique em Usar no Chrome.</li>
                     <li className="flex gap-3"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">2</span>Em Configurações, desconecte o computador da cópia antiga: a nova ocupa a vaga dela.</li>
-                    <li className="flex gap-3"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">3</span>Abra chrome://extensions e remova a Zaalys Live que tem o botão ↻ (recarregar). É a do .zip.</li>
+                    <li className="flex gap-3"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">3</span>Abra chrome://extensions e remova a MediaFlowMZ Live que tem o botão ↻ (recarregar). É a do .zip.</li>
                     <li className="flex gap-3"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">4</span>Recarregue a página do TikTok Shop (F5) e cole sua chave no painel. Seus clipes continuam lá.</li>
                   </ol>
                   <p className="mt-3 text-xs text-muted-foreground">
@@ -748,7 +750,7 @@ export default function LivePage() {
                   </p>
                 </details>
                 <a
-                  href="https://chromewebstore.google.com/search/zaalys%20live"
+                  href="https://chromewebstore.google.com/search/mediaflowmz%20live"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold hover:bg-muted"
@@ -816,7 +818,7 @@ export default function LivePage() {
                 <p className="text-xs font-semibold text-muted-foreground">Origem dos vídeos</p>
                 <div className="space-y-2">
                   {[
-                    { key: "real" as const, label: "Usar os 1 vídeo real do produto", tag: "Recomendado", desc: "Já disponíveis no painel Zaalys. Você não precisa gerar nem baixar." },
+                    { key: "real" as const, label: "Usar os 1 vídeo real do produto", tag: "Recomendado", desc: "Já disponíveis no painel MediaFlowMZ. Você não precisa gerar nem baixar." },
                     { key: "mine" as const, label: "Usar meus vídeos", desc: "Tenha os MP4 deste produto no aparelho que vai transmitir." },
                     { key: "flow" as const, label: "Gerar no Google Flow", desc: "Vamos mostrar como baixar a foto e gerar os clipes, um por vez." },
                   ].map((o) => (
@@ -885,7 +887,7 @@ export default function LivePage() {
                       <b>Qual conta do TikTok usar?</b>
                       <br />
                       <span className="text-muted-foreground">
-                        A conta onde a live vai passar. O e-mail dela não precisa ser o mesmo da sua conta Zaalys: a extensão se liga à Zaalys pela sua chave, não pelo e-mail.
+                        A conta onde a live vai passar. O e-mail dela não precisa ser o mesmo da sua conta MediaFlowMZ: a extensão se liga à MediaFlowMZ pela sua chave, não pelo e-mail.
                       </span>
                     </p>
                     {mobile && (
@@ -905,12 +907,12 @@ export default function LivePage() {
                       </p>
                     )}
                     <p>
-                      <b>O painel Zaalys Live não apareceu?</b>
+                      <b>O painel MediaFlowMZ Live não apareceu?</b>
                       <br />
                       <span className="text-muted-foreground">
                         {mobile
                           ? `A página do TikTok precisa estar aberta no ${browserName}, o mesmo navegador onde a extensão foi instalada. Feche a aba, toque em Abrir o TikTok Shop aqui de novo e espere carregar inteira.`
-                          : "Confira em chrome://extensions se a Zaalys Live está ligada e recarregue a página do TikTok (F5)."}
+                          : "Confira em chrome://extensions se a MediaFlowMZ Live está ligada e recarregue a página do TikTok (F5)."}
                       </span>
                     </p>
                   </div>
@@ -936,8 +938,8 @@ export default function LivePage() {
                 <ol className="space-y-3 text-sm">
                   {[
                     "Clipes da live → Escolher → selecione os MP4 que você baixou.",
-                    `Live do Zaalys → escolha “${current.title}”.`,
-                    "Câmera: no TikTok, escolha “Zaalys Live (vídeo)” e, no microfone, “Zaalys Live (áudio)”.",
+                    `Live do MediaFlowMZ → escolha “${current.title}”.`,
+                    "Câmera: no TikTok, escolha “MediaFlowMZ Live (vídeo)” e, no microfone, “MediaFlowMZ Live (áudio)”.",
                     "Produto no carrinho → Copiar link → cole em Adicionar produtos.",
                   ].map((t, i) => (
                     <li key={i} className="flex gap-3">
@@ -965,12 +967,12 @@ export default function LivePage() {
                   </summary>
                   <div className="mt-3 space-y-3 text-sm">
                     {[
-                      ["O item Câmera não fica verde?", mobile ? "Na página do TikTok, na aba Vídeo, abra as fontes de vídeo e áudio e escolha Zaalys Live (vídeo) na câmera e Zaalys Live (áudio) no microfone." : "Na página do TikTok abra as fontes de vídeo e áudio e escolha Zaalys Live (vídeo) na câmera e Zaalys Live (áudio) no microfone."],
-                      ["“Zaalys Live” não aparece na lista de câmeras?", "Escolha os clipes e a live no painel primeiro: a câmera só existe depois disso. Então recarregue a página do TikTok (" + (mobile ? "↻ no navegador" : "F5") + ")."],
-                      ["O painel disse “Não consegui abrir a live”?", "O painel já escolheu a câmera e o som da Zaalys; só o clique em iniciar não pegou. Clique em Iniciar LIVE no próprio TikTok e deixe o painel ligado: ele continua comentando, fixando e narrando."],
+                      ["O item Câmera não fica verde?", mobile ? "Na página do TikTok, na aba Vídeo, abra as fontes de vídeo e áudio e escolha MediaFlowMZ Live (vídeo) na câmera e MediaFlowMZ Live (áudio) no microfone." : "Na página do TikTok abra as fontes de vídeo e áudio e escolha MediaFlowMZ Live (vídeo) na câmera e MediaFlowMZ Live (áudio) no microfone."],
+                      ["“MediaFlowMZ Live” não aparece na lista de câmeras?", "Escolha os clipes e a live no painel primeiro: a câmera só existe depois disso. Então recarregue a página do TikTok (" + (mobile ? "↻ no navegador" : "F5") + ")."],
+                      ["O painel disse “Não consegui abrir a live”?", "O painel já escolheu a câmera e o som da MediaFlowMZ; só o clique em iniciar não pegou. Clique em Iniciar LIVE no próprio TikTok e deixe o painel ligado: ele continua comentando, fixando e narrando."],
                       ["O botão de iniciar LIVE do TikTok está cinza?", "Escolha os clipes no painel primeiro: sem eles não existe câmera para enviar. Se continuar cinza, recarregue a página do TikTok (" + (mobile ? "↻ no navegador" : "F5") + ") e ligue de novo. Se aparecer que iniciar LIVE está restrito, o bloqueio é do TikTok na sua conta: veja os avisos de violação no TikTok Shop."],
                       ["A live está sem som?", "Toque uma vez na página do TikTok e ligue de novo. O navegador só libera o som depois de um toque."],
-                      ["A voz sai cortada ou some depois da primeira frase?", mobile ? `Atualize a extensão: no celular ela não se atualiza sozinha. No menu de extensões do ${browserName}, remova a Zaalys Live, baixe e instale de novo pelo passo da extensão e toque em Conectar neste navegador. Os clipes continuam lá.` : "Atualize a extensão. Pela Chrome Web Store ela se atualiza sozinha; se você instalou pelo .zip, troque pela loja no passo da extensão."],
+                      ["A voz sai cortada ou some depois da primeira frase?", mobile ? `Atualize a extensão: no celular ela não se atualiza sozinha. No menu de extensões do ${browserName}, remova a MediaFlowMZ Live, baixe e instale de novo pelo passo da extensão e toque em Conectar neste navegador. Os clipes continuam lá.` : "Atualize a extensão. Pela Chrome Web Store ela se atualiza sozinha; se você instalou pelo .zip, troque pela loja no passo da extensão."],
                     ].map(([q, a]) => (
                       <p key={q}>
                         <b>{q}</b>

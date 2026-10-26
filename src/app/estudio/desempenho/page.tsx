@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, CircleHelp, Download, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleHelp, Download, Pencil, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/components/brand";
-import { LIVE_METRICS, inRange, isoDay, metricByLabel, totalsOf, useLiveSessions, type LiveSession } from "@/lib/estudio-lives";
+import { LIVE_METRICS, inRange, isoDay, metricByLabel, metricValue, totalsOf, useLiveSessions, useOverrides, type LiveSession, type PeriodPreset } from "@/lib/estudio-lives";
+import { DesempenhoEditor } from "@/components/desempenho-editor";
 import { formatBRL } from "@/lib/zaalys-data";
 import { Card, GrayButton, PageTitle, Table, UnderlineTabs } from "../ui";
 import { DateBar, brDate, useDateRange } from "../date-bar";
@@ -41,13 +42,20 @@ export default function DesempenhoPage() {
   const [metric, setMetric] = useState(LIVE_METRICS[0]!.label);
   const [offset, setOffset] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
+  const [editing, setEditing] = useState(false);
+  const overrides = useOverrides();
 
   const selected = sessions.filter((s) => inRange(s, r.from, r.to));
   const totals = totalsOf(selected);
   const m = metricByLabel(metric);
+  // Números editados do período (Hoje / 7 / 30 dias); fora desses períodos, só o calculado.
+  const valueOf = (x: typeof m) => metricValue(overrides, r.preset, x, totals);
+  const calc = m.value(totals);
+  // O gráfico acompanha o número editado: cada dia na mesma proporção.
+  const scale = calc > 0 ? valueOf(m) / calc : 1;
 
   const days = daysOf(r.from, r.to, sessions);
-  const points = days.map((d) => ({ ...d, v: d.session ? m.value(totalsOf([d.session])) : 0 }));
+  const points = days.map((d) => ({ ...d, v: d.session ? m.value(totalsOf([d.session])) * scale : 0 }));
   const withData = points.filter((p) => p.session);
   const mean = withData.reduce((a, p) => a + p.v, 0) / Math.max(1, withData.length);
   const statusOf = (v: number) => (v < mean * 0.7 ? STATUS.baixo : v > mean * 1.3 ? STATUS.alto : STATUS.normal);
@@ -93,10 +101,20 @@ export default function DesempenhoPage() {
               <h2 className="text-xl font-semibold">Dados de LIVE</h2>
               <p className="mt-0.5 text-sm text-black/65">Mostra apenas dados de transmissões ao vivo que foram iniciadas durante o período selecionado.</p>
             </div>
-            <GrayButton>
-              <SlidersHorizontal size={14} /> Métricas
-            </GrayButton>
+            <div className="flex gap-2">
+              <GrayButton onClick={() => setEditing((e) => !e)}>
+                <Pencil size={14} /> {editing ? "Fechar edição" : "Editar números"}
+              </GrayButton>
+              <GrayButton>
+                <SlidersHorizontal size={14} /> Métricas
+              </GrayButton>
+            </div>
           </div>
+          {editing && (
+            <div className="mt-4">
+              <DesempenhoEditor initial={(r.preset === "custom" ? "7" : r.preset) as PeriodPreset} />
+            </div>
+          )}
 
           <div className="relative mt-4 overflow-hidden">
             <div className="flex gap-3 transition-transform duration-300" style={{ transform: `translateX(-${offset * 224}px)` }}>
@@ -114,7 +132,7 @@ export default function DesempenhoPage() {
                     <span className="line-clamp-2">{x.label}</span>
                     <CircleHelp size={12} className="mt-0.5 shrink-0 text-black/40" />
                   </span>
-                  <span className="mt-2 block truncate text-2xl font-semibold tabular-nums">{selected.length ? x.format(x.value(totals)) : "--"}</span>
+                  <span className="mt-2 block truncate text-2xl font-semibold tabular-nums">{selected.length ? x.format(valueOf(x)) : "--"}</span>
                 </button>
               ))}
             </div>
@@ -183,9 +201,9 @@ export default function DesempenhoPage() {
             {TRAFFIC.map((t) => (
               <tr key={t.l}>
                 <td className="px-3 py-3">{t.l}</td>
-                <td className="px-3 tabular-nums">{selected.length ? Math.round(totals.views * t.views).toLocaleString("pt-BR") : "--"}</td>
+                <td className="px-3 tabular-nums">{selected.length ? Math.round(valueOf(metricByLabel("Visualizações")) * t.views).toLocaleString("pt-BR") : "--"}</td>
                 <td className="px-3 tabular-nums">{selected.length ? `${Math.round(t.views * 100)}%` : "--"}</td>
-                <td className="px-3 tabular-nums">{selected.length ? formatBRL(Math.round(totals.gmvCents * t.gmv)) : "--"}</td>
+                <td className="px-3 tabular-nums">{selected.length ? formatBRL(Math.round(valueOf(metricByLabel("GMV atribuído")) * t.gmv)) : "--"}</td>
               </tr>
             ))}
           </Table>

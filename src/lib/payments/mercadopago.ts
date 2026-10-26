@@ -63,7 +63,7 @@ export class MercadoPagoProvider implements PaymentProvider {
   }
 
   async createCheckout(input: CheckoutInput) {
-    const name = process.env.NEXT_PUBLIC_APP_NAME ?? "Zaalys";
+    const name = process.env.NEXT_PUBLIC_APP_NAME ?? "MediaFlowMZ";
 
     if (input.plan === "lifetime") {
       // Checkout Pro: Pix, boleto e cartão parcelado.

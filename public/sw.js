@@ -1,6 +1,6 @@
 // Service worker: recebe os alertas push e abre o painel ao tocar.
 self.addEventListener("push", (event) => {
-  let data = { title: "Zaalys", body: "Você tem um novo aviso.", url: "/painel" };
+  let data = { title: "MediaFlowMZ", body: "Você tem um novo aviso.", url: "/painel" };
   try {
     data = { ...data, ...event.data.json() };
   } catch {}

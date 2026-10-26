@@ -1,6 +1,6 @@
 {
-  "name": "Zaalys",
-  "short_name": "Zaalys",
+  "name": "MediaFlowMZ",
+  "short_name": "MediaFlowMZ",
   "description": "Estúdio de criação com IA para TikTok Shop.",
   "start_url": "/painel",
   "display": "standalone",

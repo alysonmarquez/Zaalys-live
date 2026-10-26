@@ -179,7 +179,7 @@ export const inRange = (s: LiveSession, from: string, to: string) => Boolean(fro
 
 // ---------- Indicadores (mesmos nomes e ordem do original) ----------
 
-type Totals = { gmvCents: number; orders: number; items: number; views: number; impressions: number; clicks: number; followers: number; watchSec: number; hours: number };
+export type Totals = { gmvCents: number; orders: number; items: number; views: number; impressions: number; clicks: number; followers: number; watchSec: number; hours: number };
 
 export function totalsOf(list: LiveSession[]): Totals {
   return list.reduce<Totals>(
@@ -206,21 +206,88 @@ const duration = (sec: number) => {
   return s >= 60 ? `${Math.floor(s / 60)}min ${s % 60}s` : `${s}s`;
 };
 
-export type LiveMetric = { label: string; value: (t: Totals) => number; format: (v: number) => string };
+export type MetricUnit = "money" | "int" | "sec" | "pct";
+export type LiveMetric = { label: string; unit: MetricUnit; value: (t: Totals) => number; format: (v: number) => string };
 
 export const LIVE_METRICS: LiveMetric[] = [
-  { label: "GMV atribuído", value: (t) => t.gmvCents, format: formatBRL },
-  { label: "Itens atribuídos vendidos", value: (t) => t.items, format: int },
-  { label: "Visualizações", value: (t) => t.views, format: int },
-  { label: "Impressões da LIVE", value: (t) => t.impressions, format: int },
-  { label: "Impressões por hora", value: (t) => div(t.impressions, t.hours), format: int },
-  { label: "GMV por hora", value: (t) => Math.round(div(t.gmvCents, t.hours)), format: formatBRL },
-  { label: "GPM de exibição", value: (t) => Math.round(div(t.gmvCents * 1000, t.impressions)), format: formatBRL },
-  { label: "Duração média de visualização", value: (t) => div(t.watchSec, t.views), format: duration },
-  { label: "Porcentagem de visitantes", value: (t) => div(t.views, t.impressions), format: pct },
-  { label: "Taxa de novos seguidores", value: (t) => div(t.followers, t.views), format: pct },
-  { label: "CTR", value: (t) => div(t.clicks, t.views), format: pct },
-  { label: "CTOR", value: (t) => div(t.orders, t.clicks), format: pct },
+  { label: "GMV atribuído", unit: "money", value: (t) => t.gmvCents, format: formatBRL },
+  { label: "Itens atribuídos vendidos", unit: "int", value: (t) => t.items, format: int },
+  { label: "Visualizações", unit: "int", value: (t) => t.views, format: int },
+  { label: "Impressões da LIVE", unit: "int", value: (t) => t.impressions, format: int },
+  { label: "Impressões por hora", unit: "int", value: (t) => div(t.impressions, t.hours), format: int },
+  { label: "GMV por hora", unit: "money", value: (t) => Math.round(div(t.gmvCents, t.hours)), format: formatBRL },
+  { label: "GPM de exibição", unit: "money", value: (t) => Math.round(div(t.gmvCents * 1000, t.impressions)), format: formatBRL },
+  { label: "Duração média de visualização", unit: "sec", value: (t) => div(t.watchSec, t.views), format: duration },
+  { label: "Porcentagem de visitantes", unit: "pct", value: (t) => div(t.views, t.impressions), format: pct },
+  { label: "Taxa de novos seguidores", unit: "pct", value: (t) => div(t.followers, t.views), format: pct },
+  { label: "CTR", unit: "pct", value: (t) => div(t.clicks, t.views), format: pct },
+  { label: "CTOR", unit: "pct", value: (t) => div(t.orders, t.clicks), format: pct },
 ];
 
 export const metricByLabel = (label: string) => LIVE_METRICS.find((m) => m.label === label)!;
+
+// ---------- Números editados por período ----------
+// "Editar números" (no Desempenho e na página Live do Painel) fixa o valor de qualquer indicador em cada
+// período da barra de datas. Sem valor, o indicador segue o calculado das transmissões.
+
+export type PeriodPreset = "hoje" | "7" | "30";
+export const PERIOD_PRESETS: { v: PeriodPreset; l: string }[] = [
+  { v: "hoje", l: "Hoje" },
+  { v: "7", l: "Últimos 7 dias" },
+  { v: "30", l: "Últimos 30 dias" },
+];
+/** Em "Hoje", os números que andam com a LIVE (GMV, itens, visualizações…) vêm de "Editar desempenho da LIVE"; aqui só as taxas. */
+export const TODAY_EDITABLE = new Set(["GPM de exibição", "Duração média de visualização", "Porcentagem de visitantes", "Taxa de novos seguidores", "CTR", "CTOR", "Impressões por hora", "GMV por hora"]);
+
+export type MetricOverrides = Partial<Record<PeriodPreset, Record<string, number>>>;
+const OVERRIDES_KEY = "zaalys_estudio_desempenho_numeros";
+export const OVERRIDES_EVENT = "zaalys:estudio-desempenho-numeros";
+
+export function loadOverrides(): MetricOverrides {
+  try {
+    return JSON.parse(localStorage.getItem(OVERRIDES_KEY) || "{}") as MetricOverrides;
+  } catch {
+    return {};
+  }
+}
+
+export function saveOverrides(o: MetricOverrides) {
+  try {
+    localStorage.setItem(OVERRIDES_KEY, JSON.stringify(o));
+  } catch {}
+  window.dispatchEvent(new Event(OVERRIDES_EVENT));
+}
+
+export function useOverrides() {
+  const [o, setO] = useState<MetricOverrides>({});
+  useEffect(() => {
+    const load = () => setO(loadOverrides());
+    load();
+    window.addEventListener(OVERRIDES_EVENT, load);
+    window.addEventListener("storage", load);
+    return () => {
+      window.removeEventListener(OVERRIDES_EVENT, load);
+      window.removeEventListener("storage", load);
+    };
+  }, []);
+  return o;
+}
+
+/** Valor do indicador no período: o editado, se houver, senão o calculado. */
+export function metricValue(o: MetricOverrides, preset: string, m: LiveMetric, t: Totals) {
+  const v = o[preset as PeriodPreset]?.[m.label];
+  return typeof v === "number" ? v : m.value(t);
+}
+
+// Conversão entre o valor guardado (centavos, fração) e o que se digita (R$, %).
+export function toInput(m: LiveMetric, v: number) {
+  const n = m.unit === "money" ? v / 100 : m.unit === "pct" ? v * 100 : v;
+  return n.toLocaleString("pt-BR", { maximumFractionDigits: 2, useGrouping: false });
+}
+export function fromInput(m: LiveMetric, raw: string): number | undefined {
+  const t = raw.trim();
+  if (!t) return undefined;
+  const n = Number(t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : /\.\d{1,2}$/.test(t) ? t : t.replace(/\./g, ""));
+  if (!Number.isFinite(n) || n < 0) return undefined;
+  return m.unit === "money" ? Math.round(n * 100) : m.unit === "pct" ? n / 100 : n;
+}

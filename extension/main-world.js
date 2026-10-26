@@ -1,5 +1,5 @@
-// Zaalys Live — câmera e microfone virtuais (roda no contexto da página do TikTok).
-// Com clipes carregados, a página passa a ver "Zaalys Live (vídeo)" e "Zaalys Live (áudio)" na lista
+// MediaFlowMZ Live — câmera e microfone virtuais (roda no contexto da página do TikTok).
+// Com clipes carregados, a página passa a ver "MediaFlowMZ Live (vídeo)" e "MediaFlowMZ Live (áudio)" na lista
 // de câmeras e microfones; escolhidos, recebem os clipes em ordem aleatória e o som deles.
 (() => {
   if (window.__zaalysCam) return;
@@ -106,7 +106,7 @@
         const list = await originalEnum().catch(() => []);
         if (!state.ready) return list;
         const fake = (deviceId, kind, label) => ({ deviceId, kind, label, groupId: "zaalys-live", toJSON() { return { deviceId, kind, label, groupId: "zaalys-live" }; } });
-        return [fake(CAM_ID, "videoinput", "Zaalys Live (vídeo)"), fake(MIC_ID, "audioinput", "Zaalys Live (áudio)"), ...list];
+        return [fake(CAM_ID, "videoinput", "MediaFlowMZ Live (vídeo)"), fake(MIC_ID, "audioinput", "MediaFlowMZ Live (áudio)"), ...list];
       };
     }
   }

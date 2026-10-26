@@ -79,7 +79,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Aliases compatíveis com o painel interno no tema Zaalys */
+  /* Aliases compatíveis com o painel interno no tema MediaFlowMZ */
   --color-paper: #110f0d;
   --color-night: #0b0a08;
   --color-ink: #f3f1ef;
@@ -223,7 +223,7 @@
   animation-delay: var(--shimmer-delay, 0s);
 }
 
-/* Zaalys Feature Demos (.zd*) */
+/* MediaFlowMZ Feature Demos (.zd*) */
 .zd {
   border-top: 1px solid var(--border);
   padding-top: 12px;

@@ -1,7 +1,7 @@
 "use client";
 
 // Animações do "Como fazer" do Assistente de Live (mesma sequência das do original):
-// 1) instalar a extensão na Chrome Web Store; 2) abrir a live no TikTok Shop com o painel Zaalys;
+// 1) instalar a extensão na Chrome Web Store; 2) abrir a live no TikTok Shop com o painel MediaFlowMZ;
 // 3) conferir câmera, som e produto e ligar a live automática. Loop de ~8 s, só com CSS.
 
 const CSS = `
@@ -63,18 +63,18 @@ function Browser({ tab, url, children }: { tab: string; url: string; children: R
 }
 
 const Z = ({ className = "" }: { className?: string }) => (
-  <span className={`grid place-items-center rounded-md bg-[#ade74e] font-extrabold text-[#0f1a01] ${className}`}>Z</span>
+  <span className={`grid place-items-center rounded-md bg-[#ade74e] font-extrabold text-[#0f1a01] ${className}`}>M</span>
 );
 
 export function ChromeStoreDemo() {
   return (
-    <Browser tab="Chrome Web Store" url="chromewebstore.google.com/detail/zaalys-live">
+    <Browser tab="Chrome Web Store" url="chromewebstore.google.com/detail/mediaflowmz-live">
       <div className="p-4">
         <div className="flex items-center gap-3 border-b border-neutral-200 pb-3">
           <Z className="size-9 text-base" />
           <div className="flex-1">
-            <p className="text-[12px] font-semibold">Zaalys Live</p>
-            <p className="text-[9px] text-neutral-500">zaalys.com · Ferramentas</p>
+            <p className="text-[12px] font-semibold">MediaFlowMZ Live</p>
+            <p className="text-[9px] text-neutral-500">mediaflowmz.com · Ferramentas</p>
           </div>
           <span className="relative h-6 w-24">
             <span className="absolute inset-0 grid place-items-center rounded-full bg-[#1a73e8] text-[9px] font-semibold text-white" style={{ animationName: "zl-btn-a" }}>
@@ -96,9 +96,9 @@ export function ChromeStoreDemo() {
 
       <div className="absolute right-3 top-3 w-[190px] rounded-lg border border-neutral-200 bg-white p-3 shadow-xl" style={{ animationName: "zl-dialog" }}>
         <p className="flex items-center gap-1.5 text-[10px] font-semibold">
-          <Z className="size-3.5 text-[7px]" /> Adicionar “Zaalys Live”?
+          <Z className="size-3.5 text-[7px]" /> Adicionar “MediaFlowMZ Live”?
         </p>
-        <p className="mt-1 text-[8px] text-neutral-500">Ela pode ler e alterar seus dados em shop.tiktok.com e zaalys.com</p>
+        <p className="mt-1 text-[8px] text-neutral-500">Ela pode ler e alterar seus dados em shop.tiktok.com e mediaflowmz.com</p>
         <div className="mt-2 flex justify-end gap-2 text-[8px] font-semibold">
           <span className="rounded-full bg-[#1a73e8] px-2 py-1 text-white">Adicionar extensão</span>
           <span className="px-1 py-1 text-[#1a73e8]">Cancelar</span>
@@ -107,7 +107,7 @@ export function ChromeStoreDemo() {
 
       <div className="absolute right-3 top-3 w-[190px] rounded-lg border border-neutral-200 bg-white p-2.5 shadow-xl" style={{ animationName: "zl-toast" }}>
         <p className="flex items-center gap-1.5 text-[10px] font-semibold">
-          <Z className="size-3.5 text-[7px]" /> Zaalys Live foi adicionada ao Chrome
+          <Z className="size-3.5 text-[7px]" /> MediaFlowMZ Live foi adicionada ao Chrome
         </p>
         <p className="mt-0.5 pl-5 text-[8px] text-neutral-500">Ela se atualiza sozinha.</p>
       </div>
@@ -154,14 +154,14 @@ export function OpenTikTokDemo() {
         <div className="absolute bottom-2 right-2 w-[132px] rounded-lg border border-neutral-200 bg-white p-2 shadow-xl" style={{ animationName: "zl-panel" }}>
           <p className="mb-1 flex items-center justify-between text-[9px] font-semibold">
             <span className="flex items-center gap-1">
-              <Z className="size-3 text-[6px]" /> Zaalys Live
+              <Z className="size-3 text-[6px]" /> MediaFlowMZ Live
             </span>
             <span className="text-neutral-400">–</span>
           </p>
           <PanelRow label="Conta conectada" at={34} />
           <PanelRow label="Clipes da live" at={100} done={false} />
-          <PanelRow label="Live do Zaalys" at={100} done={false} />
-          <PanelRow label="Câmera Zaalys no TikTok" at={100} done={false} />
+          <PanelRow label="Live do MediaFlowMZ" at={100} done={false} />
+          <PanelRow label="Câmera MediaFlowMZ no TikTok" at={100} done={false} />
           <PanelRow label="Produto no carrinho" at={100} done={false} />
           <span className="mt-1 block rounded bg-neutral-200 py-1 text-center text-[8px] font-semibold text-neutral-500">Ligar live automática</span>
         </div>
@@ -202,13 +202,13 @@ export function PreviewDemo({ product }: { product: string }) {
         <div className="absolute bottom-2 right-2 w-[140px] rounded-lg border border-neutral-200 bg-white p-2 shadow-xl">
           <p className="mb-1 flex items-center justify-between text-[9px] font-semibold">
             <span className="flex items-center gap-1">
-              <Z className="size-3 text-[6px]" /> Zaalys Live
+              <Z className="size-3 text-[6px]" /> MediaFlowMZ Live
             </span>
             <span className="text-neutral-400">–</span>
           </p>
           <PanelRow label="Clipes da live" sub="3 clipes em ordem aleatória" at={12} />
-          <PanelRow label="Live do Zaalys" sub={product} at={26} />
-          <PanelRow label="Câmera Zaalys no TikTok" sub="Recebendo o vídeo e a voz" at={44} />
+          <PanelRow label="Live do MediaFlowMZ" sub={product} at={26} />
+          <PanelRow label="Câmera MediaFlowMZ no TikTok" sub="Recebendo o vídeo e a voz" at={44} />
           <PanelRow label="Produto no carrinho" sub="Na lista, será fixado" at={60} />
           <Swap
             at={74}
@@ -235,9 +235,9 @@ export function PreviewDemo({ product }: { product: string }) {
           </Anim>
         </span>
         <p className="mt-1 text-[8px] text-neutral-500">Câmera</p>
-        <Swap at={36} a={<span className="block rounded border border-neutral-300 px-1.5 py-0.5 text-[8px]">Selecionar ▾</span>} b={<span className="block rounded border border-[#00a19c] px-1.5 py-0.5 text-[8px]">Zaalys Live (vídeo)</span>} />
+        <Swap at={36} a={<span className="block rounded border border-neutral-300 px-1.5 py-0.5 text-[8px]">Selecionar ▾</span>} b={<span className="block rounded border border-[#00a19c] px-1.5 py-0.5 text-[8px]">MediaFlowMZ Live (vídeo)</span>} />
         <p className="mt-0.5 text-[8px] text-neutral-500">Microfone</p>
-        <Swap at={40} a={<span className="block rounded border border-neutral-300 px-1.5 py-0.5 text-[8px]">Selecionar ▾</span>} b={<span className="block rounded border border-[#00a19c] px-1.5 py-0.5 text-[8px]">Zaalys Live (áudio)</span>} />
+        <Swap at={40} a={<span className="block rounded border border-neutral-300 px-1.5 py-0.5 text-[8px]">Selecionar ▾</span>} b={<span className="block rounded border border-[#00a19c] px-1.5 py-0.5 text-[8px]">MediaFlowMZ Live (áudio)</span>} />
       </div>
       <div>
         <p className="text-[9px] font-semibold">Dados e chat</p>
@@ -310,7 +310,7 @@ const Sheet = ({ children }: { children: React.ReactNode }) => (
 const ZRow = ({ v = "3.12.0" }: { v?: string }) => (
   <div className="flex items-center gap-1.5 px-2 py-1.5">
     <Z className="size-4 text-[7px]" />
-    <span className="flex-1 font-semibold">Zaalys Live</span>
+    <span className="flex-1 font-semibold">MediaFlowMZ Live</span>
     <span className="text-neutral-400">{v}</span>
     <Toggle on />
   </div>
@@ -319,7 +319,7 @@ const Crx = () => (
   <div className="flex items-center gap-1.5 rounded-md border border-neutral-200 p-1.5">
     <span className="rounded bg-neutral-200 px-1 text-[6px] font-bold">CRX</span>
     <span className="flex-1">
-      <span className="block font-semibold">zaalys-live.crx</span>
+      <span className="block font-semibold">mediaflowmz-live.crx</span>
       <span className="text-[6.5px] text-neutral-400">2,6 MB · agora</span>
     </span>
   </div>
@@ -367,20 +367,20 @@ export function DownloadCrxDemo() {
   const page = (
     <div className="p-2 text-center">
       <Z className="mx-auto mt-2 size-8 text-[13px]" />
-      <p className="mt-1 font-semibold">Zaalys Live</p>
+      <p className="mt-1 font-semibold">MediaFlowMZ Live</p>
       <p className="text-[6.5px] text-neutral-500">para iPhone, iPad e Android</p>
       <span className="mt-2 inline-block rounded-md bg-[#ade74e] px-3 py-1 font-semibold">Baixar extensão</span>
     </div>
   );
   return (
     <Phone
-      url="🔒 zaalys.com/ferramentas"
+      url="🔒 mediaflowmz.com/ferramentas"
       frames={[
         page,
         <div key="d" className="relative h-full">
           {page}
           <Sheet>
-            <p className="font-semibold">Baixar “zaalys-live.crx”?</p>
+            <p className="font-semibold">Baixar “mediaflowmz-live.crx”?</p>
             <p className="text-[6.5px] text-neutral-500">2,6 MB</p>
             <div className="mt-1.5 flex justify-end gap-3 text-[7px] font-semibold text-[#007aff]">
               <span>Cancelar</span>
@@ -391,7 +391,7 @@ export function DownloadCrxDemo() {
         <div key="ok" className="relative h-full">
           {page}
           <Sheet>
-            <p className="flex items-center gap-1 font-semibold">⬇︎ zaalys-live.crx <span className="text-[#00a19c]">✓</span></p>
+            <p className="flex items-center gap-1 font-semibold">⬇︎ mediaflowmz-live.crx <span className="text-[#00a19c]">✓</span></p>
           </Sheet>
         </div>,
       ]}
@@ -476,7 +476,7 @@ export function QuettaCheckDemo() {
 export function ConnectDemo({ os }: { os: "ios" | "android" }) {
   const base = (btn: React.ReactNode, device = false) => (
     <div className="p-2">
-      <p className="font-semibold">Extensão Zaalys Live</p>
+      <p className="font-semibold">Extensão MediaFlowMZ Live</p>
       <p className="text-[6.5px] text-neutral-500">A chave abre dois aparelhos ao mesmo tempo.</p>
       <div className="mt-1.5 flex items-center justify-between rounded-md bg-neutral-100 px-1.5 py-1 font-mono text-[7px]">
         zlv_8f3k•••••••• <span className="font-sans font-semibold">Copiar</span>
@@ -494,7 +494,7 @@ export function ConnectDemo({ os }: { os: "ios" | "android" }) {
   const b = (t: string, cls: string) => <span className={`block rounded-md py-1 text-center font-semibold ${cls}`}>{t}</span>;
   return (
     <Phone
-      url={`${os === "ios" ? "🔒 " : ""}zaalys.com/settings`}
+      url={`${os === "ios" ? "🔒 " : ""}mediaflowmz.com/settings`}
       frames={[
         base(b("Conectar neste navegador", "bg-[#ade74e]")),
         base(b("Conectando…", "bg-neutral-200 text-neutral-500")),
@@ -560,7 +560,7 @@ const PanelSheet = ({ items, btn }: { items: [string, string?][]; btn: React.Rea
   <Sheet>
     <p className="mb-1 flex items-center justify-between font-semibold">
       <span className="flex items-center gap-1">
-        <Z className="size-3 text-[6px]" /> Zaalys Live
+        <Z className="size-3 text-[6px]" /> MediaFlowMZ Live
       </span>
       <span className="text-neutral-400">–</span>
     </p>
@@ -585,7 +585,7 @@ export function MobileOpenDemo({ os }: { os: "ios" | "android" }) {
       frames={[
         <MobileLiveManager key="a" />,
         <MobileLiveManager key="b">
-          <PanelSheet items={[["Clipes da live"], ["Narração pronta"], ["Câmera Zaalys no TikTok"]]} btn={btn} />
+          <PanelSheet items={[["Clipes da live"], ["Narração pronta"], ["Câmera MediaFlowMZ no TikTok"]]} btn={btn} />
         </MobileLiveManager>,
       ]}
     />
@@ -595,8 +595,8 @@ export function MobileOpenDemo({ os }: { os: "ios" | "android" }) {
 export function MobilePreviewDemo({ os }: { os: "ios" | "android" }) {
   const items: [string, string?][] = [
     ["Clipes da live", "3 clipes em ordem aleatória"],
-    ["Live do Zaalys", "Pronta, com narração"],
-    ["Câmera Zaalys no TikTok", "Recebendo o vídeo e a voz"],
+    ["Live do MediaFlowMZ", "Pronta, com narração"],
+    ["Câmera MediaFlowMZ no TikTok", "Recebendo o vídeo e a voz"],
     ["Produto no carrinho", "Na lista, será fixado"],
   ];
   return (
@@ -604,10 +604,10 @@ export function MobilePreviewDemo({ os }: { os: "ios" | "android" }) {
       url={`${os === "ios" ? "🔒 " : ""}shop.tiktok.com/streamer/live`}
       frames={[
         <MobileLiveManager key="a" />,
-        <MobileLiveManager key="b" cam="Zaalys Live (vídeo)">
+        <MobileLiveManager key="b" cam="MediaFlowMZ Live (vídeo)">
           <PanelSheet items={items} btn={<span className="block rounded bg-[#ade74e] py-1 text-center font-semibold">Ligar live automática</span>} />
         </MobileLiveManager>,
-        <MobileLiveManager key="c" cam="Zaalys Live (vídeo)" live>
+        <MobileLiveManager key="c" cam="MediaFlowMZ Live (vídeo)" live>
           <PanelSheet items={items} btn={<span className="block rounded bg-neutral-800 py-1 text-center font-semibold text-white">■ Parar live automática</span>} />
         </MobileLiveManager>,
       ]}

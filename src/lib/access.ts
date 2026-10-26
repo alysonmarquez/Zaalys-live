@@ -31,8 +31,8 @@ export function isDemoMode() {
 
 const DEMO: Access = {
   userId: "00000000-0000-0000-0000-000000000000",
-  email: "criador@zaalys.com",
-  name: "Criador Zaalys",
+  email: "criador@mediaflowmz.com",
+  name: "Criador MediaFlowMZ",
   handle: "criador",
   active: true,
   plan: "lifetime",

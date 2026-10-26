@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Eye, MousePointerClick, Pause, Play, Settings2, ShoppingBag, Timer, Users, X } from "lucide-react";
 import { formatBRL } from "@/lib/zaalys-data";
-import { isoDay, totalsOf, useLiveSessions } from "@/lib/estudio-lives";
+import { isoDay, metricByLabel, metricValue, totalsOf, useLiveSessions, useOverrides } from "@/lib/estudio-lives";
 import { loadLiveSim, saveLiveSim, useCurrentViewers, useLiveOrders, useLiveSimConfig, type LiveOrder } from "@/lib/estudio-live-sim";
 
 const CYAN = "#25f4ee";
@@ -45,7 +45,6 @@ function useNow(every = 1000) {
 }
 
 const int = (n: number) => Math.round(n).toLocaleString("pt-BR");
-const pct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 const clock = (sec: number) => {
   const s = Math.max(0, Math.floor(sec));
   return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map((x) => String(x).padStart(2, "0")).join(":");
@@ -73,6 +72,9 @@ export default function PainelDeLivePage() {
   const now = useNow();
   const today = now ? sessions.find((s) => s.day === isoDay(now)) : undefined;
   const t = totalsOf(today ? [today] : []);
+  // Taxas de "Hoje" editadas em "Editar números" valem aqui também.
+  const overrides = useOverrides();
+  const rate = (label: string) => metricByLabel(label).format(metricValue(overrides, "hoje", metricByLabel(label), t));
   const viewers = useCurrentViewers(cfg.viewers, orders.length);
   const gmv = useCountUp(t.gmvCents);
   const items = useCountUp(t.items);
@@ -198,10 +200,10 @@ export default function PainelDeLivePage() {
           <Kpi icon={Eye} label="Visualizações" value={int(t.views)} accent={CYAN} />
           <Kpi icon={ShoppingBag} label="Clientes" value={int(customers)} accent={CYAN} />
           <Kpi icon={MousePointerClick} label="Cliques no produto" value={int(t.clicks)} accent={CYAN} />
-          <Kpi icon={MousePointerClick} label="CTR" value={pct(t.views ? t.clicks / t.views : 0)} />
-          <Kpi icon={ShoppingBag} label="Taxa de conversão" value={pct(t.clicks ? t.orders / t.clicks : 0)} />
-          <Kpi icon={ShoppingBag} label="GPM" value={formatBRL(t.impressions ? Math.round((t.gmvCents * 1000) / t.impressions) : 0)} />
-          <Kpi icon={Timer} label="Duração média" value={`${Math.round(t.views ? t.watchSec / t.views : 0)}s`} />
+          <Kpi icon={MousePointerClick} label="CTR" value={rate("CTR")} />
+          <Kpi icon={ShoppingBag} label="Taxa de conversão" value={rate("CTOR")} />
+          <Kpi icon={ShoppingBag} label="GPM" value={rate("GPM de exibição")} />
+          <Kpi icon={Timer} label="Duração média" value={rate("Duração média de visualização")} />
         </section>
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_380px]">
