@@ -36,12 +36,13 @@ export class ApplyfyProvider implements PaymentProvider {
   }
 
   private verify(req: Request) {
-    const expected = process.env.APPLYFY_WEBHOOK_TOKEN ?? "";
-    if (expected.length < 16) throw new Error("APPLYFY_WEBHOOK_TOKEN não configurado (mínimo 16 caracteres)");
-    const got = new URL(req.url).searchParams.get("token") ?? req.headers.get("x-webhook-token") ?? "";
+    const expected = (process.env.APPLYFY_WEBHOOK_TOKEN ?? "").trim();
+    if (!expected) throw new Error("APPLYFY_WEBHOOK_TOKEN não configurado (vazio nesta implantação: crie a variável e faça Redeploy)");
+    if (expected.length < 8) throw new Error(`APPLYFY_WEBHOOK_TOKEN curto demais (${expected.length} caracteres, mínimo 8)`);
+    const got = (new URL(req.url).searchParams.get("token") ?? req.headers.get("x-webhook-token") ?? "").trim();
     const a = Buffer.from(expected);
     const b = Buffer.from(got);
-    if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error("Token do webhook inválido");
+    if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error(`Token do webhook inválido (recebido ${b.length} caracteres, esperado ${a.length})`);
   }
 
   async handleWebhook(req: Request): Promise<PaymentEvent | null> {
