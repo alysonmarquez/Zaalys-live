@@ -186,7 +186,7 @@ const readPreps = (): Prep[] => {
 
 export default function LivePage() {
   const demo = useIsDemo();
-  // Estúdio de LIVE, comentários automáticos, OBS e "Editar desempenho" só na conta de demonstração.
+  // Estúdio de LIVE e "Editar desempenho" para todos; comentários automáticos e OBS só na conta de demonstração.
   const showcase = useShowcase();
   const [preps, setPreps] = useState<Prep[]>([]);
   const [current, setCurrent] = useState<Prep | null>(null);
@@ -348,7 +348,9 @@ export default function LivePage() {
         >
           {showPerf ? "Fechar desempenho da LIVE" : "Editar desempenho da LIVE"}
         </button>
-        <p className="text-xs text-muted-foreground">Pedidos caindo em tempo real no Painel de LIVE do Estúdio, no padrão do TikTok.</p>
+        <p className="text-xs text-muted-foreground">
+          {showcase ? "Pedidos caindo em tempo real no Painel de LIVE do Estúdio, no padrão do TikTok." : "Ajuste os números da sua LIVE no Estúdio de LIVE."}
+        </p>
         {showPerf && (
           <div className="space-y-3 pt-3">
             <LivePerformance />
@@ -356,6 +358,8 @@ export default function LivePage() {
           </div>
         )}
       </div>
+      {showcase && (
+      <>
       <button
         type="button"
         onClick={() => setShowTools((v) => !v)}
@@ -386,6 +390,8 @@ export default function LivePage() {
         <div className="pt-4">
           <LiveTools />
         </div>
+      )}
+      </>
       )}
     </div>
   );
@@ -495,7 +501,7 @@ export default function LivePage() {
             {!product && <p className="text-xs text-muted-foreground">Escolha um produto acima para criar a live.</p>}
           </div>
         </section>
-        {showcase && extras}
+        {extras}
       </div>
     );
   }
@@ -1017,7 +1023,7 @@ export default function LivePage() {
           </div>
         </section>
       </div>
-      {showcase && extras}
+      {extras}
     </div>
   );
 }

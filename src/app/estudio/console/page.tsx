@@ -50,7 +50,7 @@ function useConsoleMetrics() {
     metrics: [
       ["GMV atribuído", formatBRL(t.gmvCents)],
       ["Itens atribuídos vendidos", n(t.items)],
-      ["Espectadores atuais", showcase ? n(viewers) : "--"],
+      ["Espectadores atuais", showcase || cfg.edited ? n(viewers) : "--"],
       ["Duração média de visualização", rate("Duração média de visualização")],
       ["Cliques no produto", n(t.clicks)],
       ["Porcentagem de visitantes", rate("Porcentagem de visitantes")],

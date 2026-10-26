@@ -175,6 +175,17 @@ ser feito.
 Sem Supabase (desenvolvimento local), o usuário fictício do modo demonstração também conta como conta de
 demonstração.
 
+Qualquer conta pode abrir o Estúdio de LIVE e usar "Editar desempenho da LIVE" e "Editar números": os valores
+digitados valem na LIVE de hoje e nos períodos do Desempenho. Ficam no navegador e, com a coluna
+`profiles.live_settings` (`supabase/migration-2026-10-live-settings.sql`), também na conta, valendo em qualquer
+aparelho. Comentários automáticos e OBS continuam só nas contas de demonstração.
+
+## Aprovar afiliados
+
+As contas em `ADMIN_EMAILS` (padrão: `nathalyahoff@gmail.com`) veem **Aprovar afiliados** no menu da conta
+(`/painel/aprovar-afiliados`). Aprovar cria uma assinatura vitalícia `gateway = 'manual'` ativa para a conta,
+que entra no painel sem pagar; revogar cancela só essa assinatura (quem pagou continua com acesso).
+
 ## O que ainda falta (próximas fases)
 
 - Extensão enviar as vendas da LIVE (`kind: "sale"` em `/api/extension/event`, com `amountCents`, `commissionCents`, `title`, `imageUrl`, `qty`), para o faturamento real aparecer.
@@ -190,5 +201,8 @@ demonstração.
 1. Suba o repositório no GitHub e importe na Vercel.
 2. Configure as variáveis do `.env.example` no projeto da Vercel. Sem `NEXT_PUBLIC_SUPABASE_URL`,
    `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` o login não funciona em produção.
-   `SHOWCASE_EMAILS` define as contas de demonstração.
+   `SHOWCASE_EMAILS` define as contas de demonstração e `ADMIN_EMAILS` quem aprova afiliados.
+   Rode `supabase/migration-2026-10-live-settings.sql` no SQL Editor do Supabase (números editados entre aparelhos).
+4. Em Settings → Functions, deixe a região das funções a mesma do Supabase (ex.: São Paulo, `gru1`): cada página do
+   painel consulta o banco, e regiões distantes deixam tudo mais lento.
 3. Ajuste `NEXT_PUBLIC_APP_URL` para o domínio final e atualize o webhook no Mercado Pago.

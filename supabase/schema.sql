@@ -8,6 +8,8 @@ create table public.profiles (
   id uuid primary key references auth.users on delete cascade,
   email text not null,
   name text,
+  -- Números editados da LIVE (Estúdio de LIVE), sincronizados entre aparelhos
+  live_settings jsonb,
   created_at timestamptz not null default now()
 );
 

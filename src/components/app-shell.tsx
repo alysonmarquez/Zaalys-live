@@ -13,6 +13,7 @@ import {
   Settings,
   Heart,
   Wallet,
+  UserCheck,
   ShieldCheck,
   LogOut,
   Check,
@@ -27,6 +28,7 @@ import { ZAALYS_NOTIFICATIONS, formatBRL } from "@/lib/zaalys-data";
 import { BottomDock } from "@/components/bottom-dock";
 import { LiveSaleToast } from "@/components/live-sale-toast";
 import { ShowcaseProvider } from "@/lib/showcase";
+import { useLiveSettingsSync } from "@/lib/live-settings-sync";
 
 type AppShellProps = {
   userEmail: string;
@@ -35,6 +37,8 @@ type AppShellProps = {
   demo?: boolean;
   /** Conta de demonstração: dados de exemplo, vendas ao vivo simuladas e Painel do Afiliado. */
   showcase?: boolean;
+  /** Pode aprovar afiliados. */
+  admin?: boolean;
   children: React.ReactNode;
 };
 
@@ -122,7 +126,9 @@ export function BrandLogo() {
   );
 }
 
-export function AppShell({ userEmail, userName, demo, showcase = false, children }: AppShellProps) {
+export function AppShell({ userEmail, userName, demo, showcase = false, admin = false, children }: AppShellProps) {
+  // Números editados da LIVE valem em qualquer aparelho.
+  useLiveSettingsSync();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -499,6 +505,16 @@ export function AppShell({ userEmail, userName, demo, showcase = false, children
                     <Wallet size={15} className="text-muted-foreground" />
                     Saque de comissões
                   </Link>
+                  {admin && (
+                    <Link
+                      href="/painel/aprovar-afiliados"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <UserCheck size={15} className="text-muted-foreground" />
+                      Aprovar afiliados
+                    </Link>
+                  )}
                   {showcase && <Link
                     href="/painel/afiliado"
                     onClick={() => setUserMenuOpen(false)}

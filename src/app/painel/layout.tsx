@@ -8,7 +8,7 @@ export default async function PainelLayout({ children }: { children: React.React
   const access = await requireAccess();
 
   return (
-    <AppShell userEmail={access.email} userName={access.name || access.handle || "Criador"} demo={access.demo} showcase={access.showcase}>
+    <AppShell userEmail={access.email} userName={access.name || access.handle || "Criador"} demo={access.demo} showcase={access.showcase} admin={access.admin}>
       {children}
     </AppShell>
   );

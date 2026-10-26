@@ -149,7 +149,7 @@ export default function PainelDeLivePage() {
             <span className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wider" style={{ background: PINK }}>
               <span className="size-1.5 animate-pulse rounded-full bg-white" /> Ao vivo
             </span>
-            <h1 className="truncate text-lg font-semibold sm:text-xl">{showcase ? cfg.title : "Sua LIVE de hoje"}</h1>
+            <h1 className="truncate text-lg font-semibold sm:text-xl">{showcase || cfg.edited ? cfg.title : "Sua LIVE de hoje"}</h1>
           </div>
           <div className="flex items-center gap-2 text-sm text-white/70">
             <span className="flex items-center gap-1.5 rounded-md bg-white/[0.06] px-3 py-1.5 tabular-nums">
@@ -202,7 +202,7 @@ export default function PainelDeLivePage() {
 
         {/* Indicadores */}
         <section className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
-          <Kpi icon={Users} label="Espectadores atuais" value={showcase ? int(viewers) : "--"} accent={PINK} />
+          <Kpi icon={Users} label="Espectadores atuais" value={showcase || cfg.edited ? int(viewers) : "--"} accent={PINK} />
           <Kpi icon={Eye} label="Visualizações" value={int(t.views)} accent={CYAN} />
           <Kpi icon={ShoppingBag} label="Clientes" value={int(customers)} accent={CYAN} />
           <Kpi icon={MousePointerClick} label="Cliques no produto" value={int(t.clicks)} accent={CYAN} />

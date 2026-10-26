@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Check, ExternalLink, RotateCcw } from "lucide-react";
-import { todayTotals } from "@/lib/estudio-lives";
+import { isoDay, todayTotals, totalsOf, useLiveSessions } from "@/lib/estudio-lives";
+import { useShowcase } from "@/lib/showcase";
 import {
   LIVE_ORDER_EVENT,
   LIVE_SIM_CONFIG_EVENT,
@@ -39,8 +40,9 @@ const parse = (v: string) => {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 };
 
-function currentNums(cfg: LiveSimConfig): Nums {
-  const t = todayTotals();
+type Today = { gmvCents: number; orders: number; items: number; views: number; clicks: number };
+
+function currentNums(cfg: LiveSimConfig, t: Today): Nums {
   return {
     gmv: fmt(t.gmvCents / 100, 2),
     orders: fmt(t.orders),
@@ -52,8 +54,14 @@ function currentNums(cfg: LiveSimConfig): Nums {
   };
 }
 
-// "Editar desempenho da LIVE": os números da LIVE de hoje e o ritmo dos pedidos que caem.
+// "Editar desempenho da LIVE": os números da LIVE de hoje e, na conta de demonstração, o ritmo dos pedidos que caem.
 export function LivePerformance() {
+  const showcase = useShowcase();
+  // Contas reais: a LIVE de hoje (vendas registradas + ajustes já salvos). Demonstração: a LIVE simulada.
+  const sessions = useLiveSessions();
+  const real = useRef<Today>({ gmvCents: 0, orders: 0, items: 0, views: 0, clicks: 0 });
+  real.current = totalsOf(sessions.filter((x) => x.day === isoDay(new Date())));
+  const current = () => (showcase ? todayTotals() : real.current);
   const [cfg, setCfg] = useState<LiveSimConfig | null>(null);
   const [nums, setNums] = useState<Nums | null>(null);
   const [saved, setSaved] = useState(false);
@@ -64,7 +72,7 @@ export function LivePerformance() {
     const load = () => {
       const c = loadLiveSim();
       setCfg((prev) => (dirty.current && prev ? prev : c));
-      if (!dirty.current) setNums(currentNums(c));
+      if (!dirty.current) setNums(currentNums(c, current()));
     };
     load();
     const t = setInterval(load, 5000);
@@ -75,7 +83,8 @@ export function LivePerformance() {
       window.removeEventListener(LIVE_ORDER_EVENT, load);
       window.removeEventListener(LIVE_SIM_CONFIG_EVENT, load);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showcase]);
   if (!cfg || !nums) return null;
 
   const edit = (k: NumKey, v: string) => {
@@ -90,16 +99,19 @@ export function LivePerformance() {
   function save() {
     if (!cfg || !nums) return;
     // Grava a diferença entre o número digitado e o atual: a tela passa a mostrar o digitado e segue subindo dele.
-    const now = todayTotals();
+    const now = current();
+    // Ajustes que já estão na tela: numa conta real, só depois do primeiro "Salvar desempenho".
+    const applied = showcase || cfg.edited ? cfg : { baseGmv: 0, baseOrders: 0, baseItems: 0, baseViews: 0, baseClicks: 0 };
     const next: LiveSimConfig = {
       ...cfg,
-      baseGmv: cfg.baseGmv + (parse(nums.gmv) * 100 - now.gmvCents) / 100,
-      baseOrders: cfg.baseOrders + Math.round(parse(nums.orders) - now.orders),
-      baseItems: cfg.baseItems + Math.round(parse(nums.items) - now.items),
-      baseViews: cfg.baseViews + Math.round(parse(nums.views) - now.views),
-      baseClicks: cfg.baseClicks + Math.round(parse(nums.clicks) - now.clicks),
+      baseGmv: applied.baseGmv + (parse(nums.gmv) * 100 - now.gmvCents) / 100,
+      baseOrders: applied.baseOrders + Math.round(parse(nums.orders) - now.orders),
+      baseItems: applied.baseItems + Math.round(parse(nums.items) - now.items),
+      baseViews: applied.baseViews + Math.round(parse(nums.views) - now.views),
+      baseClicks: applied.baseClicks + Math.round(parse(nums.clicks) - now.clicks),
       viewers: Math.round(parse(nums.viewers)),
       avgWatchSec: Math.round(parse(nums.avgWatch)),
+      edited: true,
     };
     dirty.current = false;
     saveLiveSim(next);
@@ -119,7 +131,7 @@ export function LivePerformance() {
           <h3 className="font-display text-base font-bold">Desempenho da LIVE no Estúdio</h3>
           <p className="mt-1 max-w-xl text-xs text-muted-foreground">
             Estes são os números da LIVE de hoje agora. Altere e salve: o Painel de LIVE, o Console e o Desempenho passam a mostrar
-            exatamente o que você digitou, e os pedidos que caem seguem somando a partir daí.
+            exatamente o que você digitou, e {showcase ? "os pedidos que caem" : "as vendas que entrarem"} seguem somando a partir daí.
           </p>
         </div>
         <Link
@@ -154,6 +166,8 @@ export function LivePerformance() {
       </p>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {showcase && (
+        <>
         <label className="block space-y-1">
           <span className="text-xs font-medium text-muted-foreground">Pedidos caindo na LIVE</span>
           <select value={cfg.enabled ? "on" : "off"} onChange={(e) => editCfg({ ...cfg, enabled: e.target.value === "on" })} className={`${INPUT} cursor-pointer`}>
@@ -171,6 +185,8 @@ export function LivePerformance() {
             ))}
           </select>
         </label>
+        </>
+        )}
         <label className="block space-y-1 sm:col-span-2">
           <span className="text-xs font-medium text-muted-foreground">Título da LIVE</span>
           <input value={cfg.title} onChange={(e) => editCfg({ ...cfg, title: e.target.value })} className={INPUT} />
@@ -194,7 +210,7 @@ export function LivePerformance() {
           }}
           className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-background px-4 text-xs font-semibold hover:bg-muted cursor-pointer"
         >
-          <RotateCcw size={14} /> Recomeçar LIVE de hoje
+          <RotateCcw size={14} /> {showcase ? "Recomeçar LIVE de hoje" : "Voltar aos números reais"}
         </button>
       </div>
     </section>

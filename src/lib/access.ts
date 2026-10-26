@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
@@ -13,6 +14,8 @@ export type Access = {
   demo?: boolean;
   /** Conta de demonstração (vitrine): só ela vê os dados de exemplo e as ferramentas de demonstração. */
   showcase?: boolean;
+  /** Pode aprovar afiliados (página Aprovar afiliados). */
+  admin?: boolean;
 };
 
 /**
@@ -26,6 +29,14 @@ const SHOWCASE_EMAILS = (process.env.SHOWCASE_EMAILS || "nathalyahoff@gmail.com"
   .filter(Boolean);
 
 export const isShowcaseEmail = (email: string) => SHOWCASE_EMAILS.includes(email.trim().toLowerCase());
+
+/** Quem aprova afiliados. ADMIN_EMAILS (separados por vírgula) substitui a lista. */
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "nathalyahoff@gmail.com")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+export const isAdminEmail = (email: string) => ADMIN_EMAILS.includes(email.trim().toLowerCase());
 
 export function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -59,8 +70,11 @@ const DEMO: Access = {
 const handleOf = (email: string) =>
   email.split("@")[0]?.toLowerCase().replace(/[^a-z0-9._-]/g, "") || "criador";
 
-/** Lê a sessão do Supabase e a assinatura. Devolve null se não houver login. */
-export async function getAccess(): Promise<Access | null> {
+/**
+ * Lê a sessão do Supabase e a assinatura. Devolve null se não houver login.
+ * Uma vez por requisição (layout e página reaproveitam o mesmo resultado).
+ */
+export const getAccess = cache(async (): Promise<Access | null> => {
   if (isDemoMode()) return DEMO;
   if (!isSupabaseConfigured()) return null;
 
@@ -76,19 +90,31 @@ export async function getAccess(): Promise<Access | null> {
 
   try {
     const admin = createAdminClient();
-    // Vincula pagamentos feitos antes do cadastro (mesmo e-mail).
-    await admin.from("subscriptions").update({ user_id: user.id }).is("user_id", null).eq("email", email);
-
-    const { data: subs } = await admin
-      .from("subscriptions")
-      .select("plan, expires_at")
-      .eq("user_id", user.id)
-      .eq("status", "active");
-
     const now = Date.now();
-    const valid =
-      (subs ?? []).find((s) => s.plan === "lifetime") ??
-      (subs ?? []).find((s) => s.expires_at && Date.parse(s.expires_at) > now);
+    const readValid = async () => {
+      const { data: subs } = await admin
+        .from("subscriptions")
+        .select("plan, expires_at")
+        .eq("user_id", user.id)
+        .eq("status", "active");
+      return (
+        (subs ?? []).find((s) => s.plan === "lifetime") ??
+        (subs ?? []).find((s) => s.expires_at && Date.parse(s.expires_at) > now)
+      );
+    };
+
+    let valid = await readValid();
+    if (!valid) {
+      // Vincula pagamentos feitos antes do cadastro (mesmo e-mail). Só quando ainda não há assinatura válida,
+      // para não gravar no banco a cada página.
+      const { data: linked } = await admin
+        .from("subscriptions")
+        .update({ user_id: user.id })
+        .is("user_id", null)
+        .eq("email", email)
+        .select("id");
+      if (linked?.length) valid = await readValid();
+    }
     if (valid) {
       plan = valid.plan as Access["plan"];
       expiresAt = valid.expires_at ?? null;
@@ -104,8 +130,19 @@ export async function getAccess(): Promise<Access | null> {
     handleOf(email);
 
   const handle = ((user.user_metadata?.handle as string | undefined) || handleOf(email)).replace(/^@/, "");
-  return { userId: user.id, email, name, handle, active: plan !== null, plan, expiresAt, showcase: isShowcaseEmail(email) };
-}
+  return {
+    userId: user.id,
+    email,
+    name,
+    handle,
+    // Quem aprova afiliados sempre entra no painel.
+    active: plan !== null || isAdminEmail(email),
+    plan,
+    expiresAt,
+    showcase: isShowcaseEmail(email),
+    admin: isAdminEmail(email),
+  };
+});
 
 /** Topo das páginas do painel: sem login → /login; sem plano → checkout com o e-mail. */
 export async function requireAccess(next = "/painel"): Promise<Access> {

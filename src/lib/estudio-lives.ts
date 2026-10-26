@@ -183,8 +183,52 @@ function fromReal(lives: RealLive[], now = new Date()): LiveSession[] {
 }
 
 /**
+ * "Editar desempenho da LIVE" numa conta real: os ajustes somam à LIVE mais recente de hoje (ou criam a de hoje,
+ * se ainda não houve transmissão), para a tela mostrar exatamente os números digitados.
+ */
+function withTodayEdits(list: LiveSession[], now = new Date()): LiveSession[] {
+  const sim = loadLiveSim();
+  if (!sim.edited) return list;
+  const day = isoDay(now);
+  const i = list.findIndex((s) => s.day === day);
+  const base: LiveSession =
+    i >= 0
+      ? list[i]!
+      : {
+          id: `live-${day.replace(/-/g, "")}`,
+          day,
+          title: `LIVE de ${WEEKDAYS[now.getDay()]}`,
+          startAt: loadLiveStart() ?? now,
+          durationMin: 1,
+          gmvCents: 0,
+          orders: 0,
+          items: 0,
+          views: 0,
+          impressions: 0,
+          clicks: 0,
+          newFollowers: 0,
+          avgWatchSec: 0,
+        };
+  const views = Math.max(0, base.views + sim.baseViews);
+  const edited: LiveSession = {
+    ...base,
+    title: sim.title || base.title,
+    gmvCents: Math.max(0, base.gmvCents + Math.round(sim.baseGmv * 100)),
+    orders: Math.max(0, base.orders + sim.baseOrders),
+    items: Math.max(0, base.items + sim.baseItems),
+    views,
+    // A extensão não informa impressões nem retenção: saem das visualizações, nas proporções da conta de demonstração.
+    impressions: Math.max(base.impressions, Math.round(views * 4.2)),
+    clicks: Math.max(0, base.clicks + sim.baseClicks),
+    newFollowers: Math.max(base.newFollowers, Math.round(views * 0.006)),
+    avgWatchSec: sim.avgWatchSec || base.avgWatchSec || (views > 0 ? 38 : 0),
+  };
+  return i >= 0 ? list.map((s, j) => (j === i ? edited : s)) : [edited, ...list];
+}
+
+/**
  * Transmissões do Estúdio. Conta de demonstração: as de exemplo, atualizadas a cada pedido da LIVE simulada
- * e a cada mudança de configuração. Demais contas: as LIVEs reais.
+ * e a cada mudança de configuração. Demais contas: as LIVEs reais, com os números editados na de hoje.
  */
 export function useLiveSessions() {
   const showcase = useShowcase();
@@ -203,7 +247,19 @@ export function useLiveSessions() {
       for (const e of events) window.removeEventListener(e, load);
     };
   }, [showcase]);
-  return showcase ? sessions : fromReal(real.lives);
+  // Contas reais: recalcula quando os números editados mudam (neste ou em outro aparelho).
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (showcase) return;
+    const bump = () => setTick((n) => n + 1);
+    window.addEventListener(LIVE_SIM_CONFIG_EVENT, bump);
+    window.addEventListener("storage", bump);
+    return () => {
+      window.removeEventListener(LIVE_SIM_CONFIG_EVENT, bump);
+      window.removeEventListener("storage", bump);
+    };
+  }, [showcase]);
+  return showcase ? sessions : withTodayEdits(fromReal(real.lives));
 }
 
 export const inRange = (s: LiveSession, from: string, to: string) => Boolean(from && to) && s.day >= from && s.day <= to;
@@ -290,11 +346,8 @@ export function saveOverrides(o: MetricOverrides) {
 }
 
 export function useOverrides() {
-  const showcase = useShowcase();
   const [o, setO] = useState<MetricOverrides>({});
   useEffect(() => {
-    // Números editados são da conta de demonstração; as demais veem só o calculado.
-    if (!showcase) return;
     const load = () => setO(loadOverrides());
     load();
     window.addEventListener(OVERRIDES_EVENT, load);
@@ -303,8 +356,8 @@ export function useOverrides() {
       window.removeEventListener(OVERRIDES_EVENT, load);
       window.removeEventListener("storage", load);
     };
-  }, [showcase]);
-  return showcase ? o : {};
+  }, []);
+  return o;
 }
 
 /** Valor do indicador no período: o editado, se houver, senão o calculado. */

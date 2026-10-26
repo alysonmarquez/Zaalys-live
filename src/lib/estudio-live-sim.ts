@@ -29,6 +29,8 @@ export type LiveSimConfig = {
   baseClicks: number;
   /** Duração média de visualização em segundos (0 = automática). */
   avgWatchSec: number;
+  /** true depois do primeiro "Salvar desempenho": nas contas reais, só então os ajustes entram nos números. */
+  edited?: boolean;
 };
 
 export const PACE_LABELS: { v: LivePace; l: string; ms: [number, number] }[] = [
@@ -121,7 +123,7 @@ export function resetLiveOrders() {
     localStorage.removeItem(startKey());
   } catch {}
   // Os ajustes de números também voltam a zero: a LIVE recomeça do início.
-  saveLiveSim({ ...loadLiveSim(), baseGmv: 0, baseOrders: 0, baseItems: 0, baseViews: 0, baseClicks: 0 });
+  saveLiveSim({ ...loadLiveSim(), baseGmv: 0, baseOrders: 0, baseItems: 0, baseViews: 0, baseClicks: 0, avgWatchSec: 0, edited: false });
 }
 
 // Os produtos mais vendidos do catálogo até R$ 80 são os que "caem" na LIVE (ticket de LIVE de afiliado).

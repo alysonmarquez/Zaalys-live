@@ -23,6 +23,7 @@ import {
 import { Brand, cn } from "@/components/brand";
 import { useLiveSimEngine } from "@/lib/estudio-live-sim";
 import { ShowcaseProvider } from "@/lib/showcase";
+import { useLiveSettingsSync } from "@/lib/live-settings-sync";
 
 // Logo personalizado no topo do Estúdio (ex.: apresentações), definido por máquina em .env.local.
 // Sem ele, a marca MediaFlowMZ.
@@ -119,6 +120,8 @@ export function StudioShell({ handle, showcase, children }: { handle: string; sh
   const [collapsed, setCollapsed] = useState(false);
   // Pedidos da LIVE simulada caem enquanto o Estúdio estiver aberto (só na conta de demonstração).
   useLiveSimEngine(showcase);
+  // Números editados da LIVE valem em qualquer aparelho.
+  useLiveSettingsSync();
 
   return (
     <div className="studio-light flex h-svh flex-col bg-background text-foreground">
