@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
 import { cn } from "@/components/brand";
@@ -66,12 +66,23 @@ function ComissoesContent() {
   const [applyfyEmail, setApplyfyEmail] = useState("");
   const [applyfySaved, setApplyfySaved] = useState(false);
 
+  // Porcentagem da conta, definida no Painel do Afiliado (aba Afiliados); a demonstração usa a do exemplo.
+  const [ownPct, setOwnPct] = useState<number | null>(null);
+  useEffect(() => {
+    if (demo) return;
+    fetch("/api/conta/comissao")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d: { pct?: number } | null) => typeof d?.pct === "number" && setOwnPct(d.pct))
+      .catch(() => {});
+  }, [demo]);
+  const pctLabel = (demo ? COMMISSION_RATE * 100 : ownPct ?? COMMISSION_RATE * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+
   const r = data.resumo;
   const cards = [
     ["Recebido via Applyfy", formatBRL(r.recebidoApplyfyCents), "Já na sua conta"],
     ["A receber do admin", formatBRL(Math.max(0, r.aReceberCents - r.estornosCents)), `Menos ${formatBRL(r.estornosCents)} de estornos`],
     ["Já repassado", formatBRL(r.repassadoCents), ""],
-    ["Vendas", String(r.vendas), `Comissão de ${Math.round(COMMISSION_RATE * 100)}%`],
+    ["Vendas", String(r.vendas), `Comissão de ${pctLabel}%`],
   ];
 
   function goto(v: Aba) {
@@ -235,7 +246,7 @@ function ComissoesContent() {
                     <td className="tabular-nums">{formatBRL(c.vendaCents)}</td>
                     <td className="tabular-nums">
                       <span className="font-semibold">{formatBRL(c.comissaoCents)}</span>
-                      <span className="ml-1 text-xs text-muted-foreground">({Math.round(COMMISSION_RATE * 100)}%)</span>
+                      <span className="ml-1 text-xs text-muted-foreground">({pctLabel}%)</span>
                     </td>
                     <td><Badge s={c.status} /></td>
                   </tr>

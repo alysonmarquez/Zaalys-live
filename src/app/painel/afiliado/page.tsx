@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { Check, RotateCcw, Zap } from "lucide-react";
 import { cn } from "@/components/brand";
+import { AfiliadosAdmin } from "@/components/afiliados-admin";
+import { useAdmin, useShowcase } from "@/lib/showcase";
 import {
   FIRE_SALE_EVENT,
   METRIC_FIELDS,
@@ -22,24 +24,39 @@ const INPUT_CLASS =
 
 const CARD = "rounded-3xl border border-black/[0.06] bg-card/85 p-5 shadow-2xs sm:p-6 dark:border-white/[0.08]";
 
-type Tab = "metricas" | "vendas";
-const TABS: { v: Tab; l: string }[] = [
-  { v: "metricas", l: "Métricas" },
-  { v: "vendas", l: "Vendas ao Vivo" },
+type Tab = "metricas" | "vendas" | "afiliados";
+// Métricas e Vendas ao Vivo: conta de demonstração. Afiliados (aprovar e comissão): quem está em ADMIN_EMAILS.
+const TABS: { v: Tab; l: string; showcase?: boolean; admin?: boolean }[] = [
+  { v: "metricas", l: "Métricas", showcase: true },
+  { v: "vendas", l: "Vendas ao Vivo", showcase: true },
+  { v: "afiliados", l: "Afiliados", admin: true },
 ];
 
 export default function AfiliadoPage() {
-  const [tab, setTab] = useState<Tab>("metricas");
+  const showcase = useShowcase();
+  const admin = useAdmin();
+  const tabs = TABS.filter((t) => (t.showcase && showcase) || (t.admin && admin));
+  const [tab, setTab] = useState<Tab>(tabs[0]?.v ?? "metricas");
+  // ?aba=afiliados abre direto a lista de afiliados.
+  useEffect(() => {
+    const aba = new URLSearchParams(window.location.search).get("aba");
+    if (aba && tabs.some((t) => t.v === aba)) setTab(aba as Tab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
       <header>
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Painel do Afiliado</h1>
-        <p className="mt-1 text-muted-foreground">Configure os números e as vendas ao vivo do seu dashboard</p>
+        <p className="mt-1 text-muted-foreground">
+          {showcase
+            ? "Configure os números e as vendas ao vivo do seu dashboard" + (admin ? ", aprove afiliados e defina comissões" : "")
+            : "Aprove afiliados e defina a comissão de cada um"}
+        </p>
       </header>
 
       <div className="flex w-fit gap-1 rounded-full bg-muted/40 p-1">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.v}
             type="button"
@@ -54,7 +71,7 @@ export default function AfiliadoPage() {
         ))}
       </div>
 
-      {tab === "metricas" ? <MetricasTab /> : <VendasTab />}
+      {tab === "afiliados" ? <AfiliadosAdmin /> : tab === "metricas" ? <MetricasTab /> : <VendasTab />}
     </div>
   );
 }

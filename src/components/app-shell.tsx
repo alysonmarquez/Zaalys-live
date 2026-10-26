@@ -13,7 +13,6 @@ import {
   Settings,
   Heart,
   Wallet,
-  UserCheck,
   ShieldCheck,
   LogOut,
   Check,
@@ -27,7 +26,7 @@ import {
 import { ZAALYS_NOTIFICATIONS, formatBRL } from "@/lib/zaalys-data";
 import { BottomDock } from "@/components/bottom-dock";
 import { LiveSaleToast } from "@/components/live-sale-toast";
-import { ShowcaseProvider } from "@/lib/showcase";
+import { AdminProvider, ShowcaseProvider } from "@/lib/showcase";
 import { useLiveSettingsSync } from "@/lib/live-settings-sync";
 
 type AppShellProps = {
@@ -505,17 +504,7 @@ export function AppShell({ userEmail, userName, demo, showcase = false, admin = 
                     <Wallet size={15} className="text-muted-foreground" />
                     Saque de comissões
                   </Link>
-                  {admin && (
-                    <Link
-                      href="/painel/aprovar-afiliados"
-                      onClick={() => setUserMenuOpen(false)}
-                      className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-                    >
-                      <UserCheck size={15} className="text-muted-foreground" />
-                      Aprovar afiliados
-                    </Link>
-                  )}
-                  {showcase && <Link
+                  {(showcase || admin) && <Link
                     href="/painel/afiliado"
                     onClick={() => setUserMenuOpen(false)}
                     className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -542,7 +531,9 @@ export function AppShell({ userEmail, userName, demo, showcase = false, admin = 
 
       {/* Main Content */}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-6 sm:px-6 sm:pt-8">
-        <ShowcaseProvider value={showcase}>{children}</ShowcaseProvider>
+        <ShowcaseProvider value={showcase}>
+          <AdminProvider value={admin}>{children}</AdminProvider>
+        </ShowcaseProvider>
       </main>
 
       {/* Acesso Creator 3-Step Modal (matching 3jz1kpdvh_75d.js) */}

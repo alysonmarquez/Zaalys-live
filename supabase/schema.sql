@@ -10,6 +10,8 @@ create table public.profiles (
   name text,
   -- Números editados da LIVE (Estúdio de LIVE), sincronizados entre aparelhos
   live_settings jsonb,
+  -- Porcentagem de comissão do afiliado (nulo = 40%), definida no Painel do Afiliado
+  commission_pct numeric(5,2) check (commission_pct is null or (commission_pct >= 0 and commission_pct <= 100)),
   created_at timestamptz not null default now()
 );
 

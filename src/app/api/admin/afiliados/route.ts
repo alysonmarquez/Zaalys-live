@@ -3,8 +3,9 @@ import { getAccess } from "@/lib/access";
 import { fail, json, unauthorized } from "@/lib/http";
 import { createAdminClient } from "@/lib/supabase/server";
 
-// Aprovação de afiliados (só ADMIN_EMAILS). Aprovar cria uma assinatura vitalícia "manual" ativa para a conta,
-// que libera o painel sem pagamento; revogar cancela só essa assinatura manual (pagamentos não são tocados).
+// Afiliados no Painel do Afiliado (só ADMIN_EMAILS). Aprovar cria uma assinatura vitalícia "manual" ativa para a
+// conta, que libera o painel sem pagamento; revogar cancela só essa assinatura manual (pagamentos não são tocados).
+// "comissao" muda a porcentagem de comissão do afiliado (profiles.commission_pct; nulo = padrão).
 
 const manualRef = (userId: string) => `aprovacao:${userId}`;
 
@@ -18,12 +19,14 @@ export async function GET() {
   const c = await adminCtx();
   if (!c) return unauthorized();
   try {
-    const { data: profiles, error } = await c.admin
-      .from("profiles")
-      .select("id, email, name, created_at")
-      .order("created_at", { ascending: false })
-      .limit(1000);
+    type Row = { id: string; email: string; name: string | null; created_at: string; commission_pct?: number | null };
+    const list = (cols: string) =>
+      c.admin.from("profiles").select(cols).order("created_at", { ascending: false }).limit(1000);
+    // Sem a migração de comissão, lista sem a porcentagem.
+    let { data, error } = await list("id, email, name, created_at, commission_pct");
+    if (error) ({ data, error } = await list("id, email, name, created_at"));
     if (error) return fail(error);
+    const profiles = (data ?? []) as unknown as Row[];
     const { data: subs, error: subError } = await c.admin
       .from("subscriptions")
       .select("user_id, email, plan, status, gateway, expires_at")
@@ -33,7 +36,7 @@ export async function GET() {
     const now = Date.now();
     const valid = (subs ?? []).filter((s) => s.plan === "lifetime" || (s.expires_at && Date.parse(s.expires_at) > now));
     return json({
-      afiliados: (profiles ?? []).map((p) => {
+      afiliados: profiles.map((p) => {
         const mine = valid.filter((s) => s.user_id === p.id || s.email?.toLowerCase() === p.email?.toLowerCase());
         const paid = mine.some((s) => s.gateway !== "manual");
         const approved = mine.some((s) => s.gateway === "manual");
@@ -42,6 +45,7 @@ export async function GET() {
           email: p.email,
           name: p.name,
           createdAt: p.created_at,
+          commissionPct: p.commission_pct == null ? null : Number(p.commission_pct),
           situacao: paid ? "pago" : approved ? "aprovado" : "pendente",
         };
       }),
@@ -51,15 +55,27 @@ export async function GET() {
   }
 }
 
-const Body = z.object({ userId: z.string().uuid(), action: z.enum(["aprovar", "revogar"]) });
+const Body = z.discriminatedUnion("action", [
+  z.object({ userId: z.string().uuid(), action: z.literal("aprovar") }),
+  z.object({ userId: z.string().uuid(), action: z.literal("revogar") }),
+  // null volta ao padrão
+  z.object({ userId: z.string().uuid(), action: z.literal("comissao"), pct: z.number().min(0).max(100).nullable() }),
+]);
 
 export async function POST(req: Request) {
   const c = await adminCtx();
   if (!c) return unauthorized();
   try {
-    const { userId, action } = Body.parse(await req.json());
+    const body = Body.parse(await req.json());
+    const { userId, action } = body;
     const { data: profile } = await c.admin.from("profiles").select("email").eq("id", userId).maybeSingle();
     if (!profile) return json({ error: "Conta não encontrada" }, 404);
+
+    if (body.action === "comissao") {
+      const { error } = await c.admin.from("profiles").update({ commission_pct: body.pct }).eq("id", userId);
+      if (error) return json({ error: "Rode supabase/migration-2026-10-afiliados.sql para mudar comissões." }, 409);
+      return json({ ok: true });
+    }
 
     if (action === "aprovar") {
       const { error } = await c.admin.from("subscriptions").upsert(

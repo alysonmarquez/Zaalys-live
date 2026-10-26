@@ -180,11 +180,15 @@ digitados valem na LIVE de hoje e nos períodos do Desempenho. Ficam no navegado
 `profiles.live_settings` (`supabase/migration-2026-10-live-settings.sql`), também na conta, valendo em qualquer
 aparelho. Comentários automáticos e OBS continuam só nas contas de demonstração.
 
-## Aprovar afiliados
+## Aprovar afiliados e comissões
 
-As contas em `ADMIN_EMAILS` (padrão: `nathalyahoff@gmail.com`) veem **Aprovar afiliados** no menu da conta
-(`/painel/aprovar-afiliados`). Aprovar cria uma assinatura vitalícia `gateway = 'manual'` ativa para a conta,
-que entra no painel sem pagar; revogar cancela só essa assinatura (quem pagou continua com acesso).
+As contas em `ADMIN_EMAILS` (padrão: `nathalyahoff@gmail.com`) veem o **Painel do Afiliado** no menu da conta, com
+a aba **Afiliados** (`/painel/afiliado?aba=afiliados`):
+
+- **Aprovar** cria uma assinatura vitalícia `gateway = 'manual'` ativa para a conta, que entra no painel sem pagar;
+  **Revogar** cancela só essa assinatura (quem pagou continua com acesso).
+- **Comissão**: porcentagem de cada afiliado (`profiles.commission_pct`; vazio = 40%), mostrada no Saque de
+  comissões dele. Precisa de `supabase/migration-2026-10-afiliados.sql`.
 
 ## O que ainda falta (próximas fases)
 
@@ -202,7 +206,8 @@ que entra no painel sem pagar; revogar cancela só essa assinatura (quem pagou c
 2. Configure as variáveis do `.env.example` no projeto da Vercel. Sem `NEXT_PUBLIC_SUPABASE_URL`,
    `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` o login não funciona em produção.
    `SHOWCASE_EMAILS` define as contas de demonstração e `ADMIN_EMAILS` quem aprova afiliados.
-   Rode `supabase/migration-2026-10-live-settings.sql` no SQL Editor do Supabase (números editados entre aparelhos).
+   Rode no SQL Editor do Supabase `supabase/migration-2026-10-live-settings.sql` (números editados entre aparelhos)
+   e `supabase/migration-2026-10-afiliados.sql` (comissão por afiliado).
 4. Em Settings → Functions, deixe a região das funções a mesma do Supabase (ex.: São Paulo, `gru1`): cada página do
    painel consulta o banco, e regiões distantes deixam tudo mais lento.
 3. Ajuste `NEXT_PUBLIC_APP_URL` para o domínio final e atualize o webhook no Mercado Pago.
