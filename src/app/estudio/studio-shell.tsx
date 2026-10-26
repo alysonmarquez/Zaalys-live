@@ -24,6 +24,10 @@ import { Brand, cn } from "@/components/brand";
 import { useLiveSimEngine } from "@/lib/estudio-live-sim";
 import { ShowcaseProvider } from "@/lib/showcase";
 
+// Logo personalizado no topo do Estúdio (ex.: apresentações), definido por máquina em .env.local.
+// Sem ele, a marca MediaFlowMZ.
+const STUDIO_LOGO = process.env.NEXT_PUBLIC_STUDIO_LOGO;
+
 type Item = { label: string; href?: string; icon?: LucideIcon };
 type Group = { label: string; icon: LucideIcon; items: Item[] };
 
@@ -121,7 +125,7 @@ export function StudioShell({ handle, showcase, children }: { handle: string; sh
       <header className="flex h-14 shrink-0 items-center justify-between bg-neutral-950 px-4 text-white">
         <div className="flex items-center gap-3">
           <Link href="/painel" className="[--color-primary:#ade74e] [&_span]:!text-white">
-            <Brand />
+            {STUDIO_LOGO ? <img src={STUDIO_LOGO} alt="" className="h-7 w-auto" /> : <Brand />}
           </Link>
           <span className="h-5 w-px bg-white/30" />
           <span className="text-[17px] font-semibold">Estúdio de LIVE</span>
