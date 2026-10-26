@@ -23,9 +23,9 @@ export type LiveSimConfig = {
 };
 
 export const PACE_LABELS: { v: LivePace; l: string; ms: [number, number] }[] = [
-  { v: "lento", l: "Lento (1 pedido a cada 10–20 s)", ms: [10000, 20000] },
-  { v: "normal", l: "Normal (1 pedido a cada 4–8 s)", ms: [4000, 8000] },
-  { v: "rapido", l: "Rápido (1 pedido a cada 1,5–3 s)", ms: [1500, 3000] },
+  { v: "lento", l: "Lento (1 pedido a cada 3–5 min)", ms: [180000, 300000] },
+  { v: "normal", l: "Normal (1 pedido a cada 1,5–2,5 min)", ms: [90000, 150000] },
+  { v: "rapido", l: "Rápido (1 pedido a cada 45–90 s)", ms: [45000, 90000] },
 ];
 
 export const DEFAULT_LIVE_SIM: LiveSimConfig = {
