@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { ZAALYS_NOTIFICATIONS, formatBRL } from "@/lib/zaalys-data";
 import { BottomDock } from "@/components/bottom-dock";
+import { CreatorModal } from "@/components/creator-modal";
 import { LiveSaleToast } from "@/components/live-sale-toast";
 import { AdminProvider, ShowcaseProvider } from "@/lib/showcase";
 import { useLiveSettingsSync } from "@/lib/live-settings-sync";
@@ -32,6 +33,8 @@ import { useLiveSettingsSync } from "@/lib/live-settings-sync";
 type AppShellProps = {
   userEmail: string;
   userName?: string;
+  /** @ do criador, mostrado no Acesso Creator. */
+  userHandle?: string;
   /** Painel em modo demonstração (sem Supabase, fora de produção). */
   demo?: boolean;
   /** Conta de demonstração: dados de exemplo, vendas ao vivo simuladas e Painel do Afiliado. */
@@ -125,7 +128,7 @@ export function BrandLogo() {
   );
 }
 
-export function AppShell({ userEmail, userName, demo, showcase = false, admin = false, children }: AppShellProps) {
+export function AppShell({ userEmail, userName, userHandle, demo, showcase = false, admin = false, children }: AppShellProps) {
   // Números editados da LIVE valem em qualquer aparelho.
   useLiveSettingsSync();
   const pathname = usePathname();
@@ -167,9 +170,6 @@ export function AppShell({ userEmail, userName, demo, showcase = false, admin = 
   const [notifOpen, setNotifOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [creatorOpen, setCreatorOpen] = useState(false);
-  const [creatorStep, setCreatorStep] = useState<"offer" | "configure" | "link">("offer");
-  const [creatorUses, setCreatorUses] = useState(5);
-  const [creatorCopied, setCreatorCopied] = useState(false);
 
   const [supportOpen, setSupportOpen] = useState(false);
   const [supportTopic, setSupportTopic] = useState("Dúvida sobre ferramenta");
@@ -281,11 +281,6 @@ export function AppShell({ userEmail, userName, demo, showcase = false, admin = 
     router.refresh();
   }
 
-  const creatorInviteLink = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.mediaflowmz.com"}/convite/creator-${displayName
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "")
-    .slice(0, 10) || "vip"}-${creatorUses}x`;
-
   return (
     <div className="min-h-svh bg-studio text-foreground flex flex-col">
       {demo && (
@@ -307,7 +302,6 @@ export function AppShell({ userEmail, userName, demo, showcase = false, admin = 
             <button
               type="button"
               onClick={() => {
-                setCreatorStep("offer");
                 setCreatorOpen(true);
               }}
               className="inline-flex h-9 items-center gap-1.5 rounded-full border border-black/[0.06] bg-card px-3 text-xs font-semibold text-foreground shadow-2xs transition-[transform,border-color,background-color] duration-150 hover:bg-muted active:scale-[0.97] dark:border-white/[0.08] cursor-pointer sm:px-3.5"
@@ -536,165 +530,8 @@ export function AppShell({ userEmail, userName, demo, showcase = false, admin = 
         </ShowcaseProvider>
       </main>
 
-      {/* Acesso Creator 3-Step Modal (matching 3jz1kpdvh_75d.js) */}
-      {creatorOpen && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-xs"
-          onClick={() => setCreatorOpen(false)}
-        >
-          <div
-            className="relative w-full max-w-md overflow-hidden rounded-3xl border border-black/[0.08] bg-card p-6 text-card-foreground shadow-2xl dark:border-white/[0.1]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setCreatorOpen(false)}
-              className="absolute right-4 top-4 grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
-            >
-              <X size={16} />
-            </button>
-
-            {creatorStep === "offer" && (
-              <div className="space-y-4">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-                  <Sparkles size={13} />
-                  Programa Acesso Creator
-                </div>
-                <h2 className="font-display text-2xl font-extrabold tracking-tight">
-                  Libere convites VIP e receba comissão por cada venda
-                </h2>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  Gere um link exclusivo com limite de vagas para a sua audiência.
-                  Quem entra pelo seu link recebe desconto imediato no Vitalício e
-                  você recebe <strong>R$ 50,00 via Pix</strong> por cada acesso
-                  confirmado.
-                </p>
-                <ul className="space-y-2 rounded-2xl border border-border/60 bg-muted/30 p-3.5 text-xs text-muted-foreground">
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="shrink-0 text-primary" />
-                    <span>Desconto de R$ 30,00 aplicado automaticamente no checkout</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="shrink-0 text-primary" />
-                    <span>Acompanhamento em tempo real no Painel do Afiliado</span>
-                  </li>
-                </ul>
-                <button
-                  type="button"
-                  onClick={() => setCreatorStep("configure")}
-                  className="h-11 w-full rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-xs transition-transform active:scale-[0.98] cursor-pointer"
-                >
-                  Configurar meu convite
-                </button>
-              </div>
-            )}
-
-            {creatorStep === "configure" && (
-              <div className="space-y-4">
-                <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  Passo 2 de 2
-                </span>
-                <h2 className="font-display text-xl font-extrabold tracking-tight">
-                  Quantos acessos liberar neste link?
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Defina o limite de usos para gerar escassez nos seus stories ou
-                  na bio.
-                </p>
-                <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Limite do link
-                    </span>
-                    <span className="font-display text-2xl font-extrabold text-primary tabular-nums">
-                      {creatorUses} {creatorUses === 1 ? "vaga" : "vagas"}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={10}
-                    value={creatorUses}
-                    onChange={(e) => setCreatorUses(Number(e.target.value))}
-                    className="mt-3 w-full accent-primary cursor-pointer"
-                  />
-                  <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
-                    <span>1 vaga</span>
-                    <span>5 vagas</span>
-                    <span>10 vagas</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCreatorStep("offer")}
-                    className="h-11 flex-1 rounded-2xl border border-border bg-background text-xs font-semibold hover:bg-muted cursor-pointer"
-                  >
-                    Voltar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCreatorStep("link")}
-                    className="h-11 flex-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-xs transition-transform active:scale-[0.98] cursor-pointer"
-                  >
-                    Gerar link Creator
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {creatorStep === "link" && (
-              <div className="space-y-4">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-                  <Check size={13} />
-                  Convite ativo · {creatorUses}{" "}
-                  {creatorUses === 1 ? "vaga" : "vagas"}
-                </div>
-                <h2 className="font-display text-xl font-extrabold tracking-tight">
-                  Seu link Creator está pronto
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Compartilhe nos stories ou envie no direct. Assim que alguém
-                  entrar, você vê no painel de comissões.
-                </p>
-                <div className="flex items-center gap-2 rounded-2xl border border-border bg-background p-2 pl-3">
-                  <code className="min-w-0 flex-1 truncate font-mono text-xs">
-                    {creatorInviteLink}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(creatorInviteLink);
-                      setCreatorCopied(true);
-                      setTimeout(() => setCreatorCopied(false), 1500);
-                    }}
-                    className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground cursor-pointer"
-                  >
-                    {creatorCopied ? <Check size={13} /> : <Copy size={13} />}
-                    {creatorCopied ? "Copiado" : "Copiar"}
-                  </button>
-                </div>
-                <div className="flex justify-between pt-1">
-                  <Link
-                    href="/painel/indique"
-                    onClick={() => setCreatorOpen(false)}
-                    className="text-xs font-semibold text-primary hover:underline"
-                  >
-                    Ver painel Indique e ganhe →
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setCreatorOpen(false)}
-                    className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    Fechar
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Acesso Creator: "Sua condição especial" → valores e usos → link */}
+      {creatorOpen && <CreatorModal handle={userHandle || userEmail.split("@")[0]} onClose={() => setCreatorOpen(false)} />}
 
       {/* Support Modal (matching 3jz1kpdvh_75d.js) */}
       {supportOpen && (
