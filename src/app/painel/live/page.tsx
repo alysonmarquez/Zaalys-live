@@ -9,6 +9,7 @@ import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
 import { useIsDemo } from "@/lib/use-demo";
 import { useExtension } from "@/lib/use-extension";
 import { LiveTools } from "./live-tools";
+import { LivePerformance } from "./live-performance";
 import {
   ChromeStoreDemo,
   ConnectDemo,
@@ -194,6 +195,11 @@ export default function LivePage() {
   const [videoSource, setVideoSource] = useState<"real" | "mine" | "flow">("real");
   const [showTools, setShowTools] = useState(false);
   const [showObs, setShowObs] = useState(false);
+  const [showPerf, setShowPerf] = useState(false);
+  // "Editar desempenho" do Painel de LIVE do Estúdio chega aqui com ?desempenho=1.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("desempenho")) setShowPerf(true);
+  }, []);
   const [copied, setCopied] = useState(false);
 
   // Conta real: preparações vêm do banco (valem em qualquer aparelho). Demonstração: navegador.
@@ -329,6 +335,21 @@ export default function LivePage() {
           Abrir o Estúdio de LIVE
         </Link>
         <p className="text-xs text-muted-foreground">Console e desempenho das transmissões, numa janela própria.</p>
+      </div>
+      <div>
+        <button
+          type="button"
+          onClick={() => setShowPerf((v) => !v)}
+          className="text-sm font-semibold text-muted-foreground underline underline-offset-4 hover:text-foreground cursor-pointer"
+        >
+          {showPerf ? "Fechar desempenho da LIVE" : "Editar desempenho da LIVE"}
+        </button>
+        <p className="text-xs text-muted-foreground">Pedidos caindo em tempo real no Painel de LIVE do Estúdio, no padrão do TikTok.</p>
+        {showPerf && (
+          <div className="pt-3">
+            <LivePerformance />
+          </div>
+        )}
       </div>
       <button
         type="button"

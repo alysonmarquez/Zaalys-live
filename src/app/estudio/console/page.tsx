@@ -27,10 +27,33 @@ import {
 import { cn } from "@/components/brand";
 import { CATALOGO_ORIGINAL, CATEGORY_LABELS } from "@/lib/catalogo-original";
 import { formatBRL } from "@/lib/zaalys-data";
+import { isoDay, totalsOf, useLiveSessions } from "@/lib/estudio-lives";
+import { useCurrentViewers, useLiveOrders, useLiveSimConfig } from "@/lib/estudio-live-sim";
 
+// Indicadores do painel lateral, com a LIVE de hoje (inclusive os pedidos que caem em tempo real).
+function useConsoleMetrics() {
+  const cfg = useLiveSimConfig();
+  const orders = useLiveOrders();
+  const sessions = useLiveSessions();
+  const viewers = useCurrentViewers(cfg.viewers, orders.length);
+  const today = sessions.find((s) => s.day === isoDay(new Date()));
+  if (!today) return { orders, metrics: METRIC_LABELS.map((l) => [l, "--"] as const) };
+  const t = totalsOf([today]);
+  const n = (v: number) => Math.round(v).toLocaleString("pt-BR");
+  return {
+    orders,
+    metrics: [
+      ["GMV atribuído", formatBRL(t.gmvCents)],
+      ["Itens atribuídos vendidos", n(t.items)],
+      ["Espectadores atuais", n(viewers)],
+      ["Duração média de visualização", `${Math.round(t.watchSec / Math.max(1, t.views))}s`],
+      ["Cliques no produto", n(t.clicks)],
+      ["Porcentagem de visitantes", `${((t.views / Math.max(1, t.impressions)) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`],
+    ] as const,
+  };
+}
 
-// Indicadores do painel lateral. Sem transmissão, ficam em "--" (o clone não gera vendas).
-const METRICS = [
+const METRIC_LABELS = [
   "GMV atribuído",
   "Itens atribuídos vendidos",
   "Espectadores atuais",
@@ -105,6 +128,7 @@ export default function ConsolePage() {
   }
   const [chatSize, setChatSize] = useState(14);
   const [suggestOpen, setSuggestOpen] = useState(true);
+  const live = useConsoleMetrics();
 
   const products = productIds.map((id) => CATALOGO_ORIGINAL.find((p) => p.id === id)!).filter(Boolean);
   const pinnedProduct = products.find((p) => p.id === pinned);
@@ -444,17 +468,17 @@ export default function ConsolePage() {
           <div className="border-b border-border/60 p-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold">Análise de transmissões ao vivo</h2>
-              <a href="/estudio/desempenho" className="text-xs font-semibold text-primary">
+              <a href="/estudio/painel-de-live" className="text-xs font-semibold text-primary">
                 Painel de LIVE
               </a>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 xl:grid-cols-3">
-              {METRICS.map((m) => (
+              {live.metrics.map(([m, v]) => (
                 <div key={m} className="rounded-lg bg-muted/50 p-2.5">
                   <p className="truncate text-[11px] text-muted-foreground" title={m}>
                     {m}
                   </p>
-                  <p className="mt-1 text-sm font-semibold">--</p>
+                  <p className="mt-1 truncate text-sm font-semibold tabular-nums">{v}</p>
                 </div>
               ))}
             </div>
@@ -472,7 +496,21 @@ export default function ConsolePage() {
           <div className="flex min-h-[180px] flex-1 flex-col">
             <div className="flex h-44 shrink-0 flex-col px-4 pt-4">
               <h2 className="text-[15px] font-semibold">Atividade</h2>
-              <p className="flex flex-1 items-center justify-center text-center text-sm text-muted-foreground">Os pedidos feitos durante a sua LIVE aparecerão aqui</p>
+              {live.orders.length === 0 ? (
+                <p className="flex flex-1 items-center justify-center text-center text-sm text-muted-foreground">Os pedidos feitos durante a sua LIVE aparecerão aqui</p>
+              ) : (
+                <ul className="mt-2 min-h-0 flex-1 space-y-1.5 overflow-y-auto">
+                  {[...live.orders].reverse().slice(0, 20).map((o) => (
+                    <li key={o.id} className="flex items-center gap-2 text-xs">
+                      <img src={o.imageUrl} alt="" className="size-7 shrink-0 rounded object-cover" />
+                      <span className="min-w-0 flex-1 truncate">
+                        <span className="font-semibold">{o.buyer}</span> comprou {o.title}
+                      </span>
+                      <span className="shrink-0 font-semibold tabular-nums text-primary">{formatBRL(o.amountCents)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
               <p className="pb-1 text-center text-xs text-muted-foreground/70">Arraste para redimensionar</p>
             </div>
             <span className="relative border-t border-border/60">

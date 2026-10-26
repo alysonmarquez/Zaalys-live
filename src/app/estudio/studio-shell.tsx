@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Brand, cn } from "@/components/brand";
+import { useLiveSimEngine } from "@/lib/estudio-live-sim";
 
 type Item = { label: string; href?: string; icon?: LucideIcon };
 type Group = { label: string; icon: LucideIcon; items: Item[] };
@@ -44,6 +45,7 @@ const NAV: (Item | Group)[] = [
     label: "Escopo de dados",
     icon: BarChart3,
     items: [
+      { label: "Painel de LIVE em tempo real", href: "/estudio/painel-de-live" },
       { label: "Desempenho da LIVE", href: "/estudio/desempenho" },
       { label: "Histórico de LIVE", href: "/estudio/historico" },
       { label: "Análise de mercado", href: "/estudio/analise-de-mercado" },
@@ -110,7 +112,8 @@ function NavGroup({ group }: { group: Group }) {
 
 export function StudioShell({ handle, children }: { handle: string; children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
-
+  // Pedidos da LIVE simulada caem enquanto o Estúdio estiver aberto.
+  useLiveSimEngine();
 
   return (
     <div className="studio-light flex h-svh flex-col bg-background text-foreground">

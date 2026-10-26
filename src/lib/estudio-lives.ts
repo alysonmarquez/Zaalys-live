@@ -17,6 +17,7 @@ import {
   type BaseMetrics,
 } from "@/lib/demo-config";
 import { catchUp } from "@/lib/live-sales-engine";
+import { LIVE_ORDER_EVENT, LIVE_SIM_CONFIG_EVENT, loadLiveOrders, loadLiveSim } from "@/lib/estudio-live-sim";
 import { formatBRL } from "@/lib/zaalys-data";
 
 export type LiveSession = {
@@ -109,12 +110,15 @@ function todayTotals(custom: BaseMetrics | undefined, engineOn: boolean): DayTot
         ? { gmvCents: 0, orders: 0, items: 0, views: 0, clicks: 0 }
         : SERIES_BY_PERIOD.today;
   const sales = loadTodaySales();
+  // Mais a LIVE simulada do Estúdio: valores-base de "Editar desempenho da LIVE" e os pedidos que caíram.
+  const sim = loadLiveSim();
+  const orders = loadLiveOrders();
   return {
-    gmvCents: base.gmvCents + sales.reduce((a, s) => a + s.amountCents, 0),
-    orders: base.orders + sales.length,
-    items: base.items + sales.length,
-    views: base.views + sales.length * 47,
-    clicks: base.clicks + sales.length * 9,
+    gmvCents: base.gmvCents + sales.reduce((a, s) => a + s.amountCents, 0) + Math.round(sim.baseGmv * 100) + orders.reduce((a, o) => a + o.amountCents, 0),
+    orders: base.orders + sales.length + orders.length,
+    items: base.items + sales.length + sim.baseItems + orders.reduce((a, o) => a + o.qty, 0),
+    views: base.views + sales.length * 47 + sim.baseViews + orders.length * 35,
+    clicks: base.clicks + sales.length * 9 + orders.length * 6,
   };
 }
 
@@ -167,7 +171,7 @@ export function buildLiveSessions(now = new Date()): LiveSession[] {
   return sessions; // mais recente primeiro
 }
 
-/** Transmissões de exemplo, atualizadas a cada venda ao vivo e a cada mudança no Painel do Afiliado. */
+/** Transmissões de exemplo, atualizadas a cada venda ao vivo, a cada pedido da LIVE simulada e a cada mudança de configuração. */
 export function useLiveSessions() {
   const [sessions, setSessions] = useState<LiveSession[]>([]);
   useEffect(() => {
@@ -175,7 +179,7 @@ export function useLiveSessions() {
     if (loadLiveSales().enabled) catchUp();
     const load = () => setSessions(buildLiveSessions());
     load();
-    const events = [DEMO_CONFIG_EVENT, LIVE_SALE_EVENT, LIVE_SALES_RELOAD_EVENT, "storage"];
+    const events = [DEMO_CONFIG_EVENT, LIVE_SALE_EVENT, LIVE_SALES_RELOAD_EVENT, LIVE_SIM_CONFIG_EVENT, LIVE_ORDER_EVENT, "storage"];
     for (const e of events) window.addEventListener(e, load);
     return () => {
       for (const e of events) window.removeEventListener(e, load);
