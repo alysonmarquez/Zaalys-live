@@ -89,6 +89,7 @@ src/
     page.tsx                 landing
     login/                   login e cadastro (e-mail e senha)
     painel/                  área logada (catálogo, radar, influencers, roteiros, raio-x, live, conta)
+    estudio/                 Estúdio de LIVE (console, painel de LIVE em tempo real, desempenho, histórico)
     api/
       checkout/              cria o pagamento
       webhooks/payment/      libera/revoga acesso
@@ -99,13 +100,18 @@ src/
       cron/radar/            envio semanal
       support/               chamados de suporte
       extension/*            ativação, seletores, comentários, respostas, eventos da live
+      live/stats/            LIVEs e vendas reais da conta (dashboard e Estúdio)
       push/subscribe/        inscrição de alertas
       license/reset/         gera chave, desvincula computador
   lib/
     ai/                      camada de IA + prompts e schemas
     payments/                camada de pagamento
     supabase/                clientes do Supabase
-    access.ts                sessão, plano ativo e modo demonstração
+    access.ts                sessão, plano ativo, modo demonstração e contas de demonstração
+    showcase.tsx             contexto "conta de demonstração" para as telas
+    dashboard-demo.ts        números de exemplo do dashboard
+    estudio-lives.ts         LIVEs e indicadores do Estúdio (exemplo ou reais)
+    estudio-live-sim.ts      LIVE simulada (pedidos caindo) da conta de demonstração
     pricing.ts               preços, parcelamento e cupons
     email.ts                 envio de e-mail
     radar.ts                 conteúdo do Radar semanal
@@ -154,8 +160,24 @@ Os dados são fixos: não se atualizam sozinhos. No original, o catálogo é rel
 
 As mídias dos templates (26 vídeos + capas) e do Trend AI (12 prévias + personagens) já estão em `public/media/` e são servidas pelo próprio projeto — não há dependência do servidor do original. `NEXT_PUBLIC_TEMPLATE_MEDIA_ORIGIN` só é necessário se quiser servi-las de um CDN.
 
+## Conta de demonstração
+
+Os números de exemplo — dashboard, vendas ao vivo, notificações de venda, Painel do Afiliado, saque de
+comissões, Estúdio de LIVE (LIVEs de exemplo, pedidos caindo, "Editar números") — e as opções extras da página
+Live (Abrir o Estúdio, comentários automáticos, OBS, Editar desempenho) aparecem **só** para as contas em
+`SHOWCASE_EMAILS` (padrão: `nathalyahoff@gmail.com`). A regra é pelo e-mail logado no Supabase
+(`isShowcaseEmail` em `src/lib/access.ts`).
+
+As demais contas veem o próprio faturamento, lido de `live_sessions` e `live_events` (eventos `sale`) pela rota
+`/api/live/stats`. A extensão ainda não envia os eventos `sale`, então essas contas aparecem zeradas até isso
+ser feito.
+
+Sem Supabase (desenvolvimento local), o usuário fictício do modo demonstração também conta como conta de
+demonstração.
+
 ## O que ainda falta (próximas fases)
 
+- Extensão enviar as vendas da LIVE (`kind: "sale"` em `/api/extension/event`, com `amountCents`, `commissionCents`, `title`, `imageUrl`, `qty`), para o faturamento real aparecer.
 - Fonte de dados do catálogo e coleta periódica. As telas do painel (catálogo, radar de mudanças, galeria do Raio-X, notificações) ainda usam os dados fixos de `src/lib/zaalys-data.ts`; as tabelas `products` e `product_snapshots` já existem e alimentam o e-mail do Radar.
 - Programa de indicação: o cupom `HANDLE30` e o link `/convite/...` aparecem no painel, mas não existem no servidor (adicione os cupons em `COUPON_CODES` ou crie a rota).
 - Painel administrativo para catálogo, templates, tendências e seletores.
@@ -166,5 +188,7 @@ As mídias dos templates (26 vídeos + capas) e do Trend AI (12 prévias + perso
 ## Deploy
 
 1. Suba o repositório no GitHub e importe na Vercel.
-2. Configure as variáveis do `.env.example` no projeto da Vercel.
+2. Configure as variáveis do `.env.example` no projeto da Vercel. Sem `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` o login não funciona em produção.
+   `SHOWCASE_EMAILS` define as contas de demonstração.
 3. Ajuste `NEXT_PUBLIC_APP_URL` para o domínio final e atualize o webhook no Mercado Pago.
