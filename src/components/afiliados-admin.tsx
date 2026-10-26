@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, RotateCcw, Search, UserCheck } from "lucide-react";
+import { Check, HandCoins, RotateCcw, Search, UserCheck } from "lucide-react";
 import { cn } from "@/components/brand";
 
 // Aba "Afiliados" do Painel do Afiliado (quem está em ADMIN_EMAILS): contas cadastradas. Aprovar libera o painel
@@ -9,7 +9,8 @@ import { cn } from "@/components/brand";
 // de comissão (vazio = padrão de 40%).
 
 type Situacao = "pendente" | "aprovado" | "pago";
-type Afiliado = { id: string; email: string; name: string | null; createdAt: string; commissionPct: number | null; situacao: Situacao };
+type Afiliado = { id: string; email: string; name: string | null; createdAt: string; commissionPct: number | null; situacao: Situacao; vendas?: number; aReceberCents?: number };
+const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const CARD = "rounded-3xl border border-black/[0.06] bg-card/85 p-5 shadow-2xs sm:p-6 dark:border-white/[0.08]";
 const PADRAO_PCT = 40;
@@ -52,6 +53,24 @@ export function AfiliadosAdmin() {
   useEffect(() => {
     carregar();
   }, []);
+
+  async function repassar(a: Afiliado) {
+    if (!confirm(`Marcar ${brl(a.aReceberCents ?? 0)} de ${a.name || a.email} como repassado?`)) return;
+    setSalvando(a.id);
+    try {
+      const r = await fetch("/api/admin/afiliados", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: a.id, action: "repassar" }),
+      });
+      if (!r.ok) throw new Error();
+      setLista((l) => l?.map((x) => (x.id === a.id ? { ...x, aReceberCents: 0 } : x)) ?? l);
+    } catch {
+      setErro("Não deu certo. Tente de novo.");
+    } finally {
+      setSalvando(null);
+    }
+  }
 
   async function agir(id: string, action: "aprovar" | "revogar") {
     setSalvando(id);
@@ -151,6 +170,13 @@ export function AfiliadosAdmin() {
                 <p className="truncate text-xs text-muted-foreground">
                   {a.email} · cadastro em {new Date(a.createdAt).toLocaleDateString("pt-BR")}
                 </p>
+                {(a.vendas ?? 0) > 0 && (
+                  <p className="mt-0.5 text-xs">
+                    <span className="font-semibold tabular-nums">{a.vendas}</span>{" "}
+                    {a.vendas === 1 ? "venda pelo link" : "vendas pelo link"} ·{" "}
+                    <span className="font-semibold tabular-nums">{brl(a.aReceberCents ?? 0)}</span> a repassar
+                  </p>
+                )}
               </div>
               <label className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Comissão do afiliado">
                 Comissão
@@ -172,6 +198,16 @@ export function AfiliadosAdmin() {
                   className="inline-flex h-9 items-center gap-1 rounded-xl border border-border px-3 text-xs font-semibold hover:bg-muted disabled:opacity-50 cursor-pointer"
                 >
                   {salvoPct === a.id ? <><Check size={13} /> Salva</> : "Salvar"}
+                </button>
+              )}
+              {(a.aReceberCents ?? 0) > 0 && (
+                <button
+                  type="button"
+                  disabled={salvando === a.id}
+                  onClick={() => repassar(a)}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-semibold hover:bg-muted disabled:opacity-50 cursor-pointer"
+                >
+                  <HandCoins size={14} /> Marcar repassado
                 </button>
               )}
               <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold", SELO[a.situacao].cls)}>{SELO[a.situacao].l}</span>

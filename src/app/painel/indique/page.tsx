@@ -75,7 +75,15 @@ function IndiqueCriador() {
       .catch(() => {});
   }, []);
 
-  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.mediaflowmz.com"}/convite/${handle}`;
+  // O link leva o código fixo da conta: as vendas por ele entram no Saque de comissões.
+  const [refCode, setRefCode] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/conta/convite")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { code?: string } | null) => d?.code && setRefCode(d.code))
+      .catch(() => {});
+  }, []);
+  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://mediaflowmz.com"}/convite/${refCode ?? handle.toLowerCase()}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
     `Eu uso a MediaFlowMZ para rodar minha live automática e criar vídeos com IA no TikTok Shop. Com o meu cupom ${handle} você ganha R$ 30,00 de desconto no acesso vitalício: ${shareUrl}`
   )}`;

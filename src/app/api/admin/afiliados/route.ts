@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 // Afiliados no Painel do Afiliado (só ADMIN_EMAILS). Aprovar cria uma assinatura vitalícia "manual" ativa para a
 // conta, que libera o painel sem pagamento; revogar cancela só essa assinatura manual (pagamentos não são tocados).
 // "comissao" muda a porcentagem de comissão do afiliado (profiles.commission_pct; nulo = padrão).
+// "repassar" marca como repassadas as comissões pagas do afiliado (vendas pelos links de convite).
 
 const manualRef = (userId: string) => `aprovacao:${userId}`;
 
@@ -33,6 +34,20 @@ export async function GET() {
       .eq("status", "active");
     if (subError) return fail(subError);
 
+    // Vendas atribuídas pelos links de convite: comissão a repassar e total de vendas pagas.
+    const { data: sales } = await c.admin
+      .from("affiliate_sales")
+      .select("affiliate_id, commission_cents, status, payout_status")
+      .eq("status", "paid");
+    const totals = new Map<string, { vendas: number; aReceberCents: number }>();
+    for (const s of sales ?? []) {
+      if (!s.affiliate_id) continue;
+      const t = totals.get(s.affiliate_id) ?? { vendas: 0, aReceberCents: 0 };
+      t.vendas++;
+      if (s.payout_status === "a_receber") t.aReceberCents += s.commission_cents;
+      totals.set(s.affiliate_id, t);
+    }
+
     const now = Date.now();
     const valid = (subs ?? []).filter((s) => s.plan === "lifetime" || (s.expires_at && Date.parse(s.expires_at) > now));
     return json({
@@ -47,6 +62,8 @@ export async function GET() {
           createdAt: p.created_at,
           commissionPct: p.commission_pct == null ? null : Number(p.commission_pct),
           situacao: paid ? "pago" : approved ? "aprovado" : "pendente",
+          vendas: totals.get(p.id)?.vendas ?? 0,
+          aReceberCents: totals.get(p.id)?.aReceberCents ?? 0,
         };
       }),
     });
@@ -58,6 +75,8 @@ export async function GET() {
 const Body = z.discriminatedUnion("action", [
   z.object({ userId: z.string().uuid(), action: z.literal("aprovar") }),
   z.object({ userId: z.string().uuid(), action: z.literal("revogar") }),
+  // Comissões pagas e ainda não repassadas passam a "repassada" (o Pix é feito fora do sistema).
+  z.object({ userId: z.string().uuid(), action: z.literal("repassar") }),
   // null volta ao padrão
   z.object({ userId: z.string().uuid(), action: z.literal("comissao"), pct: z.number().min(0).max(100).nullable() }),
 ]);
@@ -74,6 +93,17 @@ export async function POST(req: Request) {
     if (body.action === "comissao") {
       const { error } = await c.admin.from("profiles").update({ commission_pct: body.pct }).eq("id", userId);
       if (error) return json({ error: "Rode supabase/migration-2026-10-afiliados.sql para mudar comissões." }, 409);
+      return json({ ok: true });
+    }
+
+    if (body.action === "repassar") {
+      const { error } = await c.admin
+        .from("affiliate_sales")
+        .update({ payout_status: "repassada", updated_at: new Date().toISOString() })
+        .eq("affiliate_id", userId)
+        .eq("status", "paid")
+        .eq("payout_status", "a_receber");
+      if (error) return fail(error);
       return json({ ok: true });
     }
 

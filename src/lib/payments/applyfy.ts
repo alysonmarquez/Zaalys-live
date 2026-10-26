@@ -5,13 +5,16 @@ import type { CheckoutInput, PaymentEvent, PaymentProvider, Plan } from "./types
 const MONTH_MS = 31 * 24 * 3600 * 1000;
 
 // Ids dos produtos na Applyfy (parte do link de checkout).
+// Postback real: data.checkoutId (id do link) e data.productId / data.product.id (id do produto).
 const PRODUCT_PLAN: Record<string, Plan> = {
-  cmvl7sdxd0e5o01pvhlhnp4rp: "lifetime",
-  cmvl7vl7g09a401q2zmahjspy: "monthly",
+  cmvl7sdxd0e5o01pvhlhnp4rp: "lifetime", // checkout vitalício
+  cmvl7sdx30e5n01pvekczd55b: "lifetime", // produto "Media Flow vitalício"
+  cmvl7vl7g09a401q2zmahjspy: "monthly", // checkout mensal
+  cmvl7vl7c09a301q2bpsr8e4y: "monthly", // produto "media flow assinatura"
 };
 
 /** Procura a primeira chave existente num objeto aninhado (o formato exato do postback ainda não foi confirmado). */
-function pick(obj: unknown, paths: string[]): string | undefined {
+export function pick(obj: unknown, paths: string[]): string | undefined {
   for (const path of paths) {
     let cur: unknown = obj;
     for (const key of path.split(".")) {
@@ -52,17 +55,27 @@ export class ApplyfyProvider implements PaymentProvider {
     // Registra o formato recebido para ajustar o mapeamento, se precisar.
     console.info("[applyfy] postback:", JSON.stringify(raw).slice(0, 2000));
 
-    const email = pick(raw, ["customer.email", "buyer.email", "client.email", "data.customer.email", "data.buyer.email", "email"])?.toLowerCase();
+    const email = pick(raw, ["data.client.email", "data.customer.email", "data.buyer.email", "customer.email", "buyer.email", "client.email", "data.email", "email"])?.toLowerCase();
     const statusRaw = (pick(raw, ["status", "data.status", "sale.status", "transaction.status", "event", "type"]) ?? "").toLowerCase();
-    const productId = pick(raw, ["product.id", "data.product.id", "product_id", "productId", "checkout.id", "checkout_id"]) ?? "";
+    const productIds = [
+      pick(raw, ["data.productId", "data.product.id", "product.id", "product_id", "productId"]),
+      pick(raw, ["data.checkoutId", "checkoutId", "checkout.id", "checkout_id"]),
+    ].filter(Boolean) as string[];
     const offer = pick(raw, ["offer.code", "offer.id", "data.offer.code", "offer_code", "offer"]) ?? "";
-    const ref = pick(raw, ["id", "data.id", "sale.id", "transaction.id", "order.id", "order_id", "transaction_id"]);
-    const amount = Number(pick(raw, ["amount", "data.amount", "total", "sale.amount", "transaction.amount", "price"]) ?? NaN);
+    const ref = pick(raw, [
+      "data.orderId", "orderId", "data.order.id", "data.transaction.id", "data.transactionId", "transactionId",
+      "data.id", "id", "sale.id", "transaction.id", "order.id", "order_id", "transaction_id",
+    ]);
+    const amount = Number(
+      pick(raw, ["data.amount", "data.total", "data.order.amount", "data.order.total", "data.transaction.amount", "amount", "total", "sale.amount", "transaction.amount", "price"]) ?? NaN,
+    );
 
-    if (!email || !ref) return null;
+    // SESSION_* = checkout aberto/atualizado (carrinho), ainda não é pagamento.
+    const kind = (pick(raw, ["event", "type"]) ?? "").toLowerCase();
+    if (/^session/.test(kind) || !email || !ref) return null;
 
     const isMonthly =
-      PRODUCT_PLAN[productId] === "monthly" ||
+      productIds.some((id) => PRODUCT_PLAN[id] === "monthly") ||
       ["95RF27C", "POL2VBI"].includes(offer.toUpperCase()) ||
       /assinatura|subscription|recorr/.test(statusRaw);
     const plan: Plan = isMonthly ? "monthly" : "lifetime";
@@ -80,7 +93,7 @@ export class ApplyfyProvider implements PaymentProvider {
     return {
       gateway: this.name,
       // Na assinatura, todas as cobranças precisam cair na mesma linha: usa a assinatura, se vier.
-      ref: (isMonthly && pick(raw, ["subscription.id", "data.subscription.id", "subscription_id"])) || ref,
+      ref: (isMonthly && pick(raw, ["data.subscriptionId", "data.subscription.id", "subscription.id", "subscription_id"])) || ref,
       email,
       plan,
       status,

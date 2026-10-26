@@ -55,7 +55,16 @@ export default function ComissoesPage() {
 function ComissoesContent() {
   // Comissões de exemplo só na conta de demonstração.
   const demo = useShowcase();
-  const data = demo ? COMISSOES_DEMO : EMPTY;
+  // Demais contas: vendas reais atribuídas aos links de convite delas.
+  const [real, setReal] = useState<typeof COMISSOES_DEMO | null>(null);
+  useEffect(() => {
+    if (demo) return;
+    fetch("/api/conta/comissoes")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d: typeof COMISSOES_DEMO | null) => d && setReal(d))
+      .catch(() => {});
+  }, [demo]);
+  const data = demo ? COMISSOES_DEMO : real ?? EMPTY;
   const router = useRouter();
   const pathname = usePathname() || "/comissoes";
   const params = useSearchParams();

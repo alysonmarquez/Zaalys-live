@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Copy, Gift, ImagePlus, LockOpen, Percent, Sparkles, X } from "lucide-react";
 
 // Acesso Creator (como no original): 1) "Sua condição especial"; 2) valores + quantos usos; 3) link pronto.
@@ -18,8 +18,16 @@ export function CreatorModal({ handle, onClose }: { handle: string; onClose: () 
   const [copied, setCopied] = useState(false);
 
   const slug = handle.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20) || "vip";
+  // Código fixo da conta (o que identifica o afiliado na venda); enquanto carrega, o @.
+  const [code, setCode] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/conta/convite")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { code?: string } | null) => d?.code && setCode(d.code))
+      .catch(() => {});
+  }, []);
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://mediaflowmz.com";
-  const link = `${base}/convite/creator-${slug}-${uses}x`;
+  const link = `${base}/convite/creator-${code ?? slug}-${uses}x`;
   const usesLabel = `${uses} ${uses === 1 ? "uso" : "usos"}`;
 
   return (
