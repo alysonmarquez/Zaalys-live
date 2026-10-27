@@ -21,7 +21,7 @@ mkdirSync(tmp);
 cpSync(join(root, "extension"), out, { recursive: true });
 
 // Troca o endereço de desenvolvimento pelo do painel em todos os arquivos que o usam.
-for (const f of ["background.js", "manifest.json"]) {
+for (const f of ["background.js", "panel.js", "manifest.json"]) {
   const p = join(out, f);
   writeFileSync(p, readFileSync(p, "utf8").replaceAll("http://localhost:3000", api));
 }

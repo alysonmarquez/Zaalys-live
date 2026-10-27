@@ -367,3 +367,5 @@ create index if not exists affiliate_sales_affiliate_idx on public.affiliate_sal
 alter table public.affiliate_sales enable row level security;
 drop policy if exists "own affiliate sales" on public.affiliate_sales;
 create policy "own affiliate sales" on public.affiliate_sales for select using (affiliate_id = auth.uid());
+-- Comentários do anfitrião gerados por live preparada (extensão)
+alter table public.live_preps add column if not exists comment_texts jsonb;

@@ -705,7 +705,7 @@ export function ZipInstallDemo() {
             <div className="mx-3 flex items-start gap-2 rounded-md border border-neutral-200 p-2">
               <Z className="size-7 text-[11px]" />
               <div className="flex-1">
-                <p className="text-[10px] font-semibold">MediaFlowMZ Live <span className="font-normal text-neutral-500">3.17.0</span></p>
+                <p className="text-[10px] font-semibold">MediaFlowMZ Live <span className="font-normal text-neutral-500">4.0.0</span></p>
                 <p className="text-[8px] text-neutral-500">Live automática e painel no TikTok Shop</p>
               </div>
               <span className="relative h-3 w-6 rounded-full bg-[#1a73e8]">

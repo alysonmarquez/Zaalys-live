@@ -2,13 +2,12 @@
   "manifest_version": 3,
   "name": "MediaFlowMZ Live",
   "short_name": "MediaFlowMZ Live",
-  "version": "3.17.0",
-  "description": "Automatiza sua live no TikTok Shop: clipes em loop como câmera, comentários, produto fixado e respostas ao chat.",
-  "icons": { "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
-  "permissions": ["storage", "alarms"],
+  "version": "4.0.0",
+  "description": "Automatiza sua live no TikTok Shop: clipes em loop como câmera, narração com voz, comentários, produto fixado e alertas de venda.",
+  "icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
+  "permissions": ["storage"],
   "host_permissions": ["http://localhost:3000/*"],
   "background": { "service_worker": "background.js" },
-  "action": { "default_popup": "popup.html", "default_title": "MediaFlowMZ Live" },
   "content_scripts": [
     {
       "matches": ["https://shop.tiktok.com/streamer/*", "http://localhost:3000/estudio/*"],
@@ -26,5 +25,8 @@
       "js": ["site-connect.js"],
       "run_at": "document_idle"
     }
+  ],
+  "web_accessible_resources": [
+    { "resources": ["audio/*", "video/*"], "matches": ["https://shop.tiktok.com/*", "http://localhost:3000/*"] }
   ]
 }

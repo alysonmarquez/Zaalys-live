@@ -318,11 +318,12 @@ export default function SettingsPage() {
             download
             className="text-xs font-medium text-primary underline underline-offset-4"
           >
-            Baixar extensão (.zip v3.17.0){ext.installed ? ` · instalada: v${ext.version}` : ""}
+            Baixar extensão (.zip v4.0.0){ext.installed ? ` · instalada: v${ext.version}` : ""}
           </a>
         </div>
 
-        {/* ExtensionUpdate Collapsible */}
+        {/* Guia para trocar o .zip pela Chrome Web Store: só quando a extensão estiver publicada na loja. */}
+        {process.env.NEXT_PUBLIC_CHROME_STORE_URL && (
         <div className="mt-4 rounded-2xl bg-muted/50">
           <button
             type="button"
@@ -335,7 +336,7 @@ export default function SettingsPage() {
                 Instalou pelo .zip? Troque pela Chrome Web Store
               </span>
               <span className="block text-xs text-muted-foreground">
-                Versão atual: <span className="tabular-nums">3.17.0</span>. Pela
+                Versão atual: <span className="tabular-nums">4.0.0</span>. Pela
                 loja, a extensão se atualiza sozinha, sempre fora da live.
               </span>
             </span>
@@ -375,6 +376,7 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+        )}
       </section>
 
       {/* Avisos no celular */}

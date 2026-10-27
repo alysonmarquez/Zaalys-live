@@ -790,7 +790,7 @@ export default function LivePage() {
                   ⬇ Baixar extensão (.zip)
                 </a>
                 <p className="text-xs text-muted-foreground">
-                  Versão atual: 3.17.0. Para atualizar, baixe o .zip de novo, substitua a pasta e clique em ↻ na extensão, em chrome://extensions.
+                  Versão atual: 4.0.0. Para atualizar, baixe o .zip de novo, substitua a pasta e clique em ↻ na extensão, em chrome://extensions.
                 </p>
                 <HowTo>
                   <ZipInstallDemo />

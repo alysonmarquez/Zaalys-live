@@ -1,0 +1,466 @@
+{
+ "voice": "pt_BR-faber-medium (Piper, voz sintética)",
+ "lines": [
+  {
+   "id": "greeting_01",
+   "kind": "greeting",
+   "text": "Oi, gente! Sejam muito bem-vindos à live. Chega mais que hoje tem coisa boa.",
+   "file": "audio/voz/greeting_01.mp3",
+   "dur": 4.44,
+   "minGap": 12
+  },
+  {
+   "id": "greeting_02",
+   "kind": "greeting",
+   "text": "E aí, pessoal, tudo bem? Que bom ter vocês aqui comigo.",
+   "file": "audio/voz/greeting_02.mp3",
+   "dur": 3.48,
+   "minGap": 12
+  },
+  {
+   "id": "greeting_03",
+   "kind": "greeting",
+   "text": "Olá, olá! Quem acabou de chegar, fica à vontade e manda um oi no chat.",
+   "file": "audio/voz/greeting_03.mp3",
+   "dur": 4.37,
+   "minGap": 12
+  },
+  {
+   "id": "greeting_04",
+   "kind": "greeting",
+   "text": "Boa, gente, a live tá começando! Já deixa seu comentário aí embaixo.",
+   "file": "audio/voz/greeting_04.mp3",
+   "dur": 4.3,
+   "minGap": 12
+  },
+  {
+   "id": "greeting_05",
+   "kind": "greeting",
+   "text": "Oi, oi! Seja bem-vindo. Pega um café e fica comigo um pouquinho.",
+   "file": "audio/voz/greeting_05.mp3",
+   "dur": 4.08,
+   "minGap": 12
+  },
+  {
+   "id": "greeting_06",
+   "kind": "greeting",
+   "text": "Fala, galera! Hoje eu vou mostrar tudo com calma, sem pressa.",
+   "file": "audio/voz/greeting_06.mp3",
+   "dur": 3.5,
+   "minGap": 12
+  },
+  {
+   "id": "greeting_07",
+   "kind": "greeting",
+   "text": "Chegou agora? Bem-vindo! Tô mostrando o produto do carrinho laranja.",
+   "file": "audio/voz/greeting_07.mp3",
+   "dur": 3.79,
+   "minGap": 12
+  },
+  {
+   "id": "greeting_08",
+   "kind": "greeting",
+   "text": "Oi, pessoal! Quem tá chegando agora, dá um oi pra mim no chat.",
+   "file": "audio/voz/greeting_08.mp3",
+   "dur": 3.91,
+   "minGap": 12
+  },
+  {
+   "id": "cta_01",
+   "kind": "cta",
+   "text": "O produto tá no carrinho laranja aqui embaixo. É só tocar pra ver.",
+   "file": "audio/voz/cta_01.mp3",
+   "dur": 3.72
+  },
+  {
+   "id": "cta_02",
+   "kind": "cta",
+   "text": "Quer ver o preço? Toca no carrinho laranja que aparece tudinho.",
+   "file": "audio/voz/cta_02.mp3",
+   "dur": 3.26
+  },
+  {
+   "id": "cta_03",
+   "kind": "cta",
+   "text": "Gostou? Clica no carrinho e dá uma olhada nos detalhes.",
+   "file": "audio/voz/cta_03.mp3",
+   "dur": 3.26
+  },
+  {
+   "id": "cta_04",
+   "kind": "cta",
+   "text": "O link tá fixado aqui embaixo, no carrinho. Corre lá ver.",
+   "file": "audio/voz/cta_04.mp3",
+   "dur": 3.36
+  },
+  {
+   "id": "cta_05",
+   "kind": "cta",
+   "text": "Toca no carrinho laranja e confere o frete pra sua cidade.",
+   "file": "audio/voz/cta_05.mp3",
+   "dur": 3.19
+  },
+  {
+   "id": "cta_06",
+   "kind": "cta",
+   "text": "Tá tudo no carrinho: preço, fotos e avaliações. Dá uma olhada.",
+   "file": "audio/voz/cta_06.mp3",
+   "dur": 3.96
+  },
+  {
+   "id": "cta_07",
+   "kind": "cta",
+   "text": "Se fez sentido pra você, o produto tá no carrinho aqui embaixo.",
+   "file": "audio/voz/cta_07.mp3",
+   "dur": 3.46
+  },
+  {
+   "id": "cta_08",
+   "kind": "cta",
+   "text": "Não esquece: o carrinho laranja é onde tá o produto da live.",
+   "file": "audio/voz/cta_08.mp3",
+   "dur": 3.26
+  },
+  {
+   "id": "howto_01",
+   "kind": "howto",
+   "text": "Pra comprar é fácil: toca no carrinho, escolhe a opção e finaliza.",
+   "file": "audio/voz/howto_01.mp3",
+   "dur": 4.03
+  },
+  {
+   "id": "howto_02",
+   "kind": "howto",
+   "text": "Toca no carrinho laranja, abre o produto e escolhe como quer pagar.",
+   "file": "audio/voz/howto_02.mp3",
+   "dur": 3.65
+  },
+  {
+   "id": "howto_03",
+   "kind": "howto",
+   "text": "Dentro do carrinho você vê as variações disponíveis antes de comprar.",
+   "file": "audio/voz/howto_03.mp3",
+   "dur": 3.79
+  },
+  {
+   "id": "howto_04",
+   "kind": "howto",
+   "text": "Dá pra ver o prazo de entrega ali no próprio carrinho, antes de fechar.",
+   "file": "audio/voz/howto_04.mp3",
+   "dur": 3.55
+  },
+  {
+   "id": "howto_05",
+   "kind": "howto",
+   "text": "Escolheu? É só adicionar e finalizar pelo próprio TikTok Shop.",
+   "file": "audio/voz/howto_05.mp3",
+   "dur": 3.77
+  },
+  {
+   "id": "howto_06",
+   "kind": "howto",
+   "text": "Qualquer dúvida na hora de comprar, me pergunta aqui no chat.",
+   "file": "audio/voz/howto_06.mp3",
+   "dur": 3.24
+  },
+  {
+   "id": "urgency_01",
+   "kind": "urgency",
+   "text": "Aproveita enquanto a live tá no ar pra ver as condições de hoje.",
+   "file": "audio/voz/urgency_01.mp3",
+   "dur": 3.41
+  },
+  {
+   "id": "urgency_02",
+   "kind": "urgency",
+   "text": "Se você tava pensando, agora é uma boa hora de dar uma olhada.",
+   "file": "audio/voz/urgency_02.mp3",
+   "dur": 3.48
+  },
+  {
+   "id": "urgency_03",
+   "kind": "urgency",
+   "text": "Confere as condições no carrinho enquanto eu tô aqui pra tirar dúvidas.",
+   "file": "audio/voz/urgency_03.mp3",
+   "dur": 3.67
+  },
+  {
+   "id": "urgency_04",
+   "kind": "urgency",
+   "text": "Quem deixa pra depois às vezes esquece. Dá uma olhada agora.",
+   "file": "audio/voz/urgency_04.mp3",
+   "dur": 3.38
+  },
+  {
+   "id": "urgency_05",
+   "kind": "urgency",
+   "text": "As condições podem mudar, então confere no carrinho enquanto dá.",
+   "file": "audio/voz/urgency_05.mp3",
+   "dur": 3.58
+  },
+  {
+   "id": "engage_01",
+   "kind": "engage",
+   "text": "Me conta no chat: você já conhecia esse produto?",
+   "file": "audio/voz/engage_01.mp3",
+   "dur": 2.88
+  },
+  {
+   "id": "engage_02",
+   "kind": "engage",
+   "text": "Ficou com alguma dúvida? Pode perguntar que eu respondo.",
+   "file": "audio/voz/engage_02.mp3",
+   "dur": 2.81
+  },
+  {
+   "id": "engage_03",
+   "kind": "engage",
+   "text": "Manda no chat de onde você tá assistindo a live hoje.",
+   "file": "audio/voz/engage_03.mp3",
+   "dur": 2.98
+  },
+  {
+   "id": "engage_04",
+   "kind": "engage",
+   "text": "Quem aí quer que eu mostre mais de perto? Comenta aqui.",
+   "file": "audio/voz/engage_04.mp3",
+   "dur": 2.95
+  },
+  {
+   "id": "engage_05",
+   "kind": "engage",
+   "text": "Deixa um coração na tela se você tá gostando da live.",
+   "file": "audio/voz/engage_05.mp3",
+   "dur": 3.05
+  },
+  {
+   "id": "engage_06",
+   "kind": "engage",
+   "text": "Pergunta o que quiser: tamanho, uso, entrega. Tô aqui pra isso.",
+   "file": "audio/voz/engage_06.mp3",
+   "dur": 3.84
+  },
+  {
+   "id": "engage_07",
+   "kind": "engage",
+   "text": "Comenta aí o que você achou até agora.",
+   "file": "audio/voz/engage_07.mp3",
+   "dur": 2.16
+  },
+  {
+   "id": "engage_08",
+   "kind": "engage",
+   "text": "Se você já usou, conta pra galera como foi a sua experiência.",
+   "file": "audio/voz/engage_08.mp3",
+   "dur": 3.38
+  },
+  {
+   "id": "engage_09",
+   "kind": "engage",
+   "text": "Curtiu? Toca duas vezes na tela pra mandar um coração.",
+   "file": "audio/voz/engage_09.mp3",
+   "dur": 3.1
+  },
+  {
+   "id": "engage_10",
+   "kind": "engage",
+   "text": "Quem tá assistindo comigo agora? Dá um oi no chat.",
+   "file": "audio/voz/engage_10.mp3",
+   "dur": 2.86
+  },
+  {
+   "id": "social_01",
+   "kind": "social",
+   "text": "Segue o perfil pra não perder as próximas lives.",
+   "file": "audio/voz/social_01.mp3",
+   "dur": 2.3
+  },
+  {
+   "id": "social_02",
+   "kind": "social",
+   "text": "Compartilha a live com aquela pessoa que precisa ver isso.",
+   "file": "audio/voz/social_02.mp3",
+   "dur": 2.78
+  },
+  {
+   "id": "social_03",
+   "kind": "social",
+   "text": "Marca um amigo que ia gostar desse produto.",
+   "file": "audio/voz/social_03.mp3",
+   "dur": 2.28
+  },
+  {
+   "id": "social_04",
+   "kind": "social",
+   "text": "Ativa o sininho pra saber quando eu entrar ao vivo de novo.",
+   "file": "audio/voz/social_04.mp3",
+   "dur": 2.81
+  },
+  {
+   "id": "social_05",
+   "kind": "social",
+   "text": "Se a live tá te ajudando, compartilha com mais alguém.",
+   "file": "audio/voz/social_05.mp3",
+   "dur": 2.83
+  },
+  {
+   "id": "social_06",
+   "kind": "social",
+   "text": "Segue a gente aqui que toda semana tem novidade.",
+   "file": "audio/voz/social_06.mp3",
+   "dur": 2.59
+  },
+  {
+   "id": "detail_01",
+   "kind": "detail",
+   "text": "Olha só os detalhes. Dá pra ver bem o acabamento daqui.",
+   "file": "audio/voz/detail_01.mp3",
+   "dur": 3.14
+  },
+  {
+   "id": "detail_02",
+   "kind": "detail",
+   "text": "Repara como ele é na prática, do jeitinho que chega pra você.",
+   "file": "audio/voz/detail_02.mp3",
+   "dur": 3.05
+  },
+  {
+   "id": "detail_03",
+   "kind": "detail",
+   "text": "Vou mostrar de novo pra quem chegou agora.",
+   "file": "audio/voz/detail_03.mp3",
+   "dur": 1.97
+  },
+  {
+   "id": "detail_04",
+   "kind": "detail",
+   "text": "As fotos e as avaliações de quem comprou ficam no carrinho.",
+   "file": "audio/voz/detail_04.mp3",
+   "dur": 3.24
+  },
+  {
+   "id": "detail_05",
+   "kind": "detail",
+   "text": "Presta atenção nesse detalhe, que faz diferença no dia a dia.",
+   "file": "audio/voz/detail_05.mp3",
+   "dur": 3.07
+  },
+  {
+   "id": "detail_06",
+   "kind": "detail",
+   "text": "Esse aqui é o produto que tá fixado no carrinho laranja.",
+   "file": "audio/voz/detail_06.mp3",
+   "dur": 3.36
+  },
+  {
+   "id": "detail_07",
+   "kind": "detail",
+   "text": "Dá uma olhada nas avaliações, a galera comenta bastante.",
+   "file": "audio/voz/detail_07.mp3",
+   "dur": 3.36
+  },
+  {
+   "id": "detail_08",
+   "kind": "detail",
+   "text": "Tô mostrando com calma pra você ver tudo direitinho.",
+   "file": "audio/voz/detail_08.mp3",
+   "dur": 2.64
+  },
+  {
+   "id": "close_01",
+   "kind": "transition",
+   "text": "Bom, quem chegou agora, já vou mostrar tudo de novo.",
+   "file": "audio/voz/close_01.mp3",
+   "dur": 2.71,
+   "onlyAt": "block_close"
+  },
+  {
+   "id": "close_02",
+   "kind": "transition",
+   "text": "Então é isso, pessoal. Já já eu repito pra quem tá chegando.",
+   "file": "audio/voz/close_02.mp3",
+   "dur": 3.65,
+   "onlyAt": "block_close"
+  },
+  {
+   "id": "close_03",
+   "kind": "transition",
+   "text": "Vou dar uma pausa rapidinha e já volto mostrando de novo.",
+   "file": "audio/voz/close_03.mp3",
+   "dur": 3.19,
+   "onlyAt": "block_close"
+  },
+  {
+   "id": "close_04",
+   "kind": "transition",
+   "text": "Fica por aqui que daqui a pouco eu mostro mais detalhes.",
+   "file": "audio/voz/close_04.mp3",
+   "dur": 2.88,
+   "onlyAt": "block_close"
+  },
+  {
+   "id": "close_05",
+   "kind": "transition",
+   "text": "Resumindo: tá tudo no carrinho laranja aqui embaixo.",
+   "file": "audio/voz/close_05.mp3",
+   "dur": 3.07,
+   "onlyAt": "block_close"
+  },
+  {
+   "id": "close_06",
+   "kind": "transition",
+   "text": "E pra quem chegou agora: o produto da live tá fixado no carrinho.",
+   "file": "audio/voz/close_06.mp3",
+   "dur": 3.46,
+   "onlyAt": "block_close"
+  },
+  {
+   "id": "celebration_01",
+   "kind": "celebration",
+   "text": "Eba! Mais uma venda! Obrigado pela confiança!",
+   "file": "audio/voz/celebration_01.mp3",
+   "dur": 3.12
+  },
+  {
+   "id": "celebration_02",
+   "kind": "celebration",
+   "text": "Uhul, saiu mais um! Muito obrigado, gente!",
+   "file": "audio/voz/celebration_02.mp3",
+   "dur": 2.9
+  },
+  {
+   "id": "celebration_03",
+   "kind": "celebration",
+   "text": "Que alegria, mais uma compra! Valeu demais!",
+   "file": "audio/voz/celebration_03.mp3",
+   "dur": 2.86
+  },
+  {
+   "id": "celebration_04",
+   "kind": "celebration",
+   "text": "Mais um pedido confirmado! Obrigado por comprar comigo!",
+   "file": "audio/voz/celebration_04.mp3",
+   "dur": 3.14
+  },
+  {
+   "id": "celebration_05",
+   "kind": "celebration",
+   "text": "Opa, venda nova! Obrigado, de coração!",
+   "file": "audio/voz/celebration_05.mp3",
+   "dur": 2.9
+  },
+  {
+   "id": "celebration_06",
+   "kind": "celebration",
+   "text": "Mais uma pessoa levando! Muito obrigado!",
+   "file": "audio/voz/celebration_06.mp3",
+   "dur": 2.47
+  }
+ ],
+ "sfx": {
+  "sale": [
+   "audio/sfx/venda-1.mp3",
+   "audio/sfx/venda-2.mp3"
+  ]
+ }
+}
