@@ -28,8 +28,9 @@ export function pick(obj: unknown, paths: string[]): string | undefined {
 
 /**
  * Applyfy: checkout hospedado (links de oferta) + postback de vendas.
- * Configure na Applyfy o postback para:
- *   https://SEU-DOMINIO/api/webhooks/payment?token=APPLYFY_WEBHOOK_TOKEN
+ * APPLYFY_WEBHOOK_TOKEN é o token do webhook gerado pela Applyfy. Configure o postback para
+ *   https://SEU-DOMINIO/api/webhooks/payment
+ * (se a Applyfy não enviar o token sozinha, acrescente ?token=APPLYFY_WEBHOOK_TOKEN).
  */
 export class ApplyfyProvider implements PaymentProvider {
   readonly name = "applyfy";
@@ -38,22 +39,42 @@ export class ApplyfyProvider implements PaymentProvider {
     return { url: checkoutUrl(input.plan, "lp", { email: input.email }) };
   }
 
-  private verify(req: Request) {
+  /**
+   * Confere o token do webhook. O lugar em que a Applyfy envia o token ainda não foi confirmado: aceita o
+   * endereço (?token=), os cabeçalhos mais comuns e os campos do corpo, e registra onde ele veio (sem o valor).
+   */
+  private verify(req: Request, raw: unknown) {
     const expected = (process.env.APPLYFY_WEBHOOK_TOKEN ?? "").trim();
     if (!expected) throw new Error("APPLYFY_WEBHOOK_TOKEN não configurado (vazio nesta implantação: crie a variável e faça Redeploy)");
     if (expected.length < 8) throw new Error(`APPLYFY_WEBHOOK_TOKEN curto demais (${expected.length} caracteres, mínimo 8)`);
-    const got = (new URL(req.url).searchParams.get("token") ?? req.headers.get("x-webhook-token") ?? "").trim();
+    const bearer = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+    const candidates: [string, string | undefined | null][] = [
+      ["query", new URL(req.url).searchParams.get("token")],
+      ["x-webhook-token", req.headers.get("x-webhook-token")],
+      ["x-applyfy-token", req.headers.get("x-applyfy-token")],
+      ["x-token", req.headers.get("x-token")],
+      ["authorization", bearer],
+      ["body", pick(raw, ["token", "webhook_token", "webhookToken", "data.token"])],
+    ];
     const a = Buffer.from(expected);
-    const b = Buffer.from(got);
-    if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error(`Token do webhook inválido (recebido ${b.length} caracteres, esperado ${a.length})`);
+    const match = candidates.find(([, got]) => {
+      const b = Buffer.from((got ?? "").trim());
+      return b.length === a.length && timingSafeEqual(a, b);
+    });
+    if (!match) {
+      const sizes = candidates.filter(([, got]) => (got ?? "").trim()).map(([where, got]) => `${where}: ${(got ?? "").trim().length}`);
+      throw new Error(`Token do webhook inválido (recebido ${sizes.join(", ") || "nenhum"}; esperado ${a.length} caracteres)`);
+    }
+    console.info(`[applyfy] token conferido (${match[0]})`);
   }
 
   async handleWebhook(req: Request): Promise<PaymentEvent | null> {
-    this.verify(req);
     const raw = (await req.json().catch(() => null)) as unknown;
+    this.verify(req, raw);
     if (!raw) return null;
-    // Registra o formato recebido para ajustar o mapeamento, se precisar.
-    console.info("[applyfy] postback:", JSON.stringify(raw).slice(0, 2000));
+    // Registra o formato recebido para ajustar o mapeamento, se precisar (sem o token, que também pode vir no corpo).
+    const safe = JSON.stringify(raw, (k, v) => (/^(token|webhook_?token)$/i.test(k) ? "[oculto]" : v));
+    console.info("[applyfy] postback:", safe.slice(0, 2000));
 
     const email = pick(raw, ["data.client.email", "data.customer.email", "data.buyer.email", "customer.email", "buyer.email", "client.email", "data.email", "email"])?.toLowerCase();
     const statusRaw = (pick(raw, ["status", "data.status", "sale.status", "transaction.status", "event", "type"]) ?? "").toLowerCase();
