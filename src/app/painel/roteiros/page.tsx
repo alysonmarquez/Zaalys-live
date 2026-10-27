@@ -1,5 +1,6 @@
 "use client";
 
+import { LazyVideo } from "@/components/lazy-video";
 import React, { useState } from "react";
 import { ArrowUpRight, ChevronLeft, Download } from "lucide-react";
 import { RaisedButton, cn } from "@/components/brand";
@@ -120,14 +121,9 @@ export default function TrendAiPage() {
               onClick={() => setFormat(f)}
               className="group relative aspect-[16/10] overflow-hidden rounded-3xl border border-black/[0.06] bg-muted text-left cursor-pointer dark:border-white/[0.08]"
             >
-              <video
-                src={f.preview}
+              <LazyVideo
+                src={f.previewLite}
                 poster={f.characters[0]?.image}
-                muted
-                loop
-                autoPlay
-                playsInline
-                preload="metadata"
                 className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />

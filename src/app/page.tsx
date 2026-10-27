@@ -654,7 +654,7 @@ export default function HomePage() {
             <figure className="_clip_1pscc_13" data-clip="">
               <video
                 poster="/media/templates/21_apresentando-produto.jpg"
-                data-src="/media/templates/21_apresentando-produto.mp4"
+                data-src="/media/templates/21_apresentando-produto.lite.mp4"
                 preload="none"
                 muted
                 loop
@@ -669,7 +669,7 @@ export default function HomePage() {
             <figure className="_clip_1pscc_13" data-clip="">
               <video
                 poster="/media/templates/24_setup-mesa.jpg"
-                data-src="/media/templates/24_setup-mesa.mp4"
+                data-src="/media/templates/24_setup-mesa.lite.mp4"
                 preload="none"
                 muted
                 loop
@@ -684,7 +684,7 @@ export default function HomePage() {
             <figure className="_clip_1pscc_13 _clipLive_1pscc_296" data-clip="" data-live-clip="">
               <video
                 poster="/media/templates/19_textura-pele.jpg"
-                data-src="/media/templates/19_textura-pele.mp4"
+                data-src="/media/templates/19_textura-pele.lite.mp4"
                 preload="none"
                 muted
                 loop
@@ -725,7 +725,7 @@ export default function HomePage() {
             <figure className="_clip_1pscc_13" data-clip="">
               <video
                 poster="/media/templates/23_preparo-e-gole.jpg"
-                data-src="/media/templates/23_preparo-e-gole.mp4"
+                data-src="/media/templates/23_preparo-e-gole.lite.mp4"
                 preload="none"
                 muted
                 loop
@@ -740,7 +740,7 @@ export default function HomePage() {
             <figure className="_clip_1pscc_13" data-clip="">
               <video
                 poster="/media/templates/25_pet-experimentando.jpg"
-                data-src="/media/templates/25_pet-experimentando.mp4"
+                data-src="/media/templates/25_pet-experimentando.lite.mp4"
                 preload="none"
                 muted
                 loop
@@ -872,7 +872,7 @@ export default function HomePage() {
                     <figure className="_liveFrame_1pscc_237">
                       <video
                         poster="/media/templates/23_preparo-e-gole.jpg"
-                        data-src="/media/templates/23_preparo-e-gole.mp4"
+                        data-src="/media/templates/23_preparo-e-gole.lite.mp4"
                         preload="none"
                         muted
                         loop
@@ -1012,7 +1012,7 @@ export default function HomePage() {
                     <figure className="_liveFrame_1pscc_237">
                       <video
                         poster="/media/templates/19_textura-pele.jpg"
-                        data-src="/media/templates/19_textura-pele.mp4"
+                        data-src="/media/templates/19_textura-pele.lite.mp4"
                         preload="none"
                         muted
                         loop

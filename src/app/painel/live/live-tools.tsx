@@ -1,5 +1,6 @@
 "use client";
 
+import { LazyVideo } from "@/components/lazy-video";
 import React, { useState } from "react";
 import { RaisedButton, Segmented, cn } from "@/components/brand";
 import { ZAALYS_PRODUCTS, ZAALYS_TEMPLATES, formatBRL } from "@/lib/zaalys-data";
@@ -194,13 +195,9 @@ export function LiveTools() {
                       i === 0 ? "border-primary ring-2 ring-primary/40" : "border-white/10",
                     )}
                   >
-                    <video
-                      src={tpl.video}
+                    <LazyVideo
+                      src={tpl.videoLite}
                       poster={tpl.poster}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
                       className="size-full object-cover"
                     />
                     <span className="absolute left-1.5 top-1.5 rounded-md bg-black/65 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-white">

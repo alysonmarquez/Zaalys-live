@@ -1,5 +1,6 @@
 "use client";
 
+import { LazyVideo } from "@/components/lazy-video";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
 import { RaisedButton, cn } from "@/components/brand";
@@ -241,13 +242,9 @@ Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do
             className="group relative flex flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-card text-left transition-[transform,border-color,box-shadow] duration-200 hover:border-primary/40 hover:shadow-[0_16px_36px_-12px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer dark:border-white/[0.08]"
           >
             <div className="relative aspect-[9/16] w-full overflow-hidden bg-black">
-              <video
-                src={tpl.video}
+              <LazyVideo
+                src={tpl.videoLite}
                 poster={tpl.poster}
-                muted
-                loop
-                playsInline
-                autoPlay
                 className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
@@ -313,13 +310,9 @@ Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do
           <div className="apple-card grid max-h-[90dvh] w-full max-w-3xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden shadow-2xl sm:grid-cols-[210px_1fr] sm:grid-rows-1">
             {/* Left Video Preview Column */}
             <div className="relative h-[190px] w-full overflow-hidden bg-black sm:h-full">
-              <video
-                src={activeTemplate.video}
+              <LazyVideo
+                src={activeTemplate.videoLite}
                 poster={activeTemplate.poster}
-                autoPlay
-                muted
-                loop
-                playsInline
                 className="size-full object-cover"
               />
               {activeTemplate.needsModel && selectedModel && (

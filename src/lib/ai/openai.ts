@@ -9,6 +9,12 @@ export type OpenAICompatibleConfig = {
   keyVar: string;
   model: string;
   transcriptionModel: string;
+  /** Modelo usado se o principal não existir mais (404 model_not_found). */
+  fallbackModel?: string;
+  /** Campos extras do corpo do chat (ex.: reasoning_effort). */
+  extraBody?: Record<string, unknown>;
+  /** Tokens a mais para modelos que raciocinam antes de responder (o raciocínio conta no limite). */
+  reasoningHeadroom?: number;
 };
 
 /** Provedores com a mesma API de chat e transcrição da OpenAI; muda o endereço, a chave e os modelos. */
@@ -19,6 +25,9 @@ export class OpenAICompatibleProvider implements AIProvider {
   private readonly apiKey: string;
   private readonly model: string;
   private readonly transcriptionModel: string;
+  private readonly fallbackModel?: string;
+  private readonly extraBody: Record<string, unknown>;
+  private readonly reasoningHeadroom: number;
 
   constructor(cfg: OpenAICompatibleConfig) {
     if (!cfg.apiKey) throw new AIError(`${cfg.keyVar} não configurada`);
@@ -28,15 +37,31 @@ export class OpenAICompatibleProvider implements AIProvider {
     this.apiKey = cfg.apiKey;
     this.model = cfg.model;
     this.transcriptionModel = cfg.transcriptionModel;
+    this.fallbackModel = cfg.fallbackModel;
+    this.extraBody = cfg.extraBody ?? {};
+    this.reasoningHeadroom = cfg.reasoningHeadroom ?? 0;
   }
 
   private async chat(opts: GenerateOptions, json: boolean): Promise<string> {
-    const res = await fetch(`${this.base}/chat/completions`, {
+    let res = await this.request(this.model, opts, json);
+    // Modelo retirado pelo provedor: tenta o reserva antes de falhar.
+    if (res.status === 404 && this.fallbackModel && this.fallbackModel !== this.model) {
+      console.warn(`[ai] ${this.label}: modelo ${this.model} indisponível, usando ${this.fallbackModel}`);
+      res = await this.request(this.fallbackModel, opts, json);
+    }
+    if (!res.ok) throw new AIError(`${this.label} ${res.status}: ${await res.text()}`, 502);
+    const data = (await res.json()) as { choices: { message: { content: string } }[] };
+    return data.choices[0]?.message.content ?? "";
+  }
+
+  private request(model: string, opts: GenerateOptions, json: boolean) {
+    return fetch(`${this.base}/chat/completions`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({
-        model: this.model,
-        max_tokens: opts.maxTokens ?? 2000,
+        model,
+        ...this.extraBody,
+        max_tokens: (opts.maxTokens ?? 2000) + this.reasoningHeadroom,
         temperature: opts.temperature ?? 0.7,
         ...(json ? { response_format: { type: "json_object" } } : {}),
         messages: [
@@ -45,9 +70,6 @@ export class OpenAICompatibleProvider implements AIProvider {
         ],
       }),
     });
-    if (!res.ok) throw new AIError(`${this.label} ${res.status}: ${await res.text()}`, 502);
-    const data = (await res.json()) as { choices: { message: { content: string } }[] };
-    return data.choices[0]?.message.content ?? "";
   }
 
   generateText(opts: GenerateOptions) {

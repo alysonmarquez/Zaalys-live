@@ -69,7 +69,7 @@ const ROWS: Row[] = [
   ["acessorio-treino", "Acessório no treino", "presenter", "full-body", ["fitness", "saude"], "26_acessorio-treino", "Corpo inteiro em casa, usando o acessório em uma repetição completa.", ["details"]],
 ];
 
-const media = (file: string, ext: "jpg" | "mp4") => {
+const media = (file: string, ext: "jpg" | "mp4" | "lite.mp4") => {
   const path = `/media/templates/${file}.${ext}`;
   return `${ORIGIN}${encodeURI(path)}`;
 };
@@ -82,6 +82,7 @@ export const TEMPLATES_ORIGINAL: ZaalysTemplate[] = ROWS.map(
     formatLabel: FORMAT_LABELS[format],
     cast: cast === "hands" ? "hands" : "model",
     video: media(file, "mp4"),
+    videoLite: media(file, "lite.mp4"),
     poster: media(file, "jpg"),
     needsModel: cast !== "hands",
     proofGoals,

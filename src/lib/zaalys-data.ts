@@ -551,6 +551,8 @@ export type ZaalysTemplate = {
   formatLabel: string;
   cast: "model" | "hands";
   video: string;
+  /** Versão leve (360p, sem áudio) para as listas. */
+  videoLite: string;
   poster: string;
   needsModel: boolean;
   proofGoals: ProofGoal[];

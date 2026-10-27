@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap");
 @import "tailwindcss";
 
 :root,
@@ -26,9 +25,9 @@
   --input: #ffffff1f;
   --ring: #ade74e;
 
-  --font-display-face: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
-  --font-sans-face: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-  --font-mono-face: "Geist Mono", "SF Mono", ui-monospace, Menlo, monospace;
+  --font-display-face: var(--font-hanken), "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  --font-sans-face: var(--font-geist), "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-mono-face: var(--font-geist-mono), "Geist Mono", "SF Mono", ui-monospace, Menlo, monospace;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);

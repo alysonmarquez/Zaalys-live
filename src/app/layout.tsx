@@ -1,6 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import "./landing.css";
+
+// Fontes servidas pelo próprio site (sem esperar o Google Fonts no carregamento).
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
+const hanken = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-hanken", display: "swap", weight: ["500", "600", "700", "800"] });
 
 const name = process.env.NEXT_PUBLIC_APP_NAME ?? "MediaFlowMZ";
 
@@ -34,7 +40,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className="dark" suppressHydrationWarning>
+    <html lang="pt-BR" className={`dark ${geist.variable} ${geistMono.variable} ${hanken.variable}`} suppressHydrationWarning>
       <body className="min-h-svh bg-background text-foreground antialiased">{children}</body>
     </html>
   );

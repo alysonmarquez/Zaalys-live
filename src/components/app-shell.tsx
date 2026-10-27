@@ -108,7 +108,7 @@ export function BrandLogo() {
   return (
     <Link
       href="/painel"
-      className="group inline-flex items-center gap-2 font-display text-lg font-extrabold tracking-tight text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+      className="group inline-flex shrink-0 items-center gap-2 font-display text-base font-extrabold sm:text-lg tracking-tight text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
     >
       <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground shadow-2xs transition-transform duration-150 group-hover:scale-105">
         <svg viewBox="0 0 100 100" fill="none" className="size-4" aria-hidden="true">
@@ -297,7 +297,7 @@ export function AppShell({ userEmail, userName, userHandle, demo, showcase = fal
           </div>
 
           {/* Right: 1. Acesso Creator | 2. Bell (9+) | 3. Suporte | 4. Moon/Sun | 5. Avatar Circle */}
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
             {/* 1. Acesso Creator */}
             <button
               type="button"
@@ -524,7 +524,7 @@ export function AppShell({ userEmail, userName, userHandle, demo, showcase = fal
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-6 sm:px-6 sm:pt-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-40 pt-6 sm:px-6 sm:pb-28 sm:pt-8">
         <ShowcaseProvider value={showcase}>
           <AdminProvider value={admin}>{children}</AdminProvider>
         </ShowcaseProvider>
@@ -667,7 +667,8 @@ export function AppShell({ userEmail, userName, userHandle, demo, showcase = fal
 
       {/* Floating "Zaal" 3D Mascot Assistant Widget (matching Screenshot 1 & 3jz1kpdvh_75d.js) */}
       {!zaalDrawerOpen && (
-        <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
+        // No celular fica acima da barra de atalhos (senão cobre o botão da Live).
+        <div className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] right-3 z-40 flex flex-col items-end gap-2 sm:bottom-5 sm:right-5">
           {!zaalBubbleDismissed && (
             <div className="mb-1 flex max-w-[300px] flex-col items-end gap-1.5">
               {/* Top Greeting Bubble */}
@@ -716,7 +717,7 @@ export function AppShell({ userEmail, userName, userHandle, demo, showcase = fal
             onClick={() => setZaalDrawerOpen(true)}
             onMouseEnter={() => setZaalHovered(true)}
             onMouseLeave={() => setZaalHovered(false)}
-            className="group relative size-14 overflow-hidden rounded-2xl border-2 border-[#B9F83A]/70 bg-[#181614] shadow-[0_12px_32px_-6px_rgba(0,0,0,0.65)] transition-transform duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+            className="group relative size-12 overflow-hidden rounded-2xl sm:size-14 border-2 border-[#B9F83A]/70 bg-[#181614] shadow-[0_12px_32px_-6px_rgba(0,0,0,0.65)] transition-transform duration-200 hover:scale-105 active:scale-95 cursor-pointer"
           >
             <img
               src={zaalHovered ? "/zaal/zaal-fab-hover.png" : "/zaal/zaal-fab.png"}

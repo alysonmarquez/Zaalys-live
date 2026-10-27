@@ -24,9 +24,9 @@ export function BottomDock() {
   return (
     <nav
       aria-label="Atalhos"
-      className="fixed bottom-4 left-1/2 z-30 -translate-x-1/2 rounded-full border border-black/[0.08] bg-card/90 p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] backdrop-blur-xl dark:border-white/[0.08]"
+      className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 -translate-x-1/2 rounded-full border border-black/[0.08] bg-card/90 p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] backdrop-blur-xl dark:border-white/[0.08]"
     >
-      <ul className="flex items-center gap-1">
+      <ul className="flex items-center gap-0.5 sm:gap-1">
         {ITEMS.map(({ href, label, icon: Icon, match }) => {
           const active = isActive(match);
           return (
@@ -37,10 +37,10 @@ export function BottomDock() {
                 aria-current={active ? "page" : undefined}
                 title={label}
                 className={cn(
-                  "flex h-11 items-center justify-center gap-2 rounded-full transition-[background-color,color,padding] duration-200",
+                  "flex h-11 shrink-0 items-center justify-center gap-2 rounded-full transition-[background-color,color,padding] duration-200",
                   active
-                    ? "bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-xs"
-                    : "w-11 text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
+                    ? "bg-primary px-3.5 text-sm sm:px-4 font-semibold text-primary-foreground shadow-xs"
+                    : "w-10 text-muted-foreground sm:w-11 hover:bg-foreground/[0.06] hover:text-foreground",
                 )}
               >
                 <Icon size={18} strokeWidth={2} className="shrink-0" />

@@ -11,6 +11,8 @@ export type TrendFormat = {
   /** "personagem", "objeto", "bebê"... usado em "Escolha o ___ que vai protagonizar". */
   noun: string;
   preview: string;
+  /** Prévia leve para a lista. */
+  previewLite: string;
   characters: TrendCharacter[];
 };
 
@@ -81,6 +83,7 @@ export const TREND_FORMATS_ORIGINAL: TrendFormat[] = RAW.map(([slug, title, desc
   desc,
   noun,
   preview: `${ORIGIN}/media/trend/${slug}/preview.mp4`,
+  previewLite: `${ORIGIN}/media/trend/${slug}/preview.lite.mp4`,
   characters: names.map((name, i) => ({
     name,
     image: `${ORIGIN}/media/trend/${slug}/${(files ?? seq(names.length))[i]}`,
