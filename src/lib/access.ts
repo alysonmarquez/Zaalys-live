@@ -30,8 +30,8 @@ const SHOWCASE_EMAILS = (process.env.SHOWCASE_EMAILS || "nathalyahoff@gmail.com"
 
 export const isShowcaseEmail = (email: string) => SHOWCASE_EMAILS.includes(email.trim().toLowerCase());
 
-/** Quem aprova afiliados. ADMIN_EMAILS (separados por vírgula) substitui a lista. */
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "nathalyahoff@gmail.com")
+/** Administradores (página Admin e aprovação de afiliados). ADMIN_EMAILS (separados por vírgula) substitui a lista. */
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "allypda@gmail.com,nathalyahoff@gmail.com")
   .split(",")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
@@ -65,6 +65,8 @@ const DEMO: Access = {
   demo: true,
   // Sem banco (desenvolvimento local), o usuário fictício também mostra os dados de exemplo.
   showcase: true,
+  // e vê a página Admin (as APIs de admin exigem banco: sem ele respondem 401).
+  admin: true,
 };
 
 const handleOf = (email: string) =>

@@ -22,6 +22,7 @@ import {
   RotateCcw,
   Send,
   Sparkles,
+  LayoutDashboard,
 } from "lucide-react";
 import { ZAALYS_NOTIFICATIONS, formatBRL } from "@/lib/zaalys-data";
 import { BottomDock } from "@/components/bottom-dock";
@@ -123,7 +124,8 @@ export function BrandLogo() {
           </g>
         </svg>
       </span>
-      <span>MediaFlowMZ</span>
+      {/* Em telas bem estreitas (< 380 px) só o ícone: o nome não cabe ao lado dos botões do topo. */}
+      <span className="hidden min-[380px]:inline">MediaFlowMZ</span>
     </Link>
   );
 }
@@ -498,6 +500,16 @@ export function AppShell({ userEmail, userName, userHandle, demo, showcase = fal
                     <Wallet size={15} className="text-muted-foreground" />
                     Saque de comissões
                   </Link>
+                  {admin && (
+                    <Link
+                      href="/painel/admin"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-primary transition-colors hover:bg-accent"
+                    >
+                      <LayoutDashboard size={15} />
+                      Admin
+                    </Link>
+                  )}
                   {(showcase || admin) && <Link
                     href="/painel/afiliado"
                     onClick={() => setUserMenuOpen(false)}
