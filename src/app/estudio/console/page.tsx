@@ -98,6 +98,49 @@ export default function ConsolePage() {
   const [onAir, setOnAir] = useState(false);
   const [camStream, setCamStream] = useState<MediaStream | null>(null);
   const [camError, setCamError] = useState<string | null>(null);
+  // Câmera e microfone da LIVE (setinha ao lado de Iniciar LIVE, como no TikTok). Com a extensão,
+  // aparecem "MediaFlowMZ Live (vídeo)" e "(áudio)", que mandam os clipes e a narração.
+  const [devOpen, setDevOpen] = useState(false);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [camId, setCamId] = useState("");
+  const [micId, setMicId] = useState("");
+  async function loadDevices() {
+    try {
+      const list = await navigator.mediaDevices.enumerateDevices();
+      setDevices(list);
+      const virtualCam = list.find((d) => d.kind === "videoinput" && /MediaFlowMZ Live/.test(d.label));
+      const virtualMic = list.find((d) => d.kind === "audioinput" && /MediaFlowMZ Live/.test(d.label));
+      setCamId((c) => c || virtualCam?.deviceId || "");
+      setMicId((m) => m || virtualMic?.deviceId || "");
+    } catch {
+      setDevices([]);
+    }
+  }
+  useEffect(() => {
+    void loadDevices();
+  }, []);
+  async function openStream(cam = camId, mic = micId) {
+    return navigator.mediaDevices.getUserMedia({
+      video: cam ? { deviceId: { exact: cam } } : true,
+      audio: mic ? { deviceId: { exact: mic } } : true,
+    });
+  }
+  async function changeDevice(kind: "cam" | "mic", id: string) {
+    const cam = kind === "cam" ? id : camId;
+    const mic = kind === "mic" ? id : micId;
+    if (kind === "cam") setCamId(id);
+    else setMicId(id);
+    if (!onAir) return;
+    // No ar: troca a fonte na hora, como o TikTok.
+    try {
+      const s = await openStream(cam, mic);
+      camStream?.getTracks().forEach((t) => t.stop());
+      setCamStream(s);
+      setCamError(null);
+    } catch {
+      setCamError("Não deu para usar esse dispositivo. Escolha outro.");
+    }
+  }
 
   // Iniciar LIVE pede câmera e microfone, como o TikTok: com a extensão MediaFlowMZ Live ligada,
   // quem responde é a câmera virtual dela (os clipes do produto).
@@ -110,8 +153,9 @@ export default function ConsolePage() {
     }
     setCamError(null);
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const s = await openStream();
       setCamStream(s);
+      void loadDevices(); // com a permissão dada, os nomes dos dispositivos aparecem
     } catch {
       setCamError("Sem câmera: a prévia mostra a foto do produto fixado.");
     }
@@ -323,6 +367,7 @@ export default function ConsolePage() {
               <div className="flex items-center gap-1">
                 <button
                   type="button"
+                  data-tid="m4b_button"
                   disabled={products.length === 0}
                   onClick={toggleLive}
                   className={cn(
@@ -332,9 +377,49 @@ export default function ConsolePage() {
                 >
                   {onAir ? "Encerrar prévia" : "Iniciar LIVE"}
                 </button>
-                <span className="grid size-8 place-items-center rounded-md bg-white text-neutral-900">
-                  <ChevronDown size={14} />
-                </span>
+                <div className="relative">
+                  <button
+                    type="button"
+                    aria-label="Câmera e microfone"
+                    aria-expanded={devOpen}
+                    onClick={() => {
+                      setDevOpen((o) => !o);
+                      void loadDevices();
+                    }}
+                    className="grid size-8 place-items-center rounded-md bg-white text-neutral-900 cursor-pointer"
+                  >
+                    <ChevronDown size={14} className={cn("transition-transform", devOpen && "rotate-180")} />
+                  </button>
+                  {devOpen && (
+                    <div className="absolute right-0 top-10 z-30 w-72 space-y-3 rounded-lg bg-white p-3 text-left text-xs text-neutral-900 shadow-xl">
+                      {(["cam", "mic"] as const).map((k) => {
+                        const kind = k === "cam" ? "videoinput" : "audioinput";
+                        const list = devices.filter((d) => d.kind === kind);
+                        const value = k === "cam" ? camId : micId;
+                        return (
+                          <label key={k} className="block space-y-1">
+                            <span className="font-semibold">{k === "cam" ? "Câmera" : "Microfone"}</span>
+                            <select
+                              value={value}
+                              onChange={(e) => void changeDevice(k, e.target.value)}
+                              className="h-8 w-full rounded-md border border-neutral-300 bg-white px-2 cursor-pointer"
+                            >
+                              <option value="">Padrão do navegador</option>
+                              {list.map((d, i) => (
+                                <option key={d.deviceId || i} value={d.deviceId}>
+                                  {d.label || `${k === "cam" ? "Câmera" : "Microfone"} ${i + 1}`}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        );
+                      })}
+                      <p className="text-[11px] text-neutral-500">
+                        Com a extensão MediaFlowMZ Live, escolha “MediaFlowMZ Live (vídeo)” e “MediaFlowMZ Live (áudio)”.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
