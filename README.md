@@ -10,7 +10,7 @@ Escopo completo, fases e estimativas: veja o documento de escopo do projeto.
 - **Supabase** — Postgres com RLS, autenticação (e-mail e senha)
 - **E-mail plugável** — `src/lib/email.ts` (adaptador Resend): Radar semanal, confirmação e suporte
 - **Tailwind CSS 4**
-- **IA plugável** — `src/lib/ai` (adaptadores Anthropic e OpenAI)
+- **IA plugável** — `src/lib/ai` (adaptadores Groq — padrão —, Anthropic e OpenAI)
 - **Pagamento plugável** — `src/lib/payments` (adaptador Mercado Pago)
 - **Extensão Chrome MV3** — `extension/`
 - **Web Push** — alertas de queda da live no celular
@@ -42,7 +42,7 @@ O pagamento usa os links de checkout da Applyfy (`src/lib/checkout-links.ts`):
 | Landing e checkout do site (valor cheio) | `KXSWOMU` — R$ 594 | `POL2VBI` — R$ 340 |
 | Convites Acesso Creator / Indique (`/convite/...`) | `UCYM6OR` — R$ 297 | `95RF27C` — R$ 170 |
 
-O formulário de `/checkout/vitalicio` leva para o link da Applyfy com o e-mail. Para liberar o acesso automaticamente, cadastre o postback de vendas na Applyfy apontando para `https://SEU-DOMINIO/api/webhooks/payment?token=APPLYFY_WEBHOOK_TOKEN`. O formato do postback ainda precisa ser confirmado: o adaptador (`src/lib/payments/applyfy.ts`) registra no log cada postback recebido para ajustar o mapeamento.
+O formulário de `/checkout/vitalicio` leva para o link da Applyfy com o e-mail. Para liberar o acesso automaticamente, cadastre o postback de vendas na Applyfy apontando para `https://SEU-DOMINIO/api/webhooks/payment` e coloque o token do webhook gerado pela Applyfy em `APPLYFY_WEBHOOK_TOKEN` (na Vercel). O site aceita o token no endereço (`?token=`), nos cabeçalhos `x-webhook-token`, `x-applyfy-token`, `x-token` ou `Authorization: Bearer`, ou no campo `token` do corpo, e registra no log onde ele veio; se a Applyfy não enviar o token sozinha, use o endereço com `?token=`. O formato do postback ainda precisa ser confirmado: o adaptador (`src/lib/payments/applyfy.ts`) registra no log cada postback recebido para ajustar o mapeamento.
 
 ### Mercado Pago (alternativo)
 
@@ -78,7 +78,7 @@ O botão Suporte do painel grava o chamado em `support_tickets` e envia um e-mai
 
 ### Trocar de provedor
 
-- **IA:** `AI_PROVIDER=anthropic|openai`. Novo provedor: implemente `AIProvider` em `src/lib/ai/` e registre em `index.ts`.
+- **IA:** padrão Groq (`GROQ_API_KEY`; modelo `GROQ_MODEL`, padrão `llama-3.3-70b-versatile`; transcrição do Raio-X com `whisper-large-v3-turbo`). `AI_PROVIDER=anthropic|openai` e `TRANSCRIPTION_PROVIDER=openai` trocam de provedor. Novo provedor: implemente `AIProvider` em `src/lib/ai/` e registre em `index.ts`; provedores com a API da OpenAI usam `OpenAICompatibleProvider`.
 - **Pagamento:** implemente `PaymentProvider` em `src/lib/payments/` (ex.: Asaas, Stripe) e registre em `index.ts`. O resto do sistema não muda.
 
 ## Estrutura

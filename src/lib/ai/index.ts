@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import { AnthropicProvider } from "./anthropic";
+import { GroqProvider } from "./groq";
 import { OpenAIProvider } from "./openai";
 import { AIError, type AIProvider, type GenerateOptions } from "./types";
 
@@ -8,17 +9,19 @@ export { AIError } from "./types";
 // Registro de adaptadores. Para um novo provedor, implemente AIProvider e adicione aqui.
 const registry: Record<string, () => AIProvider> = {
   anthropic: () => new AnthropicProvider(),
+  groq: () => new GroqProvider(),
   openai: () => new OpenAIProvider(),
 };
 
-export function getAI(name = process.env.AI_PROVIDER ?? "anthropic"): AIProvider {
+// Padrão: Groq (GROQ_API_KEY). AI_PROVIDER troca para anthropic ou openai.
+export function getAI(name = process.env.AI_PROVIDER || "groq"): AIProvider {
   const make = registry[name];
   if (!make) throw new AIError(`Provedor de IA desconhecido: ${name}`);
   return make();
 }
 
 export function getTranscriber(): AIProvider {
-  const ai = getAI(process.env.TRANSCRIPTION_PROVIDER ?? "openai");
+  const ai = getAI(process.env.TRANSCRIPTION_PROVIDER || "groq");
   if (!ai.transcribe) throw new AIError(`O provedor ${ai.name} não faz transcrição`);
   return ai;
 }
