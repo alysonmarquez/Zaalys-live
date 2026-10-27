@@ -638,3 +638,85 @@ export function QuettaDesktopSiteDemo() {
     />
   );
 }
+
+/** Instalação pelo .zip (enquanto a extensão não está na Chrome Web Store): descompactar, ligar o modo do
+ *  desenvolvedor, "Carregar sem compactação" e escolher a pasta. */
+export function ZipInstallDemo() {
+  const header = (dev: boolean, hl: boolean) => (
+    <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-2">
+      <p className="text-[12px] font-semibold">Extensões</p>
+      <span className="flex items-center gap-1.5 text-[9px] text-neutral-600">
+        Modo do desenvolvedor
+        <span className={`relative h-3 w-6 rounded-full ${dev ? "bg-[#1a73e8]" : "bg-neutral-300"} ${hl && !dev ? "ring-2 ring-[#ade74e]" : ""}`}>
+          <span className={`absolute top-0.5 size-2 rounded-full bg-white ${dev ? "right-0.5" : "left-0.5"}`} />
+        </span>
+      </span>
+    </div>
+  );
+  const devBar = (hl: boolean) => (
+    <div className="flex gap-1.5 px-3 py-2">
+      <span className={`rounded border border-neutral-300 px-2 py-1 text-[8.5px] font-medium text-[#1a73e8] ${hl ? "bg-[#ade74e]/30 ring-2 ring-[#ade74e]" : ""}`}>
+        Carregar sem compactação
+      </span>
+      <span className="rounded border border-neutral-300 px-2 py-1 text-[8.5px] text-neutral-400">Compactar extensão</span>
+    </div>
+  );
+  return (
+    <Browser tab="Extensões" url="chrome://extensions">
+      {/* 4 passos: ciclo mais longo para dar tempo de ler cada um */}
+      <style>{".zl-slow, .zl-slow * { animation-duration: 16s !important; }"}</style>
+      <div className="zl-slow h-full">
+      <Frames
+        frames={[
+          <div key="zip" className="p-3">
+            <p className="text-[11px] font-semibold">1. Descompacte o arquivo baixado</p>
+            <div className="mt-3 flex items-center gap-2 rounded-md border border-neutral-200 p-2">
+              <span className="grid size-7 place-items-center rounded bg-amber-100 text-[12px]">🗜</span>
+              <div className="flex-1">
+                <p className="text-[10px] font-semibold">mediaflowmz-live.zip</p>
+                <p className="text-[8px] text-neutral-500">Downloads</p>
+              </div>
+              <span className="rounded bg-[#ade74e]/40 px-2 py-1 text-[8.5px] font-semibold ring-2 ring-[#ade74e]">Extrair tudo</span>
+            </div>
+            <div className="mt-2 flex items-center gap-2 rounded-md border border-dashed border-neutral-300 p-2 text-[9px] text-neutral-600">
+              📁 mediaflowmz-live <span className="ml-auto text-[#00a19c]">pasta pronta ✓</span>
+            </div>
+          </div>,
+          <div key="dev">
+            {header(false, true)}
+            <p className="px-3 pt-3 text-[11px] font-semibold">2. Ligue o Modo do desenvolvedor</p>
+            <p className="px-3 text-[9px] text-neutral-500">É a chave no canto superior direito.</p>
+          </div>,
+          <div key="load">
+            {header(true, false)}
+            {devBar(true)}
+            <p className="px-3 pt-1 text-[11px] font-semibold">3. Clique em “Carregar sem compactação”</p>
+            <div className="absolute right-4 top-16 w-[170px] rounded-lg border border-neutral-200 bg-white p-2.5 shadow-xl">
+              <p className="text-[9.5px] font-semibold">Selecionar pasta</p>
+              <p className="mt-1 rounded bg-[#1a73e8]/10 px-1.5 py-1 text-[9px]">📁 mediaflowmz-live</p>
+              <div className="mt-2 flex justify-end">
+                <span className="rounded bg-[#1a73e8] px-2 py-0.5 text-[8.5px] font-semibold text-white">Selecionar pasta</span>
+              </div>
+            </div>
+          </div>,
+          <div key="ok">
+            {header(true, false)}
+            {devBar(false)}
+            <div className="mx-3 flex items-start gap-2 rounded-md border border-neutral-200 p-2">
+              <Z className="size-7 text-[11px]" />
+              <div className="flex-1">
+                <p className="text-[10px] font-semibold">MediaFlowMZ Live <span className="font-normal text-neutral-500">3.17.0</span></p>
+                <p className="text-[8px] text-neutral-500">Live automática e painel no TikTok Shop</p>
+              </div>
+              <span className="relative h-3 w-6 rounded-full bg-[#1a73e8]">
+                <span className="absolute right-0.5 top-0.5 size-2 rounded-full bg-white" />
+              </span>
+            </div>
+            <p className="px-3 pt-2 text-[11px] font-semibold">4. Pronto! Fixe a extensão pelo ícone 🧩</p>
+          </div>,
+        ]}
+      />
+      </div>
+    </Browser>
+  );
+}

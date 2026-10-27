@@ -75,7 +75,7 @@ export default function TrendAiPage() {
   }
 
   const stepper = (
-    <ol className="flex items-center gap-3 rounded-full border border-border bg-card/70 p-1.5 text-xs">
+    <ol className="flex max-w-full items-center gap-1 rounded-full border border-border bg-card/70 p-1.5 text-xs sm:gap-3">
       {["Personagem", "Tom & roteiro", "Prompt + download"].map((label, i) => {
         const n = i + 1;
         const active = step === n;
@@ -96,7 +96,8 @@ export default function TrendAiPage() {
               >
                 {done ? "✓" : n}
               </span>
-              {label}
+              {/* No celular só a etapa atual mostra o nome (as três não cabem numa linha). */}
+              <span className={cn("whitespace-nowrap", !active && "hidden sm:inline")}>{label}</span>
             </span>
           </li>
         );

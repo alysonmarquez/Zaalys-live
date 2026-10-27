@@ -14,6 +14,7 @@ import { LivePerformance } from "./live-performance";
 import { DesempenhoEditor } from "@/components/desempenho-editor";
 import {
   ChromeStoreDemo,
+  ZipInstallDemo,
   ConnectDemo,
   DownloadCrxDemo,
   IphoneReadyDemo,
@@ -655,7 +656,15 @@ export default function LivePage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   {device === "desktop" ? (
                     <>
-                      Na Chrome Web Store, clique em <b className="text-foreground">Usar no Chrome</b> e depois em <b className="text-foreground">Adicionar extensão</b>. Ela se atualiza sozinha.
+                      {CHROME_STORE_URL ? (
+                        <>
+                          Na Chrome Web Store, clique em <b className="text-foreground">Usar no Chrome</b> e depois em <b className="text-foreground">Adicionar extensão</b>. Ela se atualiza sozinha.
+                        </>
+                      ) : (
+                        <>
+                          Baixe o arquivo da extensão e carregue no Chrome em <b className="text-foreground">chrome://extensions</b>, com o Modo do desenvolvedor ligado.
+                        </>
+                      )}
                     </>
                   ) : (
                     `No ${dev.browser}, abra a página da extensão MediaFlowMZ Live e toque em Adicionar.`
@@ -718,51 +727,23 @@ export default function LivePage() {
               </>
             )}
 
-            {step.key === "ext" && (
+            {step.key === "ext" && (CHROME_STORE_URL ? (
               <>
                 <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                   Funciona no Google Chrome, no computador.{" "}
                   <a href="https://www.google.com/chrome/" target="_blank" rel="noreferrer" className="font-semibold text-foreground underline underline-offset-2">
                     Baixar o Chrome
-                  </a>{" "}
-                  ·{" "}
-                  <a href="/downloads/mediaflowmz-live.zip" download className="underline underline-offset-2">
+                  </a>
+                  {" · "}
+                  <a href={ZIP_URL} download className="underline underline-offset-2">
                     Sem acesso à loja? Baixe o .zip
-                  </a>{" "}
-                  e carregue a pasta em
-                  <button
-                    type="button"
-                    onClick={() => navigator.clipboard?.writeText("chrome://extensions").catch(() => {})}
-                    className="rounded-md bg-muted px-2 py-1 font-mono text-[11px] text-foreground cursor-pointer"
-                    title="Copiar"
-                  >
-                    chrome://extensions ⧉
-                  </button>
-                  , com o Modo do desenvolvedor ligado.
+                  </a>
                 </p>
-                <details className="group rounded-2xl bg-muted/40 p-4">
-                  <summary className="flex cursor-pointer list-none items-center justify-between">
-                    <span>
-                      <span className="block text-sm font-semibold">Instalou pelo .zip? Troque pela Chrome Web Store</span>
-                      <span className="text-xs text-muted-foreground">Versão atual: 3.17.0. Pela loja, a extensão se atualiza sozinha, sempre fora da live.</span>
-                    </span>
-                    <span className="text-muted-foreground transition-transform group-open:rotate-180">⌄</span>
-                  </summary>
-                  <ol className="mt-4 space-y-3 text-sm">
-                    <li className="flex gap-3"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">1</span>Na Chrome Web Store, clique em Usar no Chrome.</li>
-                    <li className="flex gap-3"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">2</span>Em Configurações, desconecte o computador da cópia antiga: a nova ocupa a vaga dela.</li>
-                    <li className="flex gap-3"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">3</span>Abra chrome://extensions e remova a MediaFlowMZ Live que tem o botão ↻ (recarregar). É a do .zip.</li>
-                    <li className="flex gap-3"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">4</span>Recarregue a página do TikTok Shop (F5) e cole sua chave no painel. Seus clipes continuam lá.</li>
-                  </ol>
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Troque com a live encerrada: remover a cópia antiga derruba a live automática. Com as duas instaladas, o painel avisa e não abre live até você remover uma.
-                  </p>
-                </details>
                 <a
-                  href="https://chromewebstore.google.com/search/mediaflowmz%20live"
+                  href={CHROME_STORE_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold hover:bg-muted"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
                 >
                   ↗ Abrir na Chrome Web Store
                 </a>
@@ -770,7 +751,52 @@ export default function LivePage() {
                   <ChromeStoreDemo />
                 </HowTo>
               </>
-            )}
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Funciona no Google Chrome, no computador (
+                  <a href="https://www.google.com/chrome/" target="_blank" rel="noreferrer" className="font-semibold text-foreground underline underline-offset-2">
+                    baixar o Chrome
+                  </a>
+                  ). A instalação leva 1 minuto:
+                </p>
+                <ol className="space-y-3 text-sm">
+                  <li className="flex gap-3">
+                    <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">1</span>
+                    <span>
+                      Baixe a extensão e <strong>descompacte</strong> o arquivo (no Windows: botão direito → Extrair tudo). Guarde a pasta: o Chrome usa ela.
+                    </span>
+                  </li>
+                  <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">2</span>
+                    <span className="flex flex-wrap items-center gap-1">
+                      Abra
+                      <CopyChip text="chrome://extensions" />
+                      numa aba nova e ligue o <strong>Modo do desenvolvedor</strong> (canto superior direito).
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">3</span>
+                    <span>
+                      Clique em <strong>Carregar sem compactação</strong> e escolha a pasta <strong>mediaflowmz-live</strong>.
+                    </span>
+                  </li>
+                </ol>
+                <a
+                  href={ZIP_URL}
+                  download
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                >
+                  ⬇ Baixar extensão (.zip)
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  Versão atual: 3.17.0. Para atualizar, baixe o .zip de novo, substitua a pasta e clique em ↻ na extensão, em chrome://extensions.
+                </p>
+                <HowTo>
+                  <ZipInstallDemo />
+                </HowTo>
+              </>
+            ))}
 
             {step.key === "key" && <KeyBox demo={demo} />}
 
@@ -1025,6 +1051,33 @@ export default function LivePage() {
       </div>
       {extras}
     </div>
+  );
+}
+
+// Extensão: enquanto não está na Chrome Web Store, a instalação é pelo .zip (modo do desenvolvedor).
+// Publicada, basta definir NEXT_PUBLIC_CHROME_STORE_URL com o link da loja e o passo vira "Abrir na Chrome Web Store".
+const CHROME_STORE_URL = process.env.NEXT_PUBLIC_CHROME_STORE_URL || "";
+const ZIP_URL = "/downloads/mediaflowmz-live.zip";
+
+function CopyChip({ text }: { text: string }) {
+  const [ok, setOk] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard
+          ?.writeText(text)
+          .then(() => {
+            setOk(true);
+            setTimeout(() => setOk(false), 1500);
+          })
+          .catch(() => {});
+      }}
+      className="rounded-md bg-muted px-2 py-1 font-mono text-[11px] text-foreground cursor-pointer"
+      title="Copiar"
+    >
+      {text} {ok ? "✓ copiado" : "⧉"}
+    </button>
   );
 }
 
