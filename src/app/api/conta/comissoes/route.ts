@@ -55,7 +55,7 @@ export async function GET() {
           s.status === "refunded"
             ? "Estornada"
             : s.split
-              ? "Via Applyfy"
+              ? "Na sua conta"
               : s.payout_status === "repassada"
                 ? "Repassada"
                 : requested.has(s.id)

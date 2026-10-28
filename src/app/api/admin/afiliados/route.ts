@@ -132,12 +132,10 @@ export async function POST(req: Request) {
       );
       if (error) return fail(error);
     } else {
-      const { error } = await c.admin
-        .from("subscriptions")
-        .update({ status: "canceled", updated_at: new Date().toISOString() })
-        .eq("gateway", "manual")
-        .eq("gateway_ref", manualRef(userId));
-      if (error) return fail(error);
+      // Toda liberação sem pagamento da conta (a desta aba e o "Dar vitalício" / "+30 dias" da aba Usuários).
+      const cancel = () =>
+        c.admin.from("subscriptions").update({ status: "canceled", updated_at: new Date().toISOString() }).eq("gateway", "manual").eq("status", "active");
+      for (const r of [await cancel().eq("user_id", userId), await cancel().eq("email", profile.email.toLowerCase())]) if (r.error) return fail(r.error);
     }
     return json({ ok: true });
   } catch (err) {

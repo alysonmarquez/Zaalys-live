@@ -16,7 +16,7 @@ type Profile = {
   created_at: string;
   ref_code: string | null;
   commission_pct: number | null;
-  applyfy_email?: string | null;
+  applyfy_account_id?: string | null;
   pix_type?: string | null;
   pix_key?: string | null;
 };
@@ -28,11 +28,11 @@ export async function GET() {
     const [profiles, subs, licenses, sales] = await Promise.all([
       c.db
         .from("profiles")
-        .select("id, email, name, created_at, ref_code, commission_pct, applyfy_email, pix_type, pix_key")
+        .select("id, email, name, created_at, ref_code, commission_pct, applyfy_account_id, pix_type, pix_key")
         .order("created_at", { ascending: false })
         .limit(5000)
         .then((r) =>
-          // Sem a migração de saques, as colunas de cadastro do afiliado não existem ainda.
+          // Sem as migrações de saques e da conta Applyfy, as colunas de cadastro do afiliado não existem ainda.
           r.error ? c.db.from("profiles").select("id, email, name, created_at, ref_code, commission_pct").order("created_at", { ascending: false }).limit(5000) : r,
         ),
       c.db.from("subscriptions").select("*").limit(20000),
@@ -83,7 +83,7 @@ export async function GET() {
         conta: true,
         codigo: p.ref_code,
         comissaoPct: p.commission_pct == null ? null : Number(p.commission_pct),
-        applyfy: p.applyfy_email ?? null,
+        applyfy: p.applyfy_account_id ?? null,
         pix: p.pix_key ? `${p.pix_type ?? "chave"}: ${p.pix_key}` : null,
         aparelho: l?.device_id ? { nome: l.device_label || "Aparelho conectado", desde: l.activated_at } : null,
         afiliado: aff.get(p.id) ?? { vendas: 0, aRepassarCents: 0 },

@@ -179,7 +179,7 @@ const FILTROS: { v: Filtro; l: string }[] = [
   { v: "todos", l: "Todos" },
   { v: "vitalicio", l: "Vitalício" },
   { v: "mensal", l: "Mensal" },
-  { v: "manual", l: "Liberado pelo admin" },
+  { v: "manual", l: "Aprovados por você" },
   { v: "sem", l: "Sem acesso" },
   { v: "semconta", l: "Pagou sem conta" },
 ];
@@ -189,8 +189,8 @@ const STATUS_PT: Record<string, string> = { active: "ativo", pending: "pendente"
 
 function selo(u: Usuario) {
   if (u.acesso === "pago") return { l: `${PLANO[u.plano!]} · pago`, cls: "bg-primary/15 text-primary" };
-  if (u.acesso === "manual") return { l: `${PLANO[u.plano!]} · admin`, cls: "bg-sky-500/15 text-sky-600 dark:text-sky-400" };
-  if (u.acesso === "encerrado") return { l: "Encerrado", cls: "bg-red-500/12 text-red-600 dark:text-red-400" };
+  if (u.acesso === "manual") return { l: `${PLANO[u.plano!]} · aprovado por você`, cls: "bg-sky-500/15 text-sky-600 dark:text-sky-400" };
+  if (u.acesso === "encerrado") return { l: "Sem acesso (revogado ou cancelado)", cls: "bg-red-500/12 text-red-600 dark:text-red-400" };
   return { l: "Sem acesso", cls: "bg-muted text-muted-foreground" };
 }
 
@@ -270,6 +270,11 @@ function Usuarios() {
       <ConcederAcesso salvando={salvando === "novo"} onSubmit={(body, ok) => agir("novo", body, ok)} />
 
       <section className={CARD}>
+        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
+          “Aprovado por você” é quem entrou sem pagar, liberado por você. Isso não dá acesso de admin: o painel de admin e a
+          porcentagem dos afiliados só aparecem na sua conta. Ao revogar, a pessoa fica sem acesso e o histórico abaixo de cada
+          conta continua mostrando o que já aconteceu.
+        </p>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="-mx-1 flex max-w-full gap-1 overflow-x-auto px-1">
             {FILTROS.map((f) => (
@@ -337,7 +342,7 @@ function Usuarios() {
                       </p>
                       <p>
                         <span className="block text-muted-foreground">Conta Applyfy (split do vitalício)</span>
-                        {u.applyfy ?? "Não cadastrada"}
+                        <span className="break-all font-mono">{u.applyfy ?? "Não vinculada"}</span>
                       </p>
                       <p>
                         <span className="block text-muted-foreground">Chave Pix (saques)</span>
@@ -371,12 +376,12 @@ function Usuarios() {
                           type="button"
                           disabled={busy}
                           onClick={() => {
-                            if (confirm(`Tirar o acesso liberado pelo admin de ${u.email}? Pagamentos continuam valendo.`))
-                              agir(u.id, { action: "revogar", email: u.email }, `${u.email}: acesso do admin revogado.`);
+                            if (confirm(`Tirar o acesso que você liberou para ${u.email}? Pagamentos continuam valendo.`))
+                              agir(u.id, { action: "revogar", email: u.email }, `${u.email}: acesso revogado.`);
                           }}
                           className={cn(BTN, "border border-red-500/40 text-red-600 hover:bg-red-500/10 dark:text-red-400")}
                         >
-                          <ShieldOff size={14} /> Revogar acesso do admin
+                          <ShieldOff size={14} /> Revogar acesso
                         </button>
                       )}
                       {u.aparelho && u.conta && (
@@ -408,7 +413,7 @@ function Usuarios() {
                             <li key={i} className="flex flex-wrap gap-x-2 text-muted-foreground">
                               <span className="text-foreground">{PLANO[h.plano as "lifetime" | "monthly"]}</span>
                               <span>{STATUS_PT[h.status] ?? h.status}</span>
-                              <span>· {h.origem === "manual" ? "admin" : h.origem}</span>
+                              <span>· {h.origem === "manual" ? "aprovado por você" : h.origem}</span>
                               {h.expira && <span>· até {fmtDate(h.expira)}</span>}
                               <span>· atualizado {fmtDate(h.atualizado)}</span>
                             </li>

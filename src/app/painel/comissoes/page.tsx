@@ -27,7 +27,7 @@ const EMPTY = {
 
 const TONE: Record<string, string> = {
   "A receber": "bg-amber-500/12 text-amber-600 dark:text-amber-400",
-  "Via Applyfy": "bg-sky-500/12 text-sky-600 dark:text-sky-400",
+  "Na sua conta": "bg-primary/15 text-primary",
   "Saque pedido": "bg-violet-500/12 text-violet-600 dark:text-violet-400",
   Repassada: "bg-primary/15 text-primary",
   Estornada: "bg-red-500/12 text-red-600 dark:text-red-400",
@@ -239,9 +239,9 @@ function ComissoesContent() {
   const r = data.resumo as typeof data.resumo & { saquePedidoCents?: number };
   const disponivel = Math.max(0, r.aReceberCents - r.estornosCents);
   const cards = [
-    ["A receber do admin", formatBRL(disponivel), r.saquePedidoCents ? `Mais ${formatBRL(r.saquePedidoCents)} em saque pedido` : `Menos ${formatBRL(r.estornosCents)} de estornos`],
-    ["Recebido via Applyfy", formatBRL(r.recebidoApplyfyCents), "Vitalício, direto na sua conta"],
-    ["Já repassado", formatBRL(r.repassadoCents), "Saques pagos no Pix"],
+    ["Recebido via Applyfy", formatBRL(r.recebidoApplyfyCents), "Já na sua conta"],
+    ["A receber do admin", formatBRL(disponivel), r.saquePedidoCents ? `Mais ${formatBRL(r.saquePedidoCents)} em saque pedido` : "Renovações mensais"],
+    ["Já repassado", formatBRL(r.repassadoCents), "Pago pelo admin no Pix"],
     ["Vendas", String(r.vendas), `Comissão de ${pctLabel}%`],
   ];
 
@@ -261,8 +261,8 @@ function ComissoesContent() {
       <header>
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Saque de comissões</h1>
         <p className="mt-1 max-w-2xl text-muted-foreground">
-          Vendas do vitalício pelo seu link caem direto na sua conta Applyfy. As do mensal ficam em “A receber do admin” e
-          você pede o saque por Pix.
+          Vendas do plano vitalício são divididas pela Applyfy no momento do pagamento — sua parte cai direto na sua conta, e o
+          saque você faz por lá. Renovações do plano mensal são repassadas pelo administrador via Pix.
         </p>
       </header>
 
@@ -279,14 +279,11 @@ function ComissoesContent() {
       <section className={CARD}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-display text-lg font-bold tracking-tight">
-              {applyfy ? "Conta Applyfy vinculada" : "Vincular sua conta Applyfy"}
-            </h2>
+            <h2 className="font-display text-lg font-bold tracking-tight">{applyfy ? "Sua conta Applyfy" : "Vincular sua conta Applyfy"}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
               {applyfy ? (
                 <>
-                  ID da conta <span className="break-all font-mono text-foreground">{applyfy.accountId}</span>. O vitalício cai direto nela e a
-                  Applyfy libera em cerca de 2 dias.
+                  Vinculada · ID <span className="break-all font-mono text-foreground">{applyfy.accountId}</span>
                 </>
               ) : (
                 "Informe o ID da conta, o Client ID e o Client Secret da sua Applyfy para receber o vitalício direto por lá. Sem isso, ele fica a receber do admin."
@@ -301,7 +298,7 @@ function ComissoesContent() {
               applyfy ? "border border-border bg-background hover:bg-muted" : "bg-primary text-primary-foreground",
             )}
           >
-            {applyfy ? "Editar dados da API" : "Cadastrar dados da API"}
+            {applyfy ? "Editar dados" : "Cadastrar dados da API"}
           </button>
         </div>
       </section>

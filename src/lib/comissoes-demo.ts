@@ -2,7 +2,7 @@
 // Nomes e e-mails são inventados — não há dados de clientes reais aqui.
 
 export type Plano = "Vitalício" | "Mensal";
-export type ComissaoRow = { date: string; plano: Plano; vendaCents: number; comissaoCents: number; status: "A receber" | "Repassada" | "Estornada" | "Via Applyfy" | "Saque pedido" };
+export type ComissaoRow = { date: string; plano: Plano; vendaCents: number; comissaoCents: number; status: "A receber" | "Repassada" | "Estornada" | "Na sua conta" | "Saque pedido" };
 export type TransacaoRow = { date: string; comprador: string; plano: Plano; forma: "PIX" | "CREDIT_CARD" | "CARD"; valorCents: number; situacao: "Pago" | "Aguardando pagamento" | "Recusado / expirado" | "Reembolsado" };
 export type IndicadoRow = { date: string; nome: string; email: string; plano: Plano | null; situacao: "Ativo" | "Não pagou" | "Bloqueado" };
 
@@ -81,13 +81,13 @@ function build() {
     // ativos: vitalício sai no split da Applyfy; mensal fica a receber (recentes) ou repassado (antigos)
     if (r() < 0.12) transacoes.push({ date, comprador: p.email, plano, forma: "PIX", valorCents: venda, situacao: "Aguardando pagamento" });
     transacoes.push({ date, comprador: p.email, plano, forma, valorCents: venda, situacao: "Pago" });
-    comissoes.push({ date, plano, vendaCents: venda, comissaoCents: comissao, status: plano === "Vitalício" ? "Via Applyfy" : day <= WINDOW ? "A receber" : "Repassada" });
+    comissoes.push({ date, plano, vendaCents: venda, comissaoCents: comissao, status: plano === "Vitalício" ? "Na sua conta" : day <= WINDOW ? "A receber" : "Repassada" });
   }
 
   const sum = (rows: ComissaoRow[]) => rows.reduce((a, c) => a + c.comissaoCents, 0);
   const aReceber = comissoes.filter((c) => c.status === "A receber");
   const repassadas = comissoes.filter((c) => c.status === "Repassada");
-  const viaApplyfy = comissoes.filter((c) => c.status === "Via Applyfy");
+  const viaApplyfy = comissoes.filter((c) => c.status === "Na sua conta");
 
   return {
     comissoes,
