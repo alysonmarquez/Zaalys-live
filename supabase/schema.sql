@@ -376,6 +376,11 @@ alter table public.live_preps add column if not exists comment_texts jsonb;
 alter table public.profiles add column if not exists applyfy_email text;
 alter table public.profiles add column if not exists pix_type text check (pix_type is null or pix_type in ('cpf','cnpj','email','telefone','aleatoria'));
 alter table public.profiles add column if not exists pix_key text;
+-- Conta Applyfy vinculada pelo afiliado (migration-2026-10-applyfy-conta.sql)
+alter table public.profiles add column if not exists applyfy_account_id text;
+alter table public.profiles add column if not exists applyfy_client_id text;
+alter table public.profiles add column if not exists applyfy_client_secret_enc text;
+alter table public.profiles add column if not exists applyfy_linked_at timestamptz;
 create table if not exists public.payout_requests (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,

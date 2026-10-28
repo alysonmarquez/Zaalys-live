@@ -18,10 +18,8 @@ type Afiliado = {
   situacao: Situacao;
   vendas?: number;
   aReceberCents?: number;
-  /** Conta Applyfy cadastrada pelo afiliado (para o split do vitalício). */
-  applyfyEmail?: string | null;
-  /** O admin já incluiu essa conta no split dentro da Applyfy. */
-  splitConfirmed?: boolean;
+  /** ID da conta Applyfy vinculada pelo afiliado: o vitalício cai direto nela pelo split. */
+  applyfyAccountId?: string | null;
 };
 const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -190,6 +188,15 @@ export function AfiliadosAdmin() {
                     <span className="font-semibold tabular-nums">{brl(a.aReceberCents ?? 0)}</span> a repassar
                   </p>
                 )}
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {a.applyfyAccountId ? (
+                    <>
+                      Applyfy vinculada · ID <span className="font-mono text-foreground">{a.applyfyAccountId}</span>
+                    </>
+                  ) : (
+                    "Applyfy não vinculada: o vitalício também fica a repassar"
+                  )}
+                </p>
               </div>
               <label className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Comissão do afiliado">
                 Comissão

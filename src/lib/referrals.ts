@@ -130,11 +130,11 @@ export async function attributeSale(admin: SupabaseClient, event: PaymentEvent) 
   }
   if (!ref) return null;
 
-  // applyfy_email e applyfy_split_confirmed podem não existir em bancos sem as migrações de saques e split:
-  // tenta do mais completo ao mais simples (sem a confirmação, vale "não confirmado").
-  type Affiliate = { id: string; email: string; commission_pct: number | null; applyfy_email?: string | null; applyfy_split_confirmed?: boolean | null };
+  // applyfy_account_id pode não existir em bancos sem a migração da conta Applyfy: tenta do mais completo ao
+  // mais simples (sem a coluna, vale "não vinculada").
+  type Affiliate = { id: string; email: string; commission_pct: number | null; applyfy_account_id?: string | null };
   let affiliate: Affiliate | null = null;
-  for (const cols of ["id, email, commission_pct, applyfy_email, applyfy_split_confirmed", "id, email, commission_pct, applyfy_email", "id, email, commission_pct"]) {
+  for (const cols of ["id, email, commission_pct, applyfy_account_id", "id, email, commission_pct"]) {
     const { data, error } = await admin.from("profiles").select(cols).eq("ref_code", ref).maybeSingle();
     if (!error) {
       affiliate = data as unknown as Affiliate | null;
@@ -163,10 +163,9 @@ export async function attributeSale(admin: SupabaseClient, event: PaymentEvent) 
     status,
     updated_at: new Date().toISOString(),
   };
-  // Vitalício com o afiliado cadastrado na Applyfy E o split confirmado pelo admin (ela inclui o afiliado no split
-  // dentro da Applyfy): a comissão sai no split, direto para ele. Mensal (a Applyfy não divide recorrência), sem
-  // cadastro ou sem confirmação: entra no saldo de saque e o admin repassa.
-  const split = event.plan === "lifetime" && Boolean(affiliate.applyfy_email) && affiliate.applyfy_split_confirmed === true;
+  // Vitalício com a conta Applyfy vinculada no Saque de comissões: a comissão cai direto na conta dele pelo split
+  // (e a Applyfy libera em cerca de 2 dias). Mensal, ou sem conta vinculada: entra no saldo "A receber do admin".
+  const split = event.plan === "lifetime" && Boolean(affiliate.applyfy_account_id);
   // payout_status fica como está (o admin marca "repassada").
   let { error } = await admin.from("affiliate_sales").upsert({ ...row, split }, { onConflict: "gateway,gateway_ref" });
   if (error?.code === "PGRST204" || error?.code === "42703") ({ error } = await admin.from("affiliate_sales").upsert(row, { onConflict: "gateway,gateway_ref" }));
