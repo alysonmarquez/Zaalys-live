@@ -1,8 +1,15 @@
 import { redirect } from "next/navigation";
-import { requireAccess } from "@/lib/access";
+import type { Metadata } from "next";
+import { getAccess, requireAccess } from "@/lib/access";
+import { presentationMetadata } from "@/lib/presentation";
 import { StudioShell } from "./studio-shell";
 
 export const dynamic = "force-dynamic";
+
+// Conta de demonstração: favicon do TikTok Shop (apresentação).
+export async function generateMetadata(): Promise<Metadata> {
+  return presentationMetadata((await getAccess())?.showcase);
+}
 
 // Estúdio de LIVE: o console e o desempenho das transmissões, em tela própria (abre fora do painel).
 export default async function EstudioLayout({ children }: { children: React.ReactNode }) {

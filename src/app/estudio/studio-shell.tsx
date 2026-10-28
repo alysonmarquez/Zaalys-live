@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Brand, cn } from "@/components/brand";
 import { useLiveSimEngine } from "@/lib/estudio-live-sim";
-import { PRESENTATION_LOGO, ShowcaseProvider, usePresentationFavicon } from "@/lib/showcase";
+import { PRESENTATION_LOGO, ShowcaseProvider } from "@/lib/showcase";
 import { useLiveSettingsSync } from "@/lib/live-settings-sync";
 
 // Logo personalizado no topo do Estúdio (ex.: apresentações), definido por máquina em .env.local.
@@ -120,8 +120,7 @@ export function StudioShell({ handle, showcase, children }: { handle: string; sh
   const [collapsed, setCollapsed] = useState(false);
   // Pedidos da LIVE simulada caem enquanto o Estúdio estiver aberto (só na conta de demonstração).
   useLiveSimEngine(showcase);
-  // Apresentação: conta de demonstração com logo e favicon do TikTok Shop.
-  usePresentationFavicon(showcase);
+  // Apresentação: conta de demonstração com o logo do TikTok Shop (o favicon vem da metadata do layout).
   const logo = STUDIO_LOGO || (showcase ? PRESENTATION_LOGO : null);
   // Números editados da LIVE valem em qualquer aparelho.
   useLiveSettingsSync();
