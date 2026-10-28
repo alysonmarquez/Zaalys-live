@@ -130,9 +130,17 @@ export async function attributeSale(admin: SupabaseClient, event: PaymentEvent) 
   }
   if (!ref) return null;
 
-  // applyfy_email pode não existir em bancos sem a migração de saques: tenta com e sem.
-  let { data: affiliate } = await admin.from("profiles").select("id, email, commission_pct, applyfy_email").eq("ref_code", ref).maybeSingle();
-  if (!affiliate) ({ data: affiliate } = await admin.from("profiles").select("id, email, commission_pct").eq("ref_code", ref).maybeSingle());
+  // applyfy_email e applyfy_split_confirmed podem não existir em bancos sem as migrações de saques e split:
+  // tenta do mais completo ao mais simples (sem a confirmação, vale "não confirmado").
+  type Affiliate = { id: string; email: string; commission_pct: number | null; applyfy_email?: string | null; applyfy_split_confirmed?: boolean | null };
+  let affiliate: Affiliate | null = null;
+  for (const cols of ["id, email, commission_pct, applyfy_email, applyfy_split_confirmed", "id, email, commission_pct, applyfy_email", "id, email, commission_pct"]) {
+    const { data, error } = await admin.from("profiles").select(cols).eq("ref_code", ref).maybeSingle();
+    if (!error) {
+      affiliate = data as unknown as Affiliate | null;
+      break;
+    }
+  }
   if (!affiliate) return null;
   // Quem compra pelo próprio link não ganha comissão.
   if (String(affiliate.email).toLowerCase() === event.email) return null;
@@ -155,9 +163,10 @@ export async function attributeSale(admin: SupabaseClient, event: PaymentEvent) 
     status,
     updated_at: new Date().toISOString(),
   };
-  // Vitalício com o afiliado cadastrado na Applyfy: a comissão sai no split, direto para ele.
-  // Mensal (a Applyfy não divide recorrência) ou sem cadastro: o admin repassa.
-  const split = event.plan === "lifetime" && Boolean((affiliate as { applyfy_email?: string | null }).applyfy_email);
+  // Vitalício com o afiliado cadastrado na Applyfy E o split confirmado pelo admin (ela inclui o afiliado no split
+  // dentro da Applyfy): a comissão sai no split, direto para ele. Mensal (a Applyfy não divide recorrência), sem
+  // cadastro ou sem confirmação: entra no saldo de saque e o admin repassa.
+  const split = event.plan === "lifetime" && Boolean(affiliate.applyfy_email) && affiliate.applyfy_split_confirmed === true;
   // payout_status fica como está (o admin marca "repassada").
   let { error } = await admin.from("affiliate_sales").upsert({ ...row, split }, { onConflict: "gateway,gateway_ref" });
   if (error?.code === "PGRST204" || error?.code === "42703") ({ error } = await admin.from("affiliate_sales").upsert(row, { onConflict: "gateway,gateway_ref" }));

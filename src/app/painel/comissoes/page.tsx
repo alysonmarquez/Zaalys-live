@@ -77,6 +77,8 @@ function ComissoesContent() {
   const [applyfyOpen, setApplyfyOpen] = useState(false);
   const [applyfyEmail, setApplyfyEmail] = useState("");
   const [applyfySaved, setApplyfySaved] = useState(false);
+  // O admin já incluiu a conta Applyfy no split do vitalício, dentro da Applyfy.
+  const [splitConfirmed, setSplitConfirmed] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pixType, setPixType] = useState("cpf");
   const [pixKey, setPixKey] = useState("");
@@ -88,8 +90,9 @@ function ComissoesContent() {
   const loadCadastro = React.useCallback(() => {
     fetch("/api/conta/afiliado")
       .then((res) => (res.ok ? res.json() : null))
-      .then((d: { applyfyEmail: string | null; pixType: string | null; pixKey: string | null; saques: Saque[] } | null) => {
+      .then((d: { applyfyEmail: string | null; splitConfirmed?: boolean; pixType: string | null; pixKey: string | null; saques: Saque[] } | null) => {
         if (!d) return;
+        setSplitConfirmed(d.splitConfirmed === true);
         if (d.applyfyEmail) {
           setApplyfyEmail(d.applyfyEmail);
           setApplyfySaved(true);
@@ -175,9 +178,9 @@ function ComissoesContent() {
       <header>
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Saque de comissões</h1>
         <p className="mt-1 max-w-2xl text-muted-foreground">
-          Vitalício: a Applyfy divide o pagamento na hora (split) e sua parte cai direto na sua conta Applyfy, desde
-          que ela esteja cadastrada abaixo. Mensal: a Applyfy não divide pagamentos recorrentes, então a comissão fica
-          em “A receber do admin” e você pede o saque por Pix.
+          Vitalício: a Applyfy divide o pagamento na hora (split) e sua parte cai direto na sua conta Applyfy, depois
+          que você cadastra a conta abaixo e o admin confirma o split. Mensal (ou vitalício antes da confirmação): a
+          comissão fica em “A receber do admin” e você pede o saque por Pix.
         </p>
       </header>
 
@@ -196,9 +199,11 @@ function ComissoesContent() {
           <div>
             <h2 className="font-display text-lg font-bold tracking-tight">Sua conta Applyfy</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {applyfySaved
-                ? `Conta vinculada: ${applyfyEmail}. O admin inclui essa conta no split do vitalício na Applyfy.`
-                : "Cadastre o e-mail da sua conta Applyfy para receber o vitalício pelo split. Sem cadastro, a comissão do vitalício fica a receber do admin."}
+              {!applyfySaved
+                ? "Cadastre o e-mail da sua conta Applyfy para receber o vitalício pelo split. Sem cadastro, a comissão do vitalício fica a receber do admin."
+                : splitConfirmed
+                  ? `Conta vinculada: ${applyfyEmail}. Split confirmado: a comissão do vitalício cai direto na sua conta Applyfy.`
+                  : `Conta vinculada: ${applyfyEmail}. Aguardando o admin incluir essa conta no split da Applyfy; até lá, a comissão do vitalício entra no seu saldo de saque.`}
             </p>
           </div>
           <button
@@ -216,6 +221,8 @@ function ComissoesContent() {
               e.preventDefault();
               if (await salvar({ applyfyEmail: applyfyEmail.trim() }, "Conta Applyfy salva. Peça ao admin para incluir você no split do vitalício.")) {
                 setApplyfySaved(true);
+                // Relê do servidor: trocar a conta desfaz a confirmação do split; manter a mesma, não.
+                loadCadastro();
                 setApplyfyOpen(false);
               }
             }}

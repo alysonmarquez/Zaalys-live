@@ -20,11 +20,21 @@ export async function GET() {
   const c = await adminCtx();
   if (!c) return unauthorized();
   try {
-    type Row = { id: string; email: string; name: string | null; created_at: string; commission_pct?: number | null };
+    type Row = {
+      id: string;
+      email: string;
+      name: string | null;
+      created_at: string;
+      commission_pct?: number | null;
+      applyfy_email?: string | null;
+      applyfy_split_confirmed?: boolean | null;
+    };
     const list = (cols: string) =>
       c.admin.from("profiles").select(cols).order("created_at", { ascending: false }).limit(1000);
-    // Sem a migração de comissão, lista sem a porcentagem.
-    let { data, error } = await list("id, email, name, created_at, commission_pct");
+    // Sem as migrações de split, saques ou comissão, lista com o que existir.
+    let { data, error } = await list("id, email, name, created_at, commission_pct, applyfy_email, applyfy_split_confirmed");
+    if (error) ({ data, error } = await list("id, email, name, created_at, commission_pct, applyfy_email"));
+    if (error) ({ data, error } = await list("id, email, name, created_at, commission_pct"));
     if (error) ({ data, error } = await list("id, email, name, created_at"));
     if (error) return fail(error);
     const profiles = (data ?? []) as unknown as Row[];
@@ -61,6 +71,8 @@ export async function GET() {
           name: p.name,
           createdAt: p.created_at,
           commissionPct: p.commission_pct == null ? null : Number(p.commission_pct),
+          applyfyEmail: p.applyfy_email ?? null,
+          splitConfirmed: p.applyfy_split_confirmed === true,
           situacao: paid ? "pago" : approved ? "aprovado" : "pendente",
           vendas: totals.get(p.id)?.vendas ?? 0,
           aReceberCents: totals.get(p.id)?.aReceberCents ?? 0,
@@ -79,6 +91,8 @@ const Body = z.discriminatedUnion("action", [
   z.object({ userId: z.string().uuid(), action: z.literal("repassar") }),
   // null volta ao padrão
   z.object({ userId: z.string().uuid(), action: z.literal("comissao"), pct: z.number().min(0).max(100).nullable() }),
+  // Confirma (ou desfaz) que o afiliado já está no split do vitalício dentro da Applyfy.
+  z.object({ userId: z.string().uuid(), action: z.literal("split"), confirmed: z.boolean() }),
 ]);
 
 export async function POST(req: Request) {
@@ -89,6 +103,12 @@ export async function POST(req: Request) {
     const { userId, action } = body;
     const { data: profile } = await c.admin.from("profiles").select("email").eq("id", userId).maybeSingle();
     if (!profile) return json({ error: "Conta não encontrada" }, 404);
+
+    if (body.action === "split") {
+      const { error } = await c.admin.from("profiles").update({ applyfy_split_confirmed: body.confirmed }).eq("id", userId);
+      if (error) return json({ error: "Rode supabase/migration-2026-10-split.sql para confirmar o split." }, 409);
+      return json({ ok: true });
+    }
 
     if (body.action === "comissao") {
       const { error } = await c.admin.from("profiles").update({ commission_pct: body.pct }).eq("id", userId);

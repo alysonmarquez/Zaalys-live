@@ -196,6 +196,10 @@ a aba **Afiliados** (`/painel/afiliado?aba=afiliados`):
   **Revogar** cancela só essa assinatura (quem pagou continua com acesso).
 - **Comissão**: porcentagem de cada afiliado (`profiles.commission_pct`; vazio = 40%), mostrada no Saque de
   comissões dele. Precisa de `supabase/migration-2026-10-afiliados.sql`.
+- **Split confirmado na Applyfy**: aparece para quem cadastrou a conta Applyfy no Saque de comissões. Só depois de
+  a admin incluir essa conta no split do vitalício **dentro da Applyfy** e marcar a caixa, as vendas do vitalício
+  contam como pagas pelo split; antes disso a comissão entra no saldo de saque. Trocar a conta Applyfy desmarca.
+  Precisa de `supabase/migration-2026-10-split.sql`.
 
 ## O que ainda falta (próximas fases)
 
@@ -214,7 +218,8 @@ a aba **Afiliados** (`/painel/afiliado?aba=afiliados`):
    `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` o login não funciona em produção.
    `SHOWCASE_EMAILS` define as contas de demonstração e `ADMIN_EMAILS` quem aprova afiliados.
    Rode no SQL Editor do Supabase `supabase/migration-2026-10-live-settings.sql` (números editados entre aparelhos)
-   e `supabase/migration-2026-10-afiliados.sql` (comissão por afiliado).
+   e `supabase/migration-2026-10-afiliados.sql` (comissão por afiliado) e `supabase/migration-2026-10-split.sql`
+   (confirmação do split do vitalício).
 4. Em Settings → Functions, deixe a região das funções a mesma do Supabase (ex.: São Paulo, `gru1`): cada página do
    painel consulta o banco, e regiões distantes deixam tudo mais lento.
 3. Ajuste `NEXT_PUBLIC_APP_URL` para o domínio final e atualize o webhook no Mercado Pago.

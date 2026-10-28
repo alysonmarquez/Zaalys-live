@@ -12,6 +12,8 @@ create table public.profiles (
   live_settings jsonb,
   -- Porcentagem de comissão do afiliado (nulo = 40%), definida no Painel do Afiliado
   commission_pct numeric(5,2) check (commission_pct is null or (commission_pct >= 0 and commission_pct <= 100)),
+  -- Split do vitalício confirmado pelo admin na Applyfy (só então a comissão sai pelo split)
+  applyfy_split_confirmed boolean not null default false,
   created_at timestamptz not null default now()
 );
 

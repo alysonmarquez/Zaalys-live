@@ -9,7 +9,20 @@ import { cn } from "@/components/brand";
 // de comissão (vazio = padrão de 40%).
 
 type Situacao = "pendente" | "aprovado" | "pago";
-type Afiliado = { id: string; email: string; name: string | null; createdAt: string; commissionPct: number | null; situacao: Situacao; vendas?: number; aReceberCents?: number };
+type Afiliado = {
+  id: string;
+  email: string;
+  name: string | null;
+  createdAt: string;
+  commissionPct: number | null;
+  situacao: Situacao;
+  vendas?: number;
+  aReceberCents?: number;
+  /** Conta Applyfy cadastrada pelo afiliado (para o split do vitalício). */
+  applyfyEmail?: string | null;
+  /** O admin já incluiu essa conta no split dentro da Applyfy. */
+  splitConfirmed?: boolean;
+};
 const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const CARD = "rounded-3xl border border-black/[0.06] bg-card/85 p-5 shadow-2xs sm:p-6 dark:border-white/[0.08]";
@@ -84,6 +97,26 @@ export function AfiliadosAdmin() {
       setLista((l) => l?.map((a) => (a.id === id ? { ...a, situacao: action === "aprovar" ? "aprovado" : "pendente" } : a)) ?? l);
     } catch {
       setErro("Não deu certo. Tente de novo.");
+    } finally {
+      setSalvando(null);
+    }
+  }
+
+  // Split do vitalício: só depois que a Nat inclui a conta Applyfy do afiliado no split DENTRO da Applyfy.
+  async function confirmarSplit(a: Afiliado, confirmed: boolean) {
+    setSalvando(a.id);
+    try {
+      const r = await fetch("/api/admin/afiliados", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: a.id, action: "split", confirmed }),
+      });
+      const d = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) throw new Error(d.error || "Não deu certo. Tente de novo.");
+      setLista((l) => l?.map((x) => (x.id === a.id ? { ...x, splitConfirmed: confirmed } : x)) ?? l);
+      setErro(null);
+    } catch (e) {
+      setErro((e as Error).message);
     } finally {
       setSalvando(null);
     }
@@ -170,6 +203,21 @@ export function AfiliadosAdmin() {
                 <p className="truncate text-xs text-muted-foreground">
                   {a.email} · cadastro em {new Date(a.createdAt).toLocaleDateString("pt-BR")}
                 </p>
+                {a.applyfyEmail ? (
+                  <label className="mt-1 flex flex-wrap items-center gap-1.5 text-xs" title="Marque depois de incluir esta conta no split do vitalício, dentro da Applyfy">
+                    <input
+                      type="checkbox"
+                      checked={a.splitConfirmed === true}
+                      disabled={salvando === a.id}
+                      onChange={(e) => confirmarSplit(a, e.target.checked)}
+                      className="size-3.5 accent-primary cursor-pointer"
+                    />
+                    <span className={a.splitConfirmed ? "text-primary" : "text-amber-600 dark:text-amber-400"}>
+                      {a.splitConfirmed ? "Split confirmado na Applyfy" : "Split pendente na Applyfy"}
+                    </span>
+                    <span className="text-muted-foreground">· Applyfy: {a.applyfyEmail}</span>
+                  </label>
+                ) : null}
                 {(a.vendas ?? 0) > 0 && (
                   <p className="mt-0.5 text-xs">
                     <span className="font-semibold tabular-nums">{a.vendas}</span>{" "}
