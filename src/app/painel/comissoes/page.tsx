@@ -74,11 +74,6 @@ function ComissoesContent() {
   const aba = (ABAS.find((a) => a.v === params.get("aba"))?.v ?? "comissoes") as Aba;
   const [page, setPage] = useState(0);
   const [filtro, setFiltro] = useState<"todos" | "Não pagou" | "Ativo" | "Bloqueado">("todos");
-  const [applyfyOpen, setApplyfyOpen] = useState(false);
-  const [applyfyEmail, setApplyfyEmail] = useState("");
-  const [applyfySaved, setApplyfySaved] = useState(false);
-  // O admin já incluiu a conta Applyfy no split do vitalício, dentro da Applyfy.
-  const [splitConfirmed, setSplitConfirmed] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pixType, setPixType] = useState("cpf");
   const [pixKey, setPixKey] = useState("");
@@ -86,17 +81,12 @@ function ComissoesContent() {
   const [saques, setSaques] = useState<Saque[]>([]);
   const [busy, setBusy] = useState(false);
 
-  // Cadastro do afiliado salvo na conta (Applyfy para o split do vitalício, Pix para os saques do mensal).
+  // Cadastro do afiliado salvo na conta: chave Pix para os saques.
   const loadCadastro = React.useCallback(() => {
     fetch("/api/conta/afiliado")
       .then((res) => (res.ok ? res.json() : null))
-      .then((d: { applyfyEmail: string | null; splitConfirmed?: boolean; pixType: string | null; pixKey: string | null; saques: Saque[] } | null) => {
+      .then((d: { pixType: string | null; pixKey: string | null; saques: Saque[] } | null) => {
         if (!d) return;
-        setSplitConfirmed(d.splitConfirmed === true);
-        if (d.applyfyEmail) {
-          setApplyfyEmail(d.applyfyEmail);
-          setApplyfySaved(true);
-        }
         if (d.pixKey) {
           setPixType(d.pixType ?? "cpf");
           setPixKey(d.pixKey);
@@ -156,8 +146,7 @@ function ComissoesContent() {
   const r = data.resumo as typeof data.resumo & { saquePedidoCents?: number };
   const disponivel = Math.max(0, r.aReceberCents - r.estornosCents);
   const cards = [
-    ["Recebido via Applyfy", formatBRL(r.recebidoApplyfyCents), "Vitalício: o split cai direto na sua conta"],
-    ["A receber do admin", formatBRL(disponivel), r.saquePedidoCents ? `Mais ${formatBRL(r.saquePedidoCents)} em saque pedido` : `Mensal: menos ${formatBRL(r.estornosCents)} de estornos`],
+    ["A receber do admin", formatBRL(disponivel), r.saquePedidoCents ? `Mais ${formatBRL(r.saquePedidoCents)} em saque pedido` : `Menos ${formatBRL(r.estornosCents)} de estornos`],
     ["Já repassado", formatBRL(r.repassadoCents), "Saques pagos no Pix"],
     ["Vendas", String(r.vendas), `Comissão de ${pctLabel}%`],
   ];
@@ -178,13 +167,11 @@ function ComissoesContent() {
       <header>
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Saque de comissões</h1>
         <p className="mt-1 max-w-2xl text-muted-foreground">
-          Vitalício: a Applyfy divide o pagamento na hora (split) e sua parte cai direto na sua conta Applyfy, depois
-          que você cadastra a conta abaixo e o admin confirma o split. Mensal (ou vitalício antes da confirmação): a
-          comissão fica em “A receber do admin” e você pede o saque por Pix.
+          Suas comissões, do vitalício e do mensal, ficam em “A receber do admin” e você pede o saque por Pix.
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         {cards.map(([label, value, sub]) => (
           <div key={label} className="rounded-2xl border border-border/60 bg-card/70 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -195,60 +182,12 @@ function ComissoesContent() {
       </div>
 
       <section className={CARD}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-bold tracking-tight">Sua conta Applyfy</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {!applyfySaved
-                ? "Cadastre o e-mail da sua conta Applyfy para receber o vitalício pelo split. Sem cadastro, a comissão do vitalício fica a receber do admin."
-                : splitConfirmed
-                  ? `Conta vinculada: ${applyfyEmail}. Split confirmado: a comissão do vitalício cai direto na sua conta Applyfy.`
-                  : `Conta vinculada: ${applyfyEmail}. Aguardando o admin incluir essa conta no split da Applyfy; até lá, a comissão do vitalício entra no seu saldo de saque.`}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setApplyfyOpen((o) => !o)}
-            className="inline-flex h-10 items-center rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs cursor-pointer"
-          >
-            {applyfySaved ? "Alterar dados da Applyfy" : "Cadastrar dados da Applyfy"}
-          </button>
-        </div>
-        {applyfyOpen && (
-          <form
-            className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (await salvar({ applyfyEmail: applyfyEmail.trim() }, "Conta Applyfy salva. Peça ao admin para incluir você no split do vitalício.")) {
-                setApplyfySaved(true);
-                // Relê do servidor: trocar a conta desfaz a confirmação do split; manter a mesma, não.
-                loadCadastro();
-                setApplyfyOpen(false);
-              }
-            }}
-          >
-            <input
-              required
-              type="email"
-              value={applyfyEmail}
-              onChange={(e) => setApplyfyEmail(e.target.value)}
-              placeholder="E-mail da sua conta Applyfy"
-              className={INPUT_CLASS}
-            />
-            <button type="submit" disabled={busy} className="h-11 rounded-xl border border-border bg-background px-5 text-xs font-semibold hover:bg-muted disabled:opacity-50 cursor-pointer">
-              Salvar
-            </button>
-          </form>
-        )}
-      </section>
-
-      <section className={CARD}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-bold tracking-tight">Saque por Pix</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              Disponível para saque: <strong className="text-foreground tabular-nums">{formatBRL(disponivel)}</strong> (comissões do mensal e
-              do vitalício sem split). Saque mínimo de R$ 10,00.
+              Disponível para saque: <strong className="text-foreground tabular-nums">{formatBRL(disponivel)}</strong> (comissões do vitalício e
+              do mensal). Saque mínimo de R$ 10,00.
             </p>
           </div>
           <button

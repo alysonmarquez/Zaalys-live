@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { Brand, BrandLoader, RaisedButton, Segmented } from "@/components/brand";
-import { LIFETIME_CENTS, MONTHLY_CENTS, formatBRL, installmentQuote } from "@/lib/pricing";
+import { INVITE_LIFETIME_CENTS, INVITE_MONTHLY_CENTS, LIFETIME_CENTS, MONTHLY_CENTS, formatBRL, installmentQuote } from "@/lib/pricing";
 
 // Cupom próprio só vale no Mercado Pago. Na Applyfy, os cupons são da própria Applyfy.
 const COUPONS_ENABLED = (process.env.NEXT_PUBLIC_PAYMENT_PROVIDER ?? "applyfy") === "mercadopago";
@@ -245,6 +245,8 @@ function CheckoutContent() {
   const planParam = params.get("plan") === "monthly" ? "monthly" : "lifetime";
   const initialEmail = params.get("email") ?? "";
   const initialCoupon = params.get("coupon") ?? params.get("cupom") ?? "";
+  // Convite do Acesso Creator / Indique (/convite/<codigo>): preço de convite, venda atribuída ao afiliado.
+  const invite = (params.get("convite") ?? "").trim() || null;
 
   const [method, setMethod] = useState<"pix" | "card" | "boleto">("pix");
   const [name, setName] = useState("");
@@ -288,8 +290,9 @@ function CheckoutContent() {
     }
   }, [planParam, method]);
 
-  const baseCents = planParam === "monthly" ? MONTHLY_CENTS : LIFETIME_CENTS;
-  const discountCents = appliedCoupon && planParam === "lifetime" ? appliedCoupon.discountCents : 0;
+  const fullCents = planParam === "monthly" ? MONTHLY_CENTS : LIFETIME_CENTS;
+  const baseCents = invite ? (planParam === "monthly" ? INVITE_MONTHLY_CENTS : INVITE_LIFETIME_CENTS) : fullCents;
+  const discountCents = !invite && appliedCoupon && planParam === "lifetime" ? appliedCoupon.discountCents : 0;
   const amountCents = Math.max(100, baseCents - discountCents);
 
   const installmentOptions = useMemo(() => {
@@ -382,12 +385,13 @@ function CheckoutContent() {
         body: JSON.stringify({
           plan: planParam,
           email: email.trim(),
-          coupon: appliedCoupon?.code,
+          coupon: invite ? undefined : appliedCoupon?.code,
+          convite: invite ?? undefined,
         }),
       });
       const data = await res.json().catch(() => null);
       if (res.ok && data?.url) {
-        // Pix, boleto e cartão são pagos na página segura do Mercado Pago.
+        // Pix, boleto e cartão são pagos na página segura do gateway (Applyfy).
         window.location.href = data.url;
         return;
       }
@@ -457,6 +461,12 @@ function CheckoutContent() {
                 </div>
 
                 <div className="mt-5">
+                  {invite && fullCents > baseCents ? (
+                    <p className="mb-1.5 flex items-center gap-2 text-[13px]">
+                      <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">Preço de convite</span>
+                      <span className="text-muted-foreground line-through tabular-nums">{formatBRL(fullCents)}</span>
+                    </p>
+                  ) : null}
                   <div className="mt-0.5 font-display text-[40px] font-extrabold leading-none tracking-tight tabular-nums">
                     <SplitPriceDisplay cents={amountCents} smallCents />
                   </div>
@@ -729,7 +739,7 @@ function CheckoutContent() {
                 </div>
               )}
 
-              {COUPONS_ENABLED && (showCoupon ? (
+              {COUPONS_ENABLED && !invite && (showCoupon ? (
                 <div className="rounded-2xl border border-border/60 bg-card/70 p-5">
                   <h3 className="text-sm font-semibold tracking-tight">Cupom de desconto</h3>
                   {appliedCoupon ? (
@@ -817,10 +827,10 @@ function CheckoutContent() {
                       já pago.
                     </p>
                     <p className="rounded-xl border border-border/60 px-4 py-3 text-sm">
-                      O vitalício custa {formatBRL(59400)} uma vez, menos que dois meses deste
+                      O vitalício custa {formatBRL(invite ? INVITE_LIFETIME_CENTS : LIFETIME_CENTS)} uma vez, menos que dois meses deste
                       plano.{" "}
                       <Link
-                        href="/checkout/vitalicio"
+                        href={invite ? `/checkout/vitalicio?convite=${encodeURIComponent(invite)}` : "/checkout/vitalicio"}
                         className="font-semibold underline decoration-primary underline-offset-4"
                       >
                         Trocar para o vitalício

@@ -14,6 +14,11 @@ export const MONTHLY_CENTS =
   num(process.env.PRICE_MONTHLY_CENTS, process.env.NEXT_PUBLIC_PRICE_MONTHLY_CENTS) ?? 34000;
 export const LIFETIME_CENTS =
   num(process.env.PRICE_LIFETIME_CENTS, process.env.NEXT_PUBLIC_PRICE_LIFETIME_CENTS) ?? 59400;
+// Preço de convite (Acesso Creator e Indique), igual às ofertas com desconto da Applyfy: R$ 170/mês | R$ 297.
+export const INVITE_MONTHLY_CENTS =
+  num(process.env.PRICE_INVITE_MONTHLY_CENTS, process.env.NEXT_PUBLIC_PRICE_INVITE_MONTHLY_CENTS) ?? 17000;
+export const INVITE_LIFETIME_CENTS =
+  num(process.env.PRICE_INVITE_LIFETIME_CENTS, process.env.NEXT_PUBLIC_PRICE_INVITE_LIFETIME_CENTS) ?? 29700;
 export const MAX_INSTALLMENTS =
   num(process.env.LIFETIME_MAX_INSTALLMENTS, process.env.NEXT_PUBLIC_LIFETIME_MAX_INSTALLMENTS) ?? 12;
 
