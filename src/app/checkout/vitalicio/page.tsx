@@ -240,6 +240,27 @@ function SplitPriceDisplay({
   );
 }
 
+type Applyfy3ds = {
+  authenticate: (opts: object) => Promise<{ status: "SUCCESS" | "PENDING" | "FAILED" | "TIMEOUT"; failureReason?: string }>;
+  destroy?: () => void;
+};
+type Applyfy3dsCtor = new (opts: object) => Applyfy3ds;
+
+/** SDK de 3D Secure da Applyfy, na versão fixa e com SRI (docs: /docs/v1/sdk). */
+function loadApplyfy3ds(): Promise<Applyfy3dsCtor> {
+  const w = window as unknown as { ApplyFy3DS?: Applyfy3dsCtor };
+  if (w.ApplyFy3DS) return Promise.resolve(w.ApplyFy3DS);
+  return new Promise((resolve, reject) => {
+    const s = window.document.createElement("script");
+    s.src = "https://app.applyfy.com.br/sdk/v1/1.0.0/3ds.js";
+    s.integrity = "sha384-qjOk5CuwyGCgd6MYHVFjBsz7mCmQblC4D5lP2YKye5Oiicp1bkgKTO83nYxM3aMl";
+    s.crossOrigin = "anonymous";
+    s.onload = () => (w.ApplyFy3DS ? resolve(w.ApplyFy3DS) : reject(new Error("3ds.js sem ApplyFy3DS")));
+    s.onerror = () => reject(new Error("3ds.js não carregou"));
+    window.document.head.appendChild(s);
+  });
+}
+
 function CheckoutContent() {
   const params = useSearchParams();
   const planParam = params.get("plan") === "monthly" ? "monthly" : "lifetime";
@@ -286,15 +307,32 @@ function CheckoutContent() {
   // Pix gerado aqui (vitalício por convite de afiliado com Applyfy vinculada: o split vai junto).
   const [pixCharge, setPixCharge] = useState<{ transactionId: string; code: string; image: string | null; expiresAt: string | null } | null>(null);
   const [pixCopied, setPixCopied] = useState(false);
+  // Cartão digitado aqui só quando o convite tem split (cobrado pela API da Applyfy, com 3DS quando o banco pede).
+  const [splitInfo, setSplitInfo] = useState<{ split: boolean; publicKey: string | null } | null>(null);
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [cardExp, setCardExp] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [cardTx, setCardTx] = useState<string | null>(null);
+  const cardHere = Boolean(invite && planParam === "lifetime" && splitInfo?.split);
   useEffect(() => {
-    if (!pixCharge) return;
+    if (!invite || planParam !== "lifetime") return;
+    fetch(`/api/checkout/convite?code=${encodeURIComponent(invite)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { split?: boolean; publicKey?: string | null } | null) => setSplitInfo({ split: Boolean(d?.split), publicKey: d?.publicKey ?? null }))
+      .catch(() => setSplitInfo({ split: false, publicKey: null }));
+  }, [invite, planParam]);
+  // Pix ou cartão cobrados aqui: o webhook da Applyfy confirma o pagamento e a página avança sozinha.
+  const waitingTx = pixCharge?.transactionId ?? cardTx;
+  useEffect(() => {
+    if (!waitingTx) return;
     const t = setInterval(async () => {
-      const r = await fetch(`/api/checkout/status?tx=${encodeURIComponent(pixCharge.transactionId)}`).catch(() => null);
+      const r = await fetch(`/api/checkout/status?tx=${encodeURIComponent(waitingTx)}`).catch(() => null);
       const d = r?.ok ? ((await r.json().catch(() => null)) as { paid?: boolean } | null) : null;
       if (d?.paid) window.location.href = `/obrigado?email=${encodeURIComponent(email.trim())}`;
     }, 4000);
     return () => clearInterval(t);
-  }, [pixCharge, email]);
+  }, [waitingTx, email]);
 
   useEffect(() => {
     if (planParam === "monthly" && method === "boleto") {
@@ -388,6 +426,10 @@ function CheckoutContent() {
       return;
     }
     setDocError(null);
+    if (method === "card" && cardHere) {
+      await payCardHere();
+      return;
+    }
     setSubmitting(true);
     setCheckoutError(null);
     try {
@@ -421,6 +463,71 @@ function CheckoutContent() {
       );
     } catch {
       setCheckoutError("Sem conexão com o servidor. Confira sua internet e tente de novo.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // Cartão cobrado pela API da Applyfy com o split do afiliado; quando o banco pede, autentica com o 3ds.js dela.
+  async function payCardHere() {
+    const cardDigits = digitsOnly(cardNumber);
+    const [mm = "", yy = ""] = cardExp.split("/").map((p) => digitsOnly(p));
+    const month = Number(mm);
+    if (cardDigits.length < 13 || month < 1 || month > 12 || yy.length !== 2 || digitsOnly(cardCvv).length < 3) {
+      setCheckoutError("Confira os dados do cartão: número, validade (MM/AA) e código de segurança.");
+      return;
+    }
+    const expiresAt = `20${yy}-${String(month).padStart(2, "0")}`;
+    setSubmitting(true);
+    setCheckoutError(null);
+    try {
+      const address = { zipCode, state: stateUf, city, street, neighborhood, number, complement: complement || undefined };
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: planParam,
+          email: email.trim(),
+          convite: invite,
+          method: "card",
+          name: name.trim(),
+          phone: phone.trim(),
+          document: digitsOnly(document),
+          installments,
+          address,
+          card: { number: cardDigits, owner: cardName.trim(), expiresAt, cvv: digitsOnly(cardCvv) },
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as { card?: { transactionId: string; needThreeDs: boolean; paid: boolean }; error?: string } | null;
+      if (!res.ok || !data?.card) {
+        setCheckoutError(data?.error || "Não deu para processar o cartão agora. Tente de novo ou pague pelo Pix.");
+        return;
+      }
+      if (data.card.paid) {
+        window.location.href = `/obrigado?email=${encodeURIComponent(email.trim())}`;
+        return;
+      }
+      if (data.card.needThreeDs && splitInfo?.publicKey) {
+        const Sdk = await loadApplyfy3ds();
+        const sdk = new Sdk({
+          transactionId: data.card.transactionId,
+          publicKey: splitInfo.publicKey,
+          card: { number: cardDigits, holderName: cardName.trim(), expiration: { month, year: 2000 + Number(yy) } },
+          billingAddress: { street, number, neighborhood, city, regionCode: stateUf, country: "BRA", postalCode: zipCode },
+          customer: { name: name.trim(), email: email.trim(), document: digitsOnly(document), phone: phone.trim() },
+        });
+        const result = await sdk.authenticate({});
+        sdk.destroy?.();
+        if (result.status !== "SUCCESS" && result.status !== "PENDING") {
+          setCheckoutError(result.failureReason || "O banco não autenticou o cartão. Tente de novo ou pague pelo Pix.");
+          return;
+        }
+      }
+      // Aguarda a confirmação do webhook (a venda nunca é aprovada pelo navegador).
+      setCardTx(data.card.transactionId);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      setCheckoutError("Não deu para concluir o pagamento no cartão. Tente de novo ou pague pelo Pix.");
     } finally {
       setSubmitting(false);
     }
@@ -522,7 +629,15 @@ function CheckoutContent() {
         </aside>
 
         <div className="min-w-0 lg:order-1">
-          {pixCharge ? (
+          {cardTx && !pixCharge ? (
+            <section className="space-y-3 rounded-2xl border border-border/60 bg-card/70 p-5 text-center">
+              <ShieldCheckIcon size={22} className="mx-auto text-primary" />
+              <h2 className="font-display text-xl font-bold tracking-tight">Confirmando o pagamento no cartão…</h2>
+              <p className="text-[13px] text-muted-foreground">
+                Assim que a Applyfy confirmar, esta página avança sozinha para liberar o seu acesso. Não feche esta aba.
+              </p>
+            </section>
+          ) : pixCharge ? (
             <section className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-5 text-center">
               <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 <PixMark className="size-3.5" /> Pague com Pix
@@ -760,10 +875,69 @@ function CheckoutContent() {
 
               {method === "card" && (
                 <div className="rounded-2xl border border-border/60 bg-card/70 p-5">
-                  <h3 className="text-sm font-semibold tracking-tight">Parcelamento no cartão</h3>
+                  <h3 className="text-sm font-semibold tracking-tight">{cardHere ? "Dados do cartão" : "Parcelamento no cartão"}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Você digita o cartão na página segura do Mercado Pago, no próximo passo. A MediaFlowMZ não recebe nem guarda os dados do cartão.
+                    {cardHere
+                      ? "O pagamento é processado pela Applyfy. A MediaFlowMZ não guarda os dados do cartão; se o seu banco pedir, você confirma a compra no app dele."
+                      : "Você digita o cartão na página segura da Applyfy, no próximo passo. A MediaFlowMZ não recebe nem guarda os dados do cartão."}
                   </p>
+                  {cardHere && (
+                    <div className="mt-4 grid gap-4 sm:grid-cols-6">
+                      <div className="sm:col-span-6">
+                        <FieldBlock label="Número do cartão">
+                          <input
+                            required
+                            inputMode="numeric"
+                            autoComplete="cc-number"
+                            placeholder="0000 0000 0000 0000"
+                            value={cardNumber}
+                            onChange={(e) => setCardNumber(digitsOnly(e.target.value).slice(0, 19).replace(/(\d{4})(?=\d)/g, "$1 "))}
+                            className={INPUT_CLASS}
+                          />
+                        </FieldBlock>
+                      </div>
+                      <div className="sm:col-span-6">
+                        <FieldBlock label="Nome impresso no cartão">
+                          <input
+                            required
+                            autoComplete="cc-name"
+                            value={cardName}
+                            onChange={(e) => setCardName(e.target.value.toUpperCase())}
+                            className={INPUT_CLASS}
+                          />
+                        </FieldBlock>
+                      </div>
+                      <div className="sm:col-span-3">
+                        <FieldBlock label="Validade">
+                          <input
+                            required
+                            inputMode="numeric"
+                            autoComplete="cc-exp"
+                            placeholder="MM/AA"
+                            value={cardExp}
+                            onChange={(e) => {
+                              const d = digitsOnly(e.target.value).slice(0, 4);
+                              setCardExp(d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d);
+                            }}
+                            className={INPUT_CLASS}
+                          />
+                        </FieldBlock>
+                      </div>
+                      <div className="sm:col-span-3">
+                        <FieldBlock label="Código de segurança">
+                          <input
+                            required
+                            inputMode="numeric"
+                            autoComplete="cc-csc"
+                            placeholder="CVV"
+                            value={cardCvv}
+                            onChange={(e) => setCardCvv(digitsOnly(e.target.value).slice(0, 4))}
+                            className={INPUT_CLASS}
+                          />
+                        </FieldBlock>
+                      </div>
+                    </div>
+                  )}
                   <div className="mt-4 grid gap-4 sm:grid-cols-6">
                     <div className="min-w-0 sm:col-span-6">
                       <FieldBlock label="Parcelas">

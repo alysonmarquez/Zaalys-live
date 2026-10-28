@@ -3,7 +3,8 @@ import { fail, json } from "@/lib/http";
 import { getPayments } from "@/lib/payments";
 import { INVITE_LIFETIME_CENTS, INVITE_MONTHLY_CENTS, LIFETIME_CENTS, MONTHLY_CENTS, couponDiscountCents } from "@/lib/pricing";
 import { inviteCheckoutUrl } from "@/lib/invite-link";
-import { createInvitePix } from "@/lib/invite-pix";
+import { createInviteCard, createInvitePix } from "@/lib/invite-pix";
+import { ApplyfyApiError } from "@/lib/applyfy-api";
 import { createAdminClient } from "@/lib/supabase/server";
 
 const Body = z.object({
@@ -16,13 +17,64 @@ const Body = z.object({
   name: z.string().trim().max(120).optional(),
   phone: z.string().trim().max(30).optional(),
   document: z.string().trim().max(30).optional(),
+  // Só no cartão com split (convite de afiliado com Applyfy vinculada): repassado à Applyfy, nunca gravado.
+  installments: z.number().int().min(1).max(12).optional(),
+  address: z
+    .object({
+      zipCode: z.string().trim().min(8).max(10),
+      state: z.string().trim().length(2),
+      city: z.string().trim().min(1).max(80),
+      street: z.string().trim().min(1).max(120),
+      neighborhood: z.string().trim().min(1).max(80),
+      number: z.string().trim().min(1).max(20),
+      complement: z.string().trim().max(80).optional(),
+    })
+    .optional(),
+  card: z
+    .object({
+      number: z.string().regex(/^\d{13,19}$/),
+      owner: z.string().trim().min(3).max(80),
+      expiresAt: z.string().regex(/^\d{4}-\d{2}$/),
+      cvv: z.string().regex(/^\d{3,4}$/),
+    })
+    .optional(),
 });
 
 export async function POST(req: Request) {
   try {
-    const { plan, email, coupon, convite, method, name, phone, document } = Body.parse(await req.json());
+    // safeParse: o erro de validação nunca devolve (nem registra) os dados do cartão.
+    const parsed = Body.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) return json({ error: "Confira os dados do pagamento." }, 400);
+    const { plan, email, coupon, convite, method, name, phone, document, installments, address, card } = parsed.data;
     const app = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin;
     const provider = getPayments();
+    if (convite && card) {
+      // Cartão do vitalício com o split do afiliado. Sem split disponível, não há para onde mandar o cartão.
+      if (provider.name !== "applyfy" || plan !== "lifetime" || !name || !address) return json({ error: "Confira os dados do pagamento." }, 400);
+      const clientIp = (req.headers.get("x-forwarded-for") ?? "").split(",")[0]!.trim() || req.headers.get("x-real-ip") || "127.0.0.1";
+      try {
+        const charge = await createInviteCard(createAdminClient(), {
+          convite,
+          name,
+          email: email.toLowerCase(),
+          phone,
+          document,
+          app,
+          clientIp,
+          installments: installments ?? 1,
+          address,
+          card,
+        });
+        if (!charge) return json({ error: "O pagamento no cartão por aqui não está disponível agora. Tente pelo Pix." }, 409);
+        if (charge.status === "FAILED" || charge.transactionStatus === "FAILED")
+          return json({ error: charge.errorDescription || "Pagamento recusado. Confira os dados ou tente outro cartão." }, 402);
+        return json({ card: { transactionId: charge.transactionId, needThreeDs: Boolean(charge.needThreeDs), paid: charge.transactionStatus === "COMPLETED" } });
+      } catch (err) {
+        console.error("[checkout] cartão com split:", err instanceof ApplyfyApiError ? `${err.status} ${err.message}` : "erro");
+        const msg = err instanceof ApplyfyApiError && err.status === 400 ? err.message : null;
+        return json({ error: msg || "Não deu para processar o cartão agora. Tente de novo ou pague pelo Pix." }, 502);
+      }
+    }
     if (convite) {
       // Vitalício no Pix pelo link de um afiliado com Applyfy vinculada: Pix aqui mesmo, com o split dele.
       if (provider.name === "applyfy" && plan === "lifetime" && method === "pix" && name) {

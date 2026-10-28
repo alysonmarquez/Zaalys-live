@@ -146,7 +146,12 @@ export async function attributeSale(admin: SupabaseClient, event: PaymentEvent) 
   if (String(affiliate.email).toLowerCase() === event.email) return null;
 
   const pct = affiliate.commission_pct != null ? Number(affiliate.commission_pct) : DEFAULT_COMMISSION_PCT;
-  const amount = event.amountCents ?? PLAN_CENTS[event.plan];
+  // Vitalício pago no Pix ou cartão cobrado com o split do afiliado (src/lib/invite-pix.ts): a comissão já caiu na conta Applyfy
+  // dele. Mensal, ou vitalício pago no checkout da Applyfy (que não divide): entra no saldo "A receber do admin".
+  const identifier = pick(raw, ["transaction.identifier", "data.transaction.identifier", "identifier", "data.identifier"]) ?? "";
+  const split = event.plan === "lifetime" && identifier.includes(".split.") && Boolean(affiliate.applyfy_account_id);
+  // No split, a comissão é sobre o preço do convite (os juros do parcelamento não entram, como no split enviado).
+  const amount = split ? PLAN_CENTS.lifetime : event.amountCents ?? PLAN_CENTS[event.plan];
   const status = SALE_STATUS[event.status];
   const row = {
     affiliate_id: affiliate.id,
@@ -156,17 +161,13 @@ export async function attributeSale(admin: SupabaseClient, event: PaymentEvent) 
     buyer_email: event.email,
     buyer_name: pick(raw, ["data.client.name", "data.customer.name", "client.name", "customer.name", "buyer.name"]) ?? null,
     plan: event.plan,
-    method: pick(raw, ["data.paymentMethod", "paymentMethod", "data.payment.method", "data.method", "payment_method", "method"])?.toUpperCase() ?? null,
+    method: pick(raw, ["data.paymentMethod", "transaction.paymentMethod", "paymentMethod", "data.payment.method", "data.method", "payment_method", "method"])?.toUpperCase() ?? null,
     amount_cents: amount,
     commission_pct: pct,
     commission_cents: Math.round((amount * pct) / 100),
     status,
     updated_at: new Date().toISOString(),
   };
-  // Vitalício pago no Pix gerado com o split do afiliado (src/lib/invite-pix.ts): a comissão já caiu na conta Applyfy
-  // dele. Mensal, ou vitalício pago no checkout da Applyfy (que não divide): entra no saldo "A receber do admin".
-  const identifier = pick(raw, ["transaction.identifier", "data.transaction.identifier", "identifier", "data.identifier"]) ?? "";
-  const split = event.plan === "lifetime" && identifier.includes(".split.") && Boolean(affiliate.applyfy_account_id);
   // payout_status fica como está (o admin marca "repassada").
   let { error } = await admin.from("affiliate_sales").upsert({ ...row, split }, { onConflict: "gateway,gateway_ref" });
   if (error?.code === "PGRST204" || error?.code === "42703") ({ error } = await admin.from("affiliate_sales").upsert(row, { onConflict: "gateway,gateway_ref" }));

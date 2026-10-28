@@ -64,6 +64,42 @@ export type PixCharge = {
   errorDescription?: string;
 };
 
+export type CardCharge = {
+  transactionId: string;
+  status: "OK" | "FAILED" | "PENDING" | string;
+  transactionStatus?: "PENDING" | "COMPLETED" | "FAILED" | string;
+  /** true: o navegador precisa autenticar o cartão no banco (3DS) com o 3ds.js da Applyfy. */
+  needThreeDs?: boolean;
+  errorDescription?: string;
+};
+
+/**
+ * POST /gateway/card/receive: cobra no cartão. Os dados do cartão só passam por aqui a caminho da Applyfy:
+ * nunca são gravados nem vão para os logs (os erros desta função não levam o corpo da requisição).
+ */
+export const receiveCard = (
+  keys: ApplyfyKeys,
+  body: {
+    identifier: string;
+    amount: number;
+    extraFee?: number;
+    client: {
+      name: string;
+      email: string;
+      phone?: string;
+      document?: string;
+      address: { country: string; zipCode: string; state: string; city: string; street: string; neighborhood: string; number: string; complement?: string };
+    };
+    clientIp: string;
+    card: { number: string; owner: string; expiresAt: string; cvv: string };
+    installments: number;
+    products: { id: string; name: string; quantity: number; price: number }[];
+    splits?: { producerId: string; amount: number }[];
+    metadata?: Record<string, string>;
+    callbackUrl?: string;
+  },
+) => call<CardCharge>("/gateway/card/receive", keys, { method: "POST", body });
+
 /** POST /gateway/pix/receive: cobra por Pix; `splits` manda parte do valor direto para outras contas. */
 export const receivePix = (
   keys: ApplyfyKeys,
