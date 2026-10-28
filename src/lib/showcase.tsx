@@ -40,3 +40,12 @@ export function usePresentationFavicon(active: boolean) {
     return () => links.forEach((l, i) => ((l.href = before[i]![0]), (l.type = before[i]![1])));
   }, [active]);
 }
+
+// Quem pode abrir o Estúdio de LIVE (ver Access.studio em lib/access).
+const StudioContext = createContext(false);
+
+export function StudioProvider({ value, children }: { value: boolean; children: React.ReactNode }) {
+  return <StudioContext.Provider value={value}>{children}</StudioContext.Provider>;
+}
+
+export const useStudioAccess = () => useContext(StudioContext);

@@ -28,7 +28,7 @@ import { ZAALYS_NOTIFICATIONS, formatBRL } from "@/lib/zaalys-data";
 import { BottomDock } from "@/components/bottom-dock";
 import { CreatorModal } from "@/components/creator-modal";
 import { LiveSaleToast } from "@/components/live-sale-toast";
-import { AdminProvider, ShowcaseProvider, usePresentationFavicon } from "@/lib/showcase";
+import { AdminProvider, ShowcaseProvider, StudioProvider, usePresentationFavicon } from "@/lib/showcase";
 import { useLiveSettingsSync } from "@/lib/live-settings-sync";
 
 type AppShellProps = {
@@ -42,6 +42,8 @@ type AppShellProps = {
   showcase?: boolean;
   /** Pode aprovar afiliados. */
   admin?: boolean;
+  /** Pode abrir o Estúdio de LIVE. */
+  studio?: boolean;
   children: React.ReactNode;
 };
 
@@ -130,7 +132,7 @@ export function BrandLogo() {
   );
 }
 
-export function AppShell({ userEmail, userName, userHandle, demo, showcase = false, admin = false, children }: AppShellProps) {
+export function AppShell({ userEmail, userName, userHandle, demo, showcase = false, admin = false, studio = false, children }: AppShellProps) {
   // Números editados da LIVE valem em qualquer aparelho.
   useLiveSettingsSync();
   usePresentationFavicon(showcase);
@@ -539,7 +541,9 @@ export function AppShell({ userEmail, userName, userHandle, demo, showcase = fal
       {/* Main Content */}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-40 pt-6 sm:px-6 sm:pb-28 sm:pt-8">
         <ShowcaseProvider value={showcase}>
-          <AdminProvider value={admin}>{children}</AdminProvider>
+          <AdminProvider value={admin}>
+            <StudioProvider value={studio}>{children}</StudioProvider>
+          </AdminProvider>
         </ShowcaseProvider>
       </main>
 

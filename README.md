@@ -175,7 +175,9 @@ ser feito.
 Sem Supabase (desenvolvimento local), o usuário fictício do modo demonstração também conta como conta de
 demonstração.
 
-Qualquer conta pode abrir o Estúdio de LIVE e usar "Editar desempenho da LIVE" e "Editar números": os valores
+O Estúdio de LIVE (e "Editar desempenho da LIVE") abre só para quem está em `ADMIN_EMAILS` ou `SHOWCASE_EMAILS` e
+para os afiliados aprovados manualmente na aba Afiliados; quem só pagou o plano não vê o link e, pelo endereço,
+volta para a página Live. Nessas contas, "Editar desempenho da LIVE" e "Editar números" funcionam assim: os valores
 digitados valem na LIVE de hoje e nos períodos do Desempenho. Ficam no navegador e, com a coluna
 `profiles.live_settings` (`supabase/migration-2026-10-live-settings.sql`), também na conta, valendo em qualquer
 aparelho. Comentários automáticos e OBS continuam só nas contas de demonstração.

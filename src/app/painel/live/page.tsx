@@ -7,7 +7,7 @@ import { RaisedButton, cn } from "@/components/brand";
 import { ZAALYS_PRODUCTS, formatBRL, type ZaalysProduct } from "@/lib/zaalys-data";
 import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
 import { useIsDemo } from "@/lib/use-demo";
-import { useShowcase } from "@/lib/showcase";
+import { useShowcase, useStudioAccess } from "@/lib/showcase";
 import { useExtension } from "@/lib/use-extension";
 import { LiveTools } from "./live-tools";
 import { AiClips } from "./ai-clips";
@@ -190,6 +190,8 @@ export default function LivePage() {
   const demo = useIsDemo();
   // Estúdio de LIVE e "Editar desempenho" para todos; comentários automáticos e OBS só na conta de demonstração.
   const showcase = useShowcase();
+  // Estúdio de LIVE e "Editar desempenho": só a Nat e os afiliados aprovados por ela.
+  const studio = useStudioAccess();
   const [preps, setPreps] = useState<Prep[]>([]);
   const [current, setCurrent] = useState<Prep | null>(null);
   const [query, setQuery] = useState("");
@@ -332,6 +334,8 @@ export default function LivePage() {
 
   const extras = (
     <div className="space-y-2">
+      {studio && (
+      <>
       <div>
         <Link
           href="/estudio/console"
@@ -360,6 +364,8 @@ export default function LivePage() {
           </div>
         )}
       </div>
+      </>
+      )}
       {showcase && (
       <>
       <button

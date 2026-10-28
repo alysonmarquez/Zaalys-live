@@ -16,6 +16,8 @@ export type Access = {
   showcase?: boolean;
   /** Pode aprovar afiliados (página Aprovar afiliados). */
   admin?: boolean;
+  /** Pode abrir o Estúdio de LIVE: quem aprova afiliados, contas de demonstração e afiliados aprovados pela Nat. */
+  studio?: boolean;
 };
 
 /**
@@ -68,6 +70,7 @@ const DEMO: Access = {
   showcase: true,
   // e vê a página Admin (as APIs de admin exigem banco: sem ele respondem 401).
   admin: true,
+  studio: true,
 };
 
 const handleOf = (email: string) =>
@@ -90,6 +93,7 @@ export const getAccess = cache(async (): Promise<Access | null> => {
   const email = user.email.toLowerCase();
   let plan: Access["plan"] = null;
   let expiresAt: string | null = null;
+  let approved = false;
 
   try {
     const admin = createAdminClient();
@@ -97,13 +101,13 @@ export const getAccess = cache(async (): Promise<Access | null> => {
     const readValid = async () => {
       const { data: subs } = await admin
         .from("subscriptions")
-        .select("plan, expires_at")
+        .select("plan, expires_at, gateway")
         .eq("user_id", user.id)
         .eq("status", "active");
-      return (
-        (subs ?? []).find((s) => s.plan === "lifetime") ??
-        (subs ?? []).find((s) => s.expires_at && Date.parse(s.expires_at) > now)
-      );
+      const current = (subs ?? []).filter((s) => s.plan === "lifetime" || (s.expires_at && Date.parse(s.expires_at) > now));
+      // Aprovação manual da Nat (aba Afiliados) libera também o Estúdio de LIVE.
+      approved = current.some((s) => s.gateway === "manual");
+      return current.find((s) => s.plan === "lifetime") ?? current[0];
     };
 
     let valid = await readValid();
@@ -144,6 +148,7 @@ export const getAccess = cache(async (): Promise<Access | null> => {
     expiresAt,
     showcase: isShowcaseEmail(email),
     admin: isAdminEmail(email),
+    studio: approved || isAdminEmail(email) || isShowcaseEmail(email),
   };
 });
 
