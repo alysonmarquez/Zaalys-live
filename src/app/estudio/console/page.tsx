@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeftRight,
   ChevronDown,
@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Search,
   ScanLine,
+  ShoppingCart,
   Settings,
   Smartphone,
   Sparkles,
@@ -80,10 +81,181 @@ function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange:
   );
 }
 
+/** Nível do microfone (0 a 1) de um stream, para o "Nenhum áudio detectado" / barrinha da pré-visualização. */
+function useAudioLevel(stream: MediaStream | null) {
+  const [level, setLevel] = useState(0);
+  useEffect(() => {
+    if (!stream || !stream.getAudioTracks().length) {
+      setLevel(0);
+      return;
+    }
+    const ctx = new AudioContext();
+    const an = ctx.createAnalyser();
+    an.fftSize = 512;
+    ctx.createMediaStreamSource(stream).connect(an);
+    const buf = new Float32Array(an.fftSize);
+    let raf = 0;
+    const tick = () => {
+      an.getFloatTimeDomainData(buf);
+      setLevel(Math.min(1, Math.sqrt(buf.reduce((a, x) => a + x * x, 0) / buf.length) * 6));
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => {
+      cancelAnimationFrame(raf);
+      void ctx.close();
+    };
+  }, [stream]);
+  return level;
+}
+
+/**
+ * "Configurações de áudio e vídeo", como no TikTok: pré-visualização à esquerda e as fontes à direita.
+ * Com a extensão MediaFlowMZ Live, as fontes "MediaFlowMZ Live (vídeo)" e "(áudio)" mandam os clipes e a narração.
+ */
+function AvSettings({
+  devices,
+  camId,
+  micId,
+  onClose,
+  onConfirm,
+  reload,
+}: {
+  devices: MediaDeviceInfo[];
+  camId: string;
+  micId: string;
+  onClose: () => void;
+  onConfirm: (cam: string, mic: string, stream: MediaStream | null) => void;
+  reload: () => Promise<void>;
+}) {
+  const [cam, setCam] = useState(camId);
+  const [mic, setMic] = useState(micId);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const level = useAudioLevel(stream);
+  const keep = useRef(false);
+  // A pré-visualização liga assim que uma fonte é escolhida.
+  useEffect(() => {
+    if (!cam && !mic) return;
+    let alive = true;
+    let opened: MediaStream | null = null;
+    navigator.mediaDevices
+      .getUserMedia({ video: cam ? { deviceId: { exact: cam } } : false, audio: mic ? { deviceId: { exact: mic } } : false })
+      .then((st) => {
+        if (!alive) return st.getTracks().forEach((t) => t.stop());
+        opened = st;
+        setStream(st);
+        setErr(null);
+        void reload(); // com a permissão dada, os nomes dos dispositivos aparecem
+      })
+      .catch(() => alive && setErr("Não deu para usar essa fonte. Escolha outra ou permita o acesso no navegador."));
+    return () => {
+      alive = false;
+      if (opened && !keep.current) opened.getTracks().forEach((t) => t.stop());
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cam, mic]);
+  const cams = devices.filter((d) => d.kind === "videoinput");
+  const mics = devices.filter((d) => d.kind === "audioinput");
+  const sel = "h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm text-neutral-900 outline-none focus:border-primary cursor-pointer";
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={onClose}>
+      <div className="w-full max-w-[720px] rounded-xl bg-white p-6 text-neutral-900 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Configurações de áudio e vídeo</h2>
+          <button type="button" aria-label="Fechar" onClick={onClose} className="text-neutral-500 cursor-pointer">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="mt-5 grid gap-6 sm:grid-cols-[220px_1fr]">
+          <div className="relative grid aspect-[9/16] place-items-center overflow-hidden rounded-lg bg-neutral-700 text-sm text-white/70">
+            {stream?.getVideoTracks().length ? (
+              <video
+                autoPlay
+                muted
+                playsInline
+                ref={(v) => {
+                  if (v && v.srcObject !== stream) v.srcObject = stream;
+                }}
+                className="absolute inset-0 size-full object-cover"
+              />
+            ) : (
+              "Pré-visualizar"
+            )}
+            <span className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded bg-black/40 px-1.5 py-0.5 text-[11px] text-white">
+              <span className="flex h-2.5 items-end gap-px">
+                {[0.15, 0.35, 0.6].map((t) => (
+                  <span key={t} className={cn("w-0.5 rounded-sm", level > t ? "bg-primary" : "bg-white/40")} style={{ height: `${(t + 0.4) * 100}%` }} />
+                ))}
+              </span>
+              {level > 0.15 ? "Áudio detectado" : "Nenhum áudio detectado"}
+            </span>
+          </div>
+          <div className="space-y-5">
+            <label className="block space-y-1.5">
+              <span className="text-sm font-semibold">Fonte de vídeo</span>
+              <select value={cam} onChange={(e) => setCam(e.target.value)} className={sel}>
+                <option value="">Selecionar fonte</option>
+                {cams.map((d, i) => (
+                  <option key={d.deviceId || i} value={d.deviceId}>
+                    {d.label || `Câmera ${i + 1}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-sm font-semibold">Fonte de áudio</span>
+              <select value={mic} onChange={(e) => setMic(e.target.value)} className={sel}>
+                <option value="">Selecionar fonte</option>
+                {mics.map((d, i) => (
+                  <option key={d.deviceId || i} value={d.deviceId}>
+                    {d.label || `Microfone ${i + 1}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {err && <p className="text-xs text-red-600">{err}</p>}
+            <p className="text-xs text-neutral-500">
+              Com a extensão MediaFlowMZ Live, escolha “MediaFlowMZ Live (vídeo)” e “MediaFlowMZ Live (áudio)”.
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="h-9 rounded-md border border-neutral-300 px-4 text-sm font-semibold cursor-pointer">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={!cam && !mic}
+            onClick={() => {
+              keep.current = true; // o stream segue para o player do console
+              onConfirm(cam, mic, stream);
+            }}
+            className="h-9 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-40 cursor-pointer"
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type LiveProduct = { id: number; title: string; imageUrl: string; priceCents: number | null; url?: string };
+const MAX_PRODUCTS = 150;
+
+/** Id do produto num link do TikTok Shop (…/product/1729…, …/pdp/…/1729…). */
+const productIdFromUrl = (u: string) => u.match(/(?:product|pdp)\/(?:[^/?#]+\/)?(\d{10,})/)?.[1] ?? u.match(/(\d{15,})/)?.[1] ?? null;
+
 export default function ConsolePage() {
-  const [productIds, setProductIds] = useState<number[]>([]);
+  const [items, setItems] = useState<LiveProduct[]>([]);
   const [pinned, setPinned] = useState<number | null>(null);
+  // "+ Adicionar" abre o menu "Comprar agora"; dele sai o painel "Adicionar novos produtos", como no TikTok.
+  const [addMenu, setAddMenu] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerTab, setPickerTab] = useState<"vitrine" | "kit" | "url">("vitrine");
+  const [urlText, setUrlText] = useState("");
+  const [urlMsg, setUrlMsg] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("todas");
   const [selected, setSelected] = useState<number[]>([]);
@@ -91,7 +263,7 @@ export default function ConsolePage() {
   const [scriptOn, setScriptOn] = useState(true);
   const [script, setScript] = useState("");
   const [editingScript, setEditingScript] = useState(false);
-  const [mode, setMode] = useState<"rapida" | "agendada">("rapida");
+  const [mode, setMode] = useState<"rapida" | "agendada" | "pratica">("rapida");
   const [chatTab, setChatTab] = useState<"todos" | "produto">("todos");
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -125,42 +297,38 @@ export default function ConsolePage() {
       audio: mic ? { deviceId: { exact: mic } } : true,
     });
   }
-  async function changeDevice(kind: "cam" | "mic", id: string) {
-    const cam = kind === "cam" ? id : camId;
-    const mic = kind === "mic" ? id : micId;
-    if (kind === "cam") setCamId(id);
-    else setMicId(id);
-    if (!onAir) return;
-    // No ar: troca a fonte na hora, como o TikTok.
-    try {
-      const s = await openStream(cam, mic);
-      camStream?.getTracks().forEach((t) => t.stop());
-      setCamStream(s);
-      setCamError(null);
-    } catch {
-      setCamError("Não deu para usar esse dispositivo. Escolha outro.");
-    }
-  }
-
   // Iniciar LIVE pede câmera e microfone, como o TikTok: com a extensão MediaFlowMZ Live ligada,
   // quem responde é a câmera virtual dela (os clipes do produto).
   async function toggleLive() {
     if (onAir) {
-      camStream?.getTracks().forEach((t) => t.stop());
-      setCamStream(null);
+      // Como no TikTok, encerrar a LIVE mantém a prévia da fonte escolhida.
       setOnAir(false);
       return;
     }
     setCamError(null);
-    try {
-      const s = await openStream();
-      setCamStream(s);
-      void loadDevices(); // com a permissão dada, os nomes dos dispositivos aparecem
-    } catch {
-      setCamError("Sem câmera: a prévia mostra a foto do produto fixado.");
+    if (!camStream) {
+      try {
+        const s = await openStream();
+        setCamStream(s);
+        void loadDevices(); // com a permissão dada, os nomes dos dispositivos aparecem
+      } catch {
+        setCamError("Sem câmera: a prévia mostra a foto do produto fixado.");
+      }
     }
     setOnAir(true);
   }
+  // Fonte confirmada em "Configurações de áudio e vídeo": o vídeo aparece no player na hora, antes de iniciar.
+  function confirmAv(cam: string, mic: string, stream: MediaStream | null) {
+    setCamId(cam);
+    setMicId(mic);
+    if (stream && stream !== camStream) {
+      camStream?.getTracks().forEach((t) => t.stop());
+      setCamStream(stream);
+    }
+    setCamError(null);
+    setDevOpen(false);
+  }
+  useEffect(() => () => camStream?.getTracks().forEach((t) => t.stop()), [camStream]);
   const [tip, setTip] = useState(false);
   useEffect(() => {
     try {
@@ -179,23 +347,68 @@ export default function ConsolePage() {
   const [suggestOpen, setSuggestOpen] = useState(true);
   const live = useConsoleMetrics();
 
-  const products = productIds.map((id) => CATALOGO_ORIGINAL.find((p) => p.id === id)!).filter(Boolean);
+  const products = items;
   const pinnedProduct = products.find((p) => p.id === pinned);
+  const room = MAX_PRODUCTS - products.length;
 
+  // Vitrine: o catálogo inteiro, com busca por nome, ID do produto ou ID do TikTok Shop.
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     return CATALOGO_ORIGINAL.filter(
       (p) =>
-        !productIds.includes(p.id) &&
+        !items.some((x) => x.id === p.id) &&
         (category === "todas" || p.categoryKey === category) &&
-        (!q || p.title.toLowerCase().includes(q) || String(p.id).includes(q)),
-    ).slice(0, 40);
-  }, [query, category, productIds]);
+        (!q || p.title.toLowerCase().includes(q) || String(p.id).includes(q) || p.affiliateUrl.includes(q)),
+    );
+  }, [query, category, items]);
+
+  const fromCatalog = (p: (typeof CATALOGO_ORIGINAL)[number]): LiveProduct => ({
+    id: p.id,
+    title: p.title,
+    imageUrl: p.imageUrl,
+    priceCents: p.priceCents,
+    url: p.affiliateUrl,
+  });
+
+  function closePicker() {
+    setPickerOpen(false);
+    setSelected([]);
+    setUrlText("");
+    setUrlMsg(null);
+  }
 
   function addSelected() {
-    setProductIds((prev) => [...prev, ...selected]);
-    setSelected([]);
-    setPickerOpen(false);
+    const add = selected.map((id) => CATALOGO_ORIGINAL.find((p) => p.id === id)).filter(Boolean).slice(0, room);
+    setItems((prev) => [...prev, ...add.map((p) => fromCatalog(p!))]);
+    closePicker();
+  }
+
+  // URL de produto: um link por linha (ou separados por espaço). Produto do catálogo entra com foto e preço;
+  // outro link do TikTok Shop entra com o ID dele.
+  function addUrls() {
+    const urls = urlText.split(/[\s,]+/).map((u) => u.trim()).filter((u) => /^https?:\/\//i.test(u));
+    let added = 0;
+    const invalid: string[] = [];
+    const next = [...items];
+    for (const u of urls) {
+      if (next.length >= MAX_PRODUCTS) break;
+      const tid = productIdFromUrl(u);
+      if (!tid) {
+        invalid.push(u);
+        continue;
+      }
+      const known = CATALOGO_ORIGINAL.find((p) => p.affiliateUrl.includes(tid));
+      const item: LiveProduct = known
+        ? fromCatalog(known)
+        : { id: -Number(tid.slice(-12)), title: `Produto ${tid}`, imageUrl: "", priceCents: null, url: u };
+      if (next.some((x) => x.id === item.id)) continue;
+      next.push(item);
+      added++;
+    }
+    setItems(next);
+    if (!urls.length) setUrlMsg("Cole pelo menos um link de produto (começando com https://).");
+    else if (invalid.length) setUrlMsg(`${added} adicionado(s). Não reconhecemos ${invalid.length} link(s) como produto do TikTok Shop.`);
+    else closePicker();
   }
 
   // Lê o texto do próprio campo: quem digita pode ser a extensão, antes de o React atualizar o estado.
@@ -216,11 +429,12 @@ export default function ConsolePage() {
           <div className="relative">
             <select
               value={mode}
-              onChange={(e) => setMode(e.target.value as "rapida" | "agendada")}
+              onChange={(e) => setMode(e.target.value as "rapida" | "agendada" | "pratica")}
               className="h-8 appearance-none rounded-full bg-muted pl-3 pr-7 text-xs font-semibold cursor-pointer"
             >
               <option value="rapida">LIVE rápida</option>
               <option value="agendada">Evento agendado</option>
+              <option value="pratica">Modo de prática</option>
             </select>
             <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-2.5" />
             {tip && (
@@ -287,9 +501,39 @@ export default function ConsolePage() {
                 <RefreshCw size={15} className="text-muted-foreground" />
               </span>
             </span>
-            <button type="button" onClick={() => setPickerOpen(true)} className="flex items-center gap-1 text-[15px] font-semibold text-primary cursor-pointer">
-              <Plus size={15} /> Adicionar
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                aria-expanded={addMenu}
+                onClick={() => setAddMenu((o) => !o)}
+                className="flex items-center gap-1 text-[15px] font-semibold text-primary cursor-pointer"
+              >
+                <Plus size={15} /> Adicionar
+              </button>
+              {addMenu && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setAddMenu(false)} />
+                  <div className="absolute right-0 top-8 z-30 w-60 rounded-lg bg-card p-2 text-left shadow-xl ring-1 ring-border/60">
+                    <p className="px-2 pb-1 pt-1 text-xs text-muted-foreground">Comprar agora</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddMenu(false);
+                        setPickerTab("vitrine");
+                        setPickerOpen(true);
+                      }}
+                      className="flex w-full items-start gap-2.5 rounded-md px-2 py-2 hover:bg-muted cursor-pointer"
+                    >
+                      <ShoppingCart size={17} className="mt-0.5 shrink-0 text-primary" />
+                      <span>
+                        <span className="block text-sm font-semibold">Adicionar produtos</span>
+                        <span className="block text-xs text-muted-foreground">Produtos com preço fixo</span>
+                      </span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {products.length === 0 ? (
@@ -306,7 +550,10 @@ export default function ConsolePage() {
               <p className="text-sm text-muted-foreground">Os produtos adicionados aparecerão aqui</p>
               <button
                 type="button"
-                onClick={() => setPickerOpen(true)}
+                onClick={() => {
+                  setPickerTab("vitrine");
+                  setPickerOpen(true);
+                }}
                 className="mt-4 h-10 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground cursor-pointer"
               >
                 Adicionar produtos
@@ -317,10 +564,16 @@ export default function ConsolePage() {
               {products.map((p, i) => (
                 <li key={p.id} className={cn("flex gap-2.5 rounded-lg border p-2", pinned === p.id ? "border-primary bg-primary/5" : "border-border/60")}>
                   <span className="w-4 pt-1 text-center text-xs text-muted-foreground">{i + 1}</span>
-                  <img src={p.imageUrl} alt="" className="size-14 shrink-0 rounded-md object-cover" />
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt="" className="size-14 shrink-0 rounded-md object-cover" />
+                  ) : (
+                    <span className="grid size-14 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
+                      <ShoppingCart size={18} />
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="line-clamp-2 text-xs font-medium">{p.title}</p>
-                    <p className="mt-1 font-mono text-xs tabular-nums">{formatBRL(p.priceCents)}</p>
+                    <p className="mt-1 font-mono text-xs tabular-nums">{p.priceCents != null ? formatBRL(p.priceCents) : "Preço da loja"}</p>
                     <div className="mt-1 flex gap-1.5">
                       <button
                         type="button"
@@ -336,7 +589,7 @@ export default function ConsolePage() {
                         type="button"
                         aria-label="Remover"
                         onClick={() => {
-                          setProductIds((ids) => ids.filter((x) => x !== p.id));
+                          setItems((list) => list.filter((x) => x.id !== p.id));
                           if (pinned === p.id) setPinned(null);
                         }}
                         className="grid h-6 w-6 place-items-center rounded-md border border-border text-muted-foreground cursor-pointer"
@@ -368,63 +621,30 @@ export default function ConsolePage() {
                 <button
                   type="button"
                   data-tid="m4b_button"
-                  disabled={products.length === 0}
                   onClick={toggleLive}
                   className={cn(
                     "h-8 rounded-md px-4 text-xs font-semibold cursor-pointer disabled:cursor-not-allowed disabled:bg-[#9fdcd9] disabled:text-white",
                     onAir ? "bg-red-500 text-white" : "bg-primary text-primary-foreground",
                   )}
                 >
-                  {onAir ? "Encerrar prévia" : "Iniciar LIVE"}
+                  {onAir ? (mode === "pratica" ? "Encerrar prática" : "Encerrar LIVE") : mode === "pratica" ? "Iniciar prática" : "Iniciar LIVE"}
                 </button>
-                <div className="relative">
-                  <button
-                    type="button"
-                    aria-label="Câmera e microfone"
-                    aria-expanded={devOpen}
-                    onClick={() => {
-                      setDevOpen((o) => !o);
-                      void loadDevices();
-                    }}
-                    className="grid size-8 place-items-center rounded-md bg-white text-neutral-900 cursor-pointer"
-                  >
-                    <ChevronDown size={14} className={cn("transition-transform", devOpen && "rotate-180")} />
-                  </button>
-                  {devOpen && (
-                    <div className="absolute right-0 top-10 z-30 w-72 space-y-3 rounded-lg bg-white p-3 text-left text-xs text-neutral-900 shadow-xl">
-                      {(["cam", "mic"] as const).map((k) => {
-                        const kind = k === "cam" ? "videoinput" : "audioinput";
-                        const list = devices.filter((d) => d.kind === kind);
-                        const value = k === "cam" ? camId : micId;
-                        return (
-                          <label key={k} className="block space-y-1">
-                            <span className="font-semibold">{k === "cam" ? "Câmera" : "Microfone"}</span>
-                            <select
-                              value={value}
-                              onChange={(e) => void changeDevice(k, e.target.value)}
-                              className="h-8 w-full rounded-md border border-neutral-300 bg-white px-2 cursor-pointer"
-                            >
-                              <option value="">Padrão do navegador</option>
-                              {list.map((d, i) => (
-                                <option key={d.deviceId || i} value={d.deviceId}>
-                                  {d.label || `${k === "cam" ? "Câmera" : "Microfone"} ${i + 1}`}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        );
-                      })}
-                      <p className="text-[11px] text-neutral-500">
-                        Com a extensão MediaFlowMZ Live, escolha “MediaFlowMZ Live (vídeo)” e “MediaFlowMZ Live (áudio)”.
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  aria-label="Configurações de áudio e vídeo"
+                  onClick={() => {
+                    void loadDevices();
+                    setDevOpen(true);
+                  }}
+                  className="grid size-8 place-items-center rounded-md bg-white text-neutral-900 cursor-pointer"
+                >
+                  <ChevronDown size={14} />
+                </button>
               </div>
             </div>
 
             <div className="relative mx-2 flex flex-1 items-center justify-center rounded-lg bg-neutral-800 text-center text-white/70">
-              {videoOn && onAir && camStream ? (
+              {videoOn && camStream?.getVideoTracks().length ? (
                 <video
                   autoPlay
                   muted
@@ -474,7 +694,9 @@ export default function ConsolePage() {
                 </div>
               )}
               {onAir && (
-                <span className="absolute left-3 top-1 rounded bg-red-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">Prévia</span>
+                <span className="absolute left-3 top-1 rounded bg-red-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                  {mode === "pratica" ? "Prática" : "Ao vivo"}
+                </span>
               )}
             </div>
             {camError && <p className="px-4 pt-1 text-[11px] text-amber-300/80">{camError}</p>}
@@ -616,67 +838,141 @@ export default function ConsolePage() {
         </section>
       </div>
 
-      {/* Adicionar produtos (catálogo do clone) */}
+      {devOpen && (
+        <AvSettings devices={devices} camId={camId} micId={micId} reload={loadDevices} onClose={() => setDevOpen(false)} onConfirm={confirmAv} />
+      )}
+
+      {/* Adicionar novos produtos: painel lateral com as abas do TikTok (vitrine, kit e URL de produto) */}
       {pickerOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setPickerOpen(false)}>
-          <div className="flex max-h-[85svh] w-full max-w-2xl flex-col rounded-2xl bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-border/60 p-4">
-              <h2 className="font-semibold">Adicionar produtos</h2>
-              <button type="button" aria-label="Fechar" onClick={() => setPickerOpen(false)} className="cursor-pointer">
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={closePicker}>
+          <div className="flex h-full w-full max-w-[560px] flex-col bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 pb-2 pt-5">
+              <h2 className="text-lg font-semibold">Adicionar novos produtos</h2>
+              <button type="button" aria-label="Fechar" onClick={closePicker} className="cursor-pointer">
                 <X size={18} />
               </button>
             </div>
-            <div className="flex flex-wrap gap-2 p-4 pb-2">
-              <label className="flex h-9 min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-border px-3">
-                <Search size={14} className="text-muted-foreground" />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Pesquisar ID ou nome do produto"
-                  className="flex-1 bg-transparent text-sm outline-none"
-                />
-              </label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-9 rounded-lg border border-border bg-card px-2 text-sm cursor-pointer">
-                <option value="todas">Todas as categorias</option>
-                {Object.entries(CATEGORY_LABELS).map(([k, l]) => (
-                  <option key={k} value={k}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <ul className="min-h-0 flex-1 divide-y divide-border/50 overflow-y-auto px-4">
-              {results.map((p) => (
-                <li key={p.id}>
-                  <label className="flex cursor-pointer items-center gap-3 py-2.5">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(p.id)}
-                      onChange={(e) => setSelected((s) => (e.target.checked ? [...s, p.id] : s.filter((x) => x !== p.id)))}
-                      className="size-4 accent-primary"
-                    />
-                    <img src={p.imageUrl} alt="" className="size-11 rounded-md object-cover" />
-                    <span className="min-w-0 flex-1">
-                      <span className="line-clamp-1 text-sm">{p.title}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {p.category} · {formatBRL(p.priceCents)} · {p.commissionPct}% de comissão
-                      </span>
-                    </span>
-                  </label>
-                </li>
+            <div className="flex gap-6 border-b border-border/60 px-6">
+              {(
+                [
+                  ["vitrine", "Produtos da vitrine"],
+                  ["kit", "Kit de produtos da LIVE"],
+                  ["url", "URL de produto"],
+                ] as const
+              ).map(([v, l]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setPickerTab(v)}
+                  className={cn(
+                    "-mb-px flex items-center gap-1 border-b-2 py-3 text-sm font-semibold cursor-pointer",
+                    pickerTab === v ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {l}
+                  {v === "url" && <CircleHelp size={13} className="text-muted-foreground" />}
+                </button>
               ))}
-              {results.length === 0 && <li className="py-8 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</li>}
-            </ul>
-            <div className="flex items-center justify-between border-t border-border/60 p-4">
-              <span className="text-sm text-muted-foreground">{selected.length} selecionado(s)</span>
-              <button
-                type="button"
-                disabled={selected.length === 0}
-                onClick={addSelected}
-                className="h-9 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-40 cursor-pointer"
-              >
-                Adicionar
-              </button>
+            </div>
+
+            {pickerTab === "vitrine" && (
+              <>
+                <div className="flex flex-wrap gap-2 px-6 pb-2 pt-4">
+                  <label className="flex h-9 min-w-[200px] flex-1 items-center gap-2 rounded-md border border-border px-3">
+                    <Search size={14} className="text-muted-foreground" />
+                    <input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Pesquisar ID ou nome do produto"
+                      className="flex-1 bg-transparent text-sm outline-none"
+                    />
+                  </label>
+                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-9 rounded-md border border-border bg-card px-2 text-sm cursor-pointer">
+                    <option value="todas">Todas as categorias</option>
+                    {Object.entries(CATEGORY_LABELS).map(([k, l]) => (
+                      <option key={k} value={k}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <p className="px-6 pb-1 text-xs text-muted-foreground">{results.length.toLocaleString("pt-BR")} produtos na vitrine</p>
+                <ul className="min-h-0 flex-1 divide-y divide-border/50 overflow-y-auto px-6">
+                  {results.map((p) => (
+                    <li key={p.id}>
+                      <label className="flex cursor-pointer items-center gap-3 py-2.5">
+                        <input
+                          type="checkbox"
+                          checked={selected.includes(p.id)}
+                          disabled={!selected.includes(p.id) && selected.length >= room}
+                          onChange={(e) => setSelected((s) => (e.target.checked ? [...s, p.id] : s.filter((x) => x !== p.id)))}
+                          className="size-4 accent-primary"
+                        />
+                        <img src={p.imageUrl} alt="" className="size-11 rounded-md object-cover" />
+                        <span className="min-w-0 flex-1">
+                          <span className="line-clamp-1 text-sm">{p.title}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {p.category} · {formatBRL(p.priceCents)} · {p.commissionPct}% de comissão
+                          </span>
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                  {results.length === 0 && <li className="py-8 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</li>}
+                </ul>
+              </>
+            )}
+
+            {pickerTab === "kit" && (
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
+                <p className="text-[15px] font-semibold">Você ainda não tem kits de produtos</p>
+                <p className="max-w-xs text-sm text-muted-foreground">
+                  Agrupe os produtos que você apresenta sempre e adicione todos de uma vez à LIVE.
+                </p>
+                <a href="/estudio/kit-de-produtos" className="mt-3 h-9 rounded-md border border-border px-4 text-sm font-semibold leading-9">
+                  Criar kit de produtos
+                </a>
+              </div>
+            )}
+
+            {pickerTab === "url" && (
+              <div className="flex-1 space-y-3 px-6 pt-4">
+                <textarea
+                  rows={4}
+                  value={urlText}
+                  onChange={(e) => {
+                    setUrlText(e.target.value);
+                    setUrlMsg(null);
+                  }}
+                  placeholder="Insira os URLs de produto aqui. Por exemplo: https://URLdoproduto.com.br/produto"
+                  className="w-full resize-none rounded-md border border-border bg-transparent p-3 text-sm outline-none focus:border-primary"
+                />
+                <button
+                  type="button"
+                  disabled={!urlText.trim()}
+                  onClick={addUrls}
+                  className="h-9 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-40 cursor-pointer"
+                >
+                  URL de produtos
+                </button>
+                {urlMsg && <p className="text-xs text-amber-600 dark:text-amber-400">{urlMsg}</p>}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-3 border-t border-border/60 px-6 py-4">
+              <span className="text-xs text-muted-foreground">
+                O canal de LIVE tem espaço para mais {Math.max(0, room - selected.length)} produtos
+              </span>
+              {pickerTab === "vitrine" && (
+                <button
+                  type="button"
+                  disabled={selected.length === 0}
+                  onClick={addSelected}
+                  className="h-9 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-40 cursor-pointer"
+                >
+                  Adicionar{selected.length ? ` (${selected.length})` : ""}
+                </button>
+              )}
             </div>
           </div>
         </div>
