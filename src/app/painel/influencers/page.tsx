@@ -4,6 +4,8 @@ import { LazyVideo } from "@/components/lazy-video";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
 import { RaisedButton, cn } from "@/components/brand";
+import { DownloadImages, FlowGuide, type FlowImage } from "@/components/flow-guide";
+import { ProductPicker } from "@/components/product-picker";
 import {
   PROOF_GOAL_LABELS,
   type ProofGoal,
@@ -38,12 +40,14 @@ function TemplatesInner() {
   const [selectedGoal, setSelectedGoal] = useState<ProofGoal>("use");
   const [generating, setGenerating] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [flowPrompt, setFlowPrompt] = useState<string | null>(null);
+  const [tplStep, setTplStep] = useState(0);
 
   useEffect(() => {
     if (searchParams.get("produto")) {
       setSelectedProdId(Number(searchParams.get("produto")));
       setActiveTemplate(ZAALYS_TEMPLATES[1]!);
+      setTplStep(1); // produto já escolhido na página anterior
     }
   }, [searchParams]);
 
@@ -86,6 +90,7 @@ Demonstração contínua mostrando: ${selectedProduct.facts[0]}. Movimento de c�
 Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do TikTok Shop): "Deixei o link com desconto aqui no carrinho laranja."`;
 
       setGeneratedPrompt(prompt);
+      setFlowPrompt(prompt);
       setGenerating(false);
     }, 900);
   }
@@ -132,6 +137,7 @@ Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do
         cta: string;
         videoPrompt: string;
       };
+      setFlowPrompt(sc.videoPrompt);
       setGeneratedPrompt(
         `[ROTEIRO FALADO — 8s]\nGancho: "${sc.hook}"\n${sc.scenes
           .map((c, i) => `Cena ${i + 1} (${c.seconds}s): ${c.shot}, ${c.action} — "${c.speech}"`)
@@ -144,19 +150,21 @@ Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do
     }
   }
 
-  function handleCopyPrompt() {
-    if (!generatedPrompt) return;
-    navigator.clipboard?.writeText(generatedPrompt).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  // Passo a passo do template: produto → avatar (se tiver modelo) → prompt → baixar → Flow.
+  const STEPS = activeTemplate?.needsModel ? ["Produto", "Avatar", "Prompt", "Baixar", "Flow"] : ["Produto", "Prompt", "Baixar", "Flow"];
+  const stepName = STEPS[Math.min(tplStep, STEPS.length - 1)]!;
+  const images: FlowImage[] = [
+    { src: selectedProduct.imageUrl, label: "Foto do produto", filename: `produto-${selectedProduct.title.slice(0, 40)}` },
+    ...(activeTemplate?.needsModel ? [{ src: selectedModel.image, label: `Avatar ${selectedModel.name}`, filename: `avatar-${selectedModel.id}` }] : []),
+  ];
+  function openTemplate(tpl: ZaalysTemplate) {
+    setActiveTemplate(tpl);
+    setGeneratedPrompt(null);
+    setFlowPrompt(null);
+    setGenerateError(null);
+    setTplStep(0);
   }
-
-  function handleOpenFlow() {
-    if (generatedPrompt) {
-      navigator.clipboard?.writeText(generatedPrompt).catch(() => {});
-    }
-    window.open("https://labs.google/fx/tools/flow", "_blank", "noopener,noreferrer");
-  }
+  const canNext = stepName === "Prompt" ? Boolean(flowPrompt) : stepName !== "Flow";
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
@@ -235,10 +243,7 @@ Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do
           <button
             key={tpl.id}
             type="button"
-            onClick={() => {
-              setActiveTemplate(tpl);
-              setGeneratedPrompt(null);
-            }}
+            onClick={() => openTemplate(tpl)}
             className="group relative flex flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-card text-left transition-[transform,border-color,box-shadow] duration-200 hover:border-primary/40 hover:shadow-[0_16px_36px_-12px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer dark:border-white/[0.08]"
           >
             <div className="relative aspect-[9/16] w-full overflow-hidden bg-black">
@@ -281,8 +286,7 @@ Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do
               type="button"
               onClick={() => {
                 setSelectedModelId(m.id);
-                setActiveTemplate(ZAALYS_TEMPLATES[1]!);
-                setGeneratedPrompt(null);
+                openTemplate(ZAALYS_TEMPLATES[1]!);
               }}
               className="group relative aspect-[3/4] overflow-hidden rounded-3xl border border-black/[0.06] bg-muted text-left transition-[transform,border-color] duration-200 hover:border-primary/50 active:scale-[0.97] cursor-pointer dark:border-white/[0.08]"
             >
@@ -304,114 +308,71 @@ Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do
         </div>
       </section>
 
-      {/* Split-View Template Generator Modal (Exact 32je0ui0vbk-h.js layout) */}
+      {/* Template: passo a passo (produto → avatar → prompt → baixar → Flow) */}
       {activeTemplate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="apple-card grid max-h-[90dvh] w-full max-w-3xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden shadow-2xl sm:grid-cols-[210px_1fr] sm:grid-rows-1">
-            {/* Left Video Preview Column */}
-            <div className="relative h-[190px] w-full overflow-hidden bg-black sm:h-full">
-              <LazyVideo
-                src={activeTemplate.videoLite}
-                poster={activeTemplate.poster}
-                className="size-full object-cover"
-              />
-              {activeTemplate.needsModel && selectedModel && (
-                <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3">
-                  <img
-                    src={selectedModel.image}
-                    alt={selectedModel.name}
-                    className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary"
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-[10px] uppercase tracking-wide text-white/60">
-                      Modelo
-                    </span>
-                    <span className="block truncate text-sm font-semibold text-white">
-                      {selectedModel.name}
-                    </span>
-                  </span>
-                </div>
-              )}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-4">
+          <div className="apple-card grid max-h-[92dvh] w-full max-w-3xl grid-cols-[minmax(0,1fr)] overflow-hidden shadow-2xl sm:grid-cols-[200px_minmax(0,1fr)]">
+            {/* Prévia do movimento */}
+            <div className="relative hidden h-full w-full overflow-hidden bg-black sm:block">
+              <LazyVideo src={activeTemplate.videoLite} poster={activeTemplate.poster} className="size-full object-cover" />
             </div>
 
-            {/* Right Controls & Generated Prompt Column */}
-            <div className="flex min-h-0 flex-col overflow-y-auto p-5 sm:p-6">
-              <div className="flex items-start justify-between gap-2">
-                <span className="w-fit rounded-full border border-black/[0.04] bg-primary/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary dark:border-white/[0.06]">
-                  Movimento · {activeTemplate.formatLabel}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setActiveTemplate(null)}
-                  className="rounded-lg p-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  ✕
-                </button>
+            <div className="flex min-h-0 min-w-0 flex-col">
+              <div className="border-b border-border/60 p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">Movimento · {activeTemplate.formatLabel}</span>
+                    <h2 className="truncate font-display text-lg font-bold tracking-tight">{activeTemplate.title}</h2>
+                  </div>
+                  <button type="button" aria-label="Fechar" onClick={() => setActiveTemplate(null)} className="rounded-lg p-1 text-muted-foreground hover:text-foreground cursor-pointer">
+                    ✕
+                  </button>
+                </div>
+                <ol className="mt-3 flex gap-1 overflow-x-auto [scrollbar-width:none]">
+                  {STEPS.map((label, i) => {
+                    const reachable = i <= tplStep || (i <= STEPS.indexOf("Prompt") ) || (Boolean(flowPrompt) && i > STEPS.indexOf("Prompt"));
+                    return (
+                      <li key={label}>
+                        <button
+                          type="button"
+                          disabled={!reachable}
+                          onClick={() => setTplStep(i)}
+                          className={cn(
+                            "flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-40",
+                            i === tplStep ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          <span className={cn("grid size-4 place-items-center rounded-full text-[10px]", i === tplStep ? "bg-primary-foreground/20" : "bg-muted")}>
+                            {i < tplStep ? "✓" : i + 1}
+                          </span>
+                          {label}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
               </div>
 
-              <h2 className="mt-3 font-display text-xl font-bold tracking-tight">
-                {activeTemplate.title}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {activeTemplate.needsModel
-                  ? "Escolha o produto e o modelo — a IA adapta este movimento para você."
-                  : "Escolha o produto — este movimento mostra só as mãos, sem modelo."}
-              </p>
-
-              <fieldset disabled={generating} className="mt-4 min-w-0 space-y-4">
-                {/* Product Selector */}
-                <div className="block space-y-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">Produto</span>
-                  <select
-                    value={selectedProdId}
-                    onChange={(e) => {
-                      setSelectedProdId(Number(e.target.value));
-                      setGeneratedPrompt(null);
-                    }}
-                    className="field text-sm"
-                  >
-                    {ZAALYS_PRODUCTS.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.title} ({formatBRL(p.priceCents)})
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[11px] text-muted-foreground">
-                    Este movimento combina com {activeTemplate.categories.join(", ")}.
-                  </p>
-                </div>
-
-                {/* Pergunta de compra */}
-                <fieldset className="flex flex-wrap gap-2">
-                  <legend className="mb-1.5 text-xs font-medium text-muted-foreground">
-                    Pergunta de compra
-                  </legend>
-                  {activeTemplate.proofGoals.map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => {
-                        setSelectedGoal(g);
-                        setGeneratedPrompt(null);
-                      }}
-                      className={cn(
-                        "rounded-xl px-3 py-1 text-xs font-semibold transition-colors cursor-pointer",
-                        selectedGoal === g
-                          ? "bg-primary text-primary-foreground"
-                          : "border border-border bg-card text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {PROOF_GOAL_LABELS[g]}
-                    </button>
-                  ))}
-                </fieldset>
-
-                {/* Model Selector Grid */}
-                {activeTemplate.needsModel && (
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+                {stepName === "Produto" && (
                   <div className="space-y-2">
-                    <span className="text-xs font-medium text-muted-foreground">Modelo</span>
-                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
-                      {ZAALYS_MODELS.slice(0, 5).map((m) => {
+                    <p className="text-sm text-muted-foreground">Qual produto vai aparecer no vídeo? Este movimento combina com {activeTemplate.categories.join(", ")}.</p>
+                    <ProductPicker
+                      value={selectedProduct}
+                      onChange={(p) => {
+                        setSelectedProdId(p.id);
+                        setGeneratedPrompt(null);
+                        setFlowPrompt(null);
+                      }}
+                    />
+                  </div>
+                )}
+
+                {stepName === "Avatar" && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">Escolha o avatar de IA que vai apresentar o produto. Você baixa a foto dele no fim.</p>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {ZAALYS_MODELS.map((m) => {
                         const isSel = m.id === selectedModelId;
                         return (
                           <button
@@ -420,26 +381,21 @@ Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do
                             onClick={() => {
                               setSelectedModelId(m.id);
                               setGeneratedPrompt(null);
+                              setFlowPrompt(null);
                             }}
                             className={cn(
-                              "group relative overflow-hidden rounded-2xl border text-left transition-all cursor-pointer",
-                              isSel
-                                ? "border-primary ring-2 ring-primary/40 shadow-xs"
-                                : "border-black/[0.06] hover:border-black/[0.12] dark:border-white/[0.08]",
+                              "relative overflow-hidden rounded-2xl border text-left cursor-pointer",
+                              isSel ? "border-primary ring-2 ring-primary/40" : "border-border hover:border-primary/40",
                             )}
                           >
-                            <div className="relative aspect-[3/4] overflow-hidden bg-muted/40">
-                              <img
-                                src={m.image}
-                                alt={m.name}
-                                className="size-full object-cover"
-                              />
-                              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 to-transparent" />
+                            <div className="relative aspect-[3/4] bg-muted">
+                              <img src={m.image} alt={m.name} loading="lazy" className="size-full object-cover" />
+                              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                               <div className="absolute inset-x-0 bottom-0 p-1.5">
-                                <span className="block truncate text-[10px] font-semibold text-white">
-                                  {m.name}
-                                </span>
+                                <span className="block truncate text-[11px] font-semibold text-white">{m.name}</span>
+                                <span className="block truncate text-[9px] text-white/70">{m.style}</span>
                               </div>
+                              {isSel && <span className="absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">✓</span>}
                             </div>
                           </button>
                         );
@@ -447,73 +403,88 @@ Sorriso confiante apontando sutilmente para o canto inferior esquerdo (sacola do
                     </div>
                   </div>
                 )}
-              </fieldset>
 
-              <div className="mt-4">
-                <RaisedButton
-                  size="lg"
-                  className="w-full"
-                  disabled={generating}
-                  onClick={handleGenerate}
-                >
-                  {generating ? "Gerando roteiro…" : "✦ Gerar roteiro"}
-                </RaisedButton>
+                {stepName === "Prompt" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3">
+                      <img src={selectedProduct.imageUrl} alt="" className="size-12 rounded-lg object-cover" />
+                      {activeTemplate.needsModel && <img src={selectedModel.image} alt="" className="size-12 rounded-lg object-cover" />}
+                      <p className="min-w-0 text-xs">
+                        <span className="line-clamp-1 font-semibold">{selectedProduct.title}</span>
+                        <span className="text-muted-foreground">{activeTemplate.needsModel ? `com ${selectedModel.name}` : "só as mãos, sem modelo"}</span>
+                      </p>
+                    </div>
+                    <fieldset className="flex flex-wrap gap-2">
+                      <legend className="mb-1.5 text-xs font-medium text-muted-foreground">Qual pergunta de compra o vídeo responde?</legend>
+                      {activeTemplate.proofGoals.map((g) => (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => {
+                            setSelectedGoal(g);
+                            setGeneratedPrompt(null);
+                            setFlowPrompt(null);
+                          }}
+                          className={cn(
+                            "rounded-xl px-3 py-1 text-xs font-semibold transition-colors cursor-pointer",
+                            selectedGoal === g ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {PROOF_GOAL_LABELS[g]}
+                        </button>
+                      ))}
+                    </fieldset>
+                    <RaisedButton size="lg" className="w-full" disabled={generating} onClick={handleGenerate}>
+                      {generating ? "Gerando o prompt…" : generatedPrompt ? "↻ Gerar de novo" : "✦ Gerar prompt com IA"}
+                    </RaisedButton>
+                    {generateError && (
+                      <p role="alert" className="text-xs font-medium text-destructive">
+                        {generateError}
+                      </p>
+                    )}
+                    {generatedPrompt && (
+                      <pre className="max-h-[30vh] overflow-y-auto whitespace-pre-wrap rounded-2xl border border-border bg-card/60 p-3 font-mono text-[11px] leading-relaxed">{generatedPrompt}</pre>
+                    )}
+                  </div>
+                )}
+
+                {stepName === "Baixar" && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Baixe {images.length > 1 ? "as duas fotos" : "a foto do produto"}: você vai enviar no Google Flow junto com o prompt.
+                    </p>
+                    <DownloadImages images={images} />
+                  </div>
+                )}
+
+                {stepName === "Flow" && flowPrompt && (
+                  <FlowGuide images={images} prompt={flowPrompt} finalStep="Poste o vídeo no feed do TikTok e marque o produto (carrinho laranja) na publicação." />
+                )}
               </div>
 
-              {generateError && (
-                <p role="alert" className="mt-3 text-xs font-medium text-destructive">
-                  {generateError}
-                </p>
-              )}
-
-              {generatedPrompt && (
-                <div className="mt-5 space-y-4">
-                  <div className="rounded-2xl border border-border bg-card/60 p-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-primary">
-                        Roteiro gerado
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleCopyPrompt}
-                        className="rounded-lg border border-border px-2.5 py-1 text-xs font-semibold hover:bg-foreground/[0.05] cursor-pointer"
-                      >
-                        {copied ? "✓ Copiado" : "Copiar"}
-                      </button>
-                    </div>
-                    <pre className="max-h-[24vh] overflow-y-auto whitespace-pre-wrap font-mono text-xs leading-relaxed text-foreground/90">
-                      {generatedPrompt}
-                    </pre>
-                  </div>
-
-                  {/* Agora gere no Google Flow */}
-                  <div className="rounded-2xl border border-border bg-card/40 p-4">
-                    <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Agora gere no Google Flow
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {activeTemplate.needsModel && (
-                          <img
-                            src={selectedModel.image}
-                            alt={selectedModel.name}
-                            className="size-8 rounded-lg object-cover"
-                          />
-                        )}
-                        <img
-                          src={selectedProduct.imageUrl}
-                          alt={selectedProduct.title}
-                          className="size-8 rounded-lg object-cover"
-                        />
-                        <span>Ingredientes prontos para colar (Ctrl/Cmd + V)</span>
-                      </div>
-                      <RaisedButton size="sm" onClick={handleOpenFlow}>
-                        Copiar e abrir Google Flow ↗
-                      </RaisedButton>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <div className="flex items-center justify-between gap-2 border-t border-border/60 p-3 sm:px-5">
+                <button
+                  type="button"
+                  onClick={() => (tplStep === 0 ? setActiveTemplate(null) : setTplStep((s) => s - 1))}
+                  className="h-10 rounded-xl px-3 text-sm font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  {tplStep === 0 ? "Cancelar" : "← Voltar"}
+                </button>
+                {stepName !== "Flow" ? (
+                  <button
+                    type="button"
+                    disabled={!canNext}
+                    onClick={() => setTplStep((s) => s + 1)}
+                    className="h-10 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {stepName === "Prompt" && !flowPrompt ? "Gere o prompt para continuar" : "Continuar →"}
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setActiveTemplate(null)} className="h-10 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground cursor-pointer">
+                    Concluir
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

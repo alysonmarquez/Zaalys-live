@@ -499,49 +499,25 @@ export type ZaalysModel = {
   appearance: string;
 };
 
+// Avatares de IA para os vídeos de feed (imagens geradas por IA, sem pessoas reais).
+// Baixe a foto do avatar e envie junto com a foto do produto no Google Flow.
+const M = (id: string, name: string, style: string, image: string, appearance: string): ZaalysModel => ({ id, name, style, image: `/media/models/${image}.webp`, appearance });
+
 export const ZAALYS_MODELS: ZaalysModel[] = [
-  {
-    id: "bia-costa",
-    name: "Bia Costa",
-    style: "UGC · Casa & Beleza",
-    image: "/media/models/woman-casual.webp",
-    appearance: "Mulher brasileira de 26 anos, cabelo castanho ondulado na altura dos ombros, pele morena clara natural, sorriso espontâneo, camiseta branca básica e jeans, iluminação natural de janela.",
-  },
-  {
-    id: "lucas-mendes",
-    name: "Lucas Mendes",
-    style: "Social · Tech & Rotina",
-    image: "/media/models/man-smart.webp",
-    appearance: "Homem brasileiro de 28 anos, cabelo curto alinhado, barba curta bem feita, camisa social clara, fundo de estúdio moderno com luz suave.",
-  },
-  {
-    id: "camila-souza",
-    name: "Camila Souza",
-    style: "Apresentadora · Rotina",
-    image: "/media/templates/21_apresentando-produto.jpg",
-    appearance: "Mulher brasileira de 24 anos, cabelo longo escuro liso, olhos castanhos expressivos, regata branca canelada, sala iluminada com luz do dia.",
-  },
-  {
-    id: "duda-ferreira",
-    name: "Duda Ferreira",
-    style: "Skincare & Glow",
-    image: "/media/templates/19_textura-pele.jpg",
-    appearance: "Jovem brasileira de 23 anos, cabelo preso com presilha, pele iluminada natural, blusa marrom de tricô leve em banheiro/quarto moderno com luz quente.",
-  },
-  {
-    id: "larissa-oliveira",
-    name: "Larissa Oliveira",
-    style: "Fitness & Suplementos",
-    image: "/media/templates/23_preparo-e-gole.jpg",
-    appearance: "Mulher brasileira de 27 anos, cabelo preso, top esportivo, cozinha iluminada preparando shake na bancada, expressão confiante e energética.",
-  },
-  {
-    id: "pedro-alves",
-    name: "Pedro Alves",
-    style: "Setup & Casa",
-    image: "/media/templates/24_setup-mesa.jpg",
-    appearance: "Criador brasileiro de 30 anos em bancada/mesa organizada com iluminação aconchegante, tom direto e confiável.",
-  },
+  M("bia-costa", "Bia Costa", "UGC · Casa & Beleza", "woman-casual", "Mulher brasileira de 26 anos, cabelo castanho ondulado na altura dos ombros, pele morena clara natural, sorriso espontâneo, camiseta branca básica e jeans, iluminação natural de janela."),
+  M("lucas-mendes", "Lucas Mendes", "Social · Tech & Rotina", "man-smart", "Homem brasileiro de 28 anos, cabelo curto alinhado, barba curta bem feita, camisa social clara, fundo de estúdio moderno com luz suave."),
+  M("julia-praia", "Júlia Ramos", "Fitness · Praia", "julia-praia", "Mulher brasileira de 25 anos, pele morena, cabelo castanho preso, top esportivo azul-marinho, calçadão à beira-mar ao fim da tarde."),
+  M("marina-executiva", "Marina Lopes", "Rotina · Trabalho", "marina-executiva", "Mulher brasileira de 30 anos, cabelo castanho liso, blazer bege e crachá, rua movimentada da cidade com luz do dia."),
+  M("jessica-trancas", "Jéssica Santos", "Beleza · Cabelo", "jessica-trancas", "Mulher brasileira negra de 27 anos, tranças longas, camiseta verde, varanda com plantas e luz natural."),
+  M("carol-academia", "Carol Dias", "Fitness · Suplementos", "carol-academia", "Mulher brasileira de 26 anos, cabelo preso, top esportivo, academia ao ar livre com luz do dia."),
+  M("aline-treino", "Aline Moraes", "Treino · Energia", "aline-treino", "Mulher brasileira negra de 29 anos, cabelo cacheado preso, roupa de treino, academia com luz natural e expressão confiante."),
+  M("helena-elegante", "Helena Prado", "Moda · 50+", "helena-elegante", "Mulher brasileira de 55 anos, cabelo grisalho curto, camisa azul de seda, jardim florido, sorriso acolhedor."),
+  M("sonia-casa", "Sônia Ribeiro", "Casa · Cozinha", "sonia-casa", "Mulher brasileira de 50 anos, cabelo castanho na altura dos ombros, vestido floral, sala aconchegante com luz de fim de tarde."),
+  M("vera-alegre", "Vera Nunes", "Bem-estar · 50+", "vera-alegre", "Mulher brasileira negra de 52 anos, cabelo crespo grisalho, regata amarela, calçadão à beira-mar, sorriso aberto."),
+  M("rafael-fitness", "Rafael Costa", "Fitness · Academia", "rafael-fitness", "Homem brasileiro de 28 anos, cabelo raspado nas laterais, regata preta, academia com halteres ao fundo."),
+  M("theo-praia", "Théo Martins", "Lifestyle · Praia", "theo-praia", "Homem brasileiro de 24 anos, cabelo loiro escuro bagunçado, regata cinza, praia com montanhas ao fundo."),
+  M("gabriel-casual", "Gabriel Souza", "Lifestyle · Rua", "gabriel-casual", "Homem brasileiro de 30 anos, chapéu de palha, camisa estampada, rua de bairro com comércio ao fundo."),
+  M("roberto-classico", "Roberto Lima", "Casa & Ferramentas · 50+", "roberto-classico", "Homem brasileiro de 55 anos, cabelo grisalho, camisa branca de linho, varanda com vista para o mar."),
 ];
 
 export type ZaalysTemplate = {

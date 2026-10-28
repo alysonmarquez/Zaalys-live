@@ -2,7 +2,7 @@
 // Sem RESEND_API_KEY, o e-mail é só registrado no log (útil para testar local).
 
 export type EmailInput = {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   text: string;
@@ -28,7 +28,7 @@ export async function sendEmail(input: EmailInput): Promise<{ sent: boolean }> {
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
     body: JSON.stringify({
       from,
-      to: [input.to],
+      to: Array.isArray(input.to) ? input.to : [input.to],
       subject: input.subject,
       html: input.html,
       text: input.text,

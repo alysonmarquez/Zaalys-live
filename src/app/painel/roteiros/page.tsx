@@ -2,8 +2,9 @@
 
 import { LazyVideo } from "@/components/lazy-video";
 import React, { useState } from "react";
-import { ArrowUpRight, ChevronLeft, Download } from "lucide-react";
+import { ArrowUpRight, ChevronLeft } from "lucide-react";
 import { RaisedButton, cn } from "@/components/brand";
+import { DownloadImages, FlowGuide } from "@/components/flow-guide";
 import {
   TREND_CTAS,
   TREND_FORMATS_ORIGINAL,
@@ -292,12 +293,6 @@ export default function TrendAiPage() {
             ))}
             <p className="font-semibold text-primary">“{active.cta}”</p>
           </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Prompt para o Google Flow</p>
-            <pre className="mt-1.5 max-h-48 overflow-auto whitespace-pre-wrap rounded-2xl border border-border bg-background/60 p-3 font-mono text-[11px] leading-relaxed">
-              {active.videoPrompt}
-            </pre>
-          </div>
           <div className="flex flex-wrap gap-2">
             <RaisedButton
               size="sm"
@@ -309,14 +304,6 @@ export default function TrendAiPage() {
             >
               {copied ? "Copiado" : "Copiar roteiro + prompt"}
             </RaisedButton>
-            <a
-              href={character.image}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-semibold hover:bg-muted"
-            >
-              <Download size={14} /> Imagem do personagem
-            </a>
             <button
               type="button"
               onClick={() => setScripts(null)}
@@ -325,9 +312,19 @@ export default function TrendAiPage() {
               Trocar tom
             </button>
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            No Flow, envie a imagem do personagem como referência e cole o prompt.
-          </p>
+
+          <div className="space-y-2 border-t border-border/60 pt-4">
+            <p className="text-sm font-semibold">1. Baixe a imagem do personagem</p>
+            <DownloadImages images={[{ src: character.image, label: character.name, filename: `personagem-${format.slug}-${character.name}` }]} />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">2. Gere o vídeo no Google Flow</p>
+            <FlowGuide
+              images={[{ src: character.image, label: character.name, filename: `personagem-${format.slug}` }]}
+              prompt={active.videoPrompt}
+              finalStep="Poste no TikTok com uma legenda que puxe comentário (ex.: “você também faz isso?”) para ganhar alcance e seguidores."
+            />
+          </div>
         </div>
       )}
     </div>

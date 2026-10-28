@@ -65,6 +65,17 @@ function IndiqueCriador() {
   const [pixType, setPixType] = useState("cpf");
   const [pixKey, setPixKey] = useState("");
   const [pixSaved, setPixSaved] = useState(false);
+  useEffect(() => {
+    fetch("/api/conta/afiliado")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { pixType?: string | null; pixKey?: string | null } | null) => {
+        if (d?.pixKey) {
+          setPixType(d.pixType ?? "cpf");
+          setPixKey(d.pixKey);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -198,8 +209,15 @@ function IndiqueCriador() {
         </p>
         <form
           className="mt-4 grid gap-3 sm:grid-cols-[10rem_1fr_auto]"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
+            // Mesma chave Pix do Saque de comissões (fica salva na conta).
+            const res = await fetch("/api/conta/afiliado", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pixType, pixKey: pixKey.trim() }),
+            }).catch(() => null);
+            if (!res?.ok) return;
             setPixSaved(true);
             setTimeout(() => setPixSaved(false), 2000);
           }}
@@ -213,8 +231,8 @@ function IndiqueCriador() {
             <option value="cpf">CPF</option>
             <option value="cnpj">CNPJ</option>
             <option value="email">E-mail</option>
-            <option value="phone">Telefone</option>
-            <option value="random">Chave aleatória</option>
+            <option value="telefone">Telefone</option>
+            <option value="aleatoria">Chave aleatória</option>
           </select>
           <input
             required

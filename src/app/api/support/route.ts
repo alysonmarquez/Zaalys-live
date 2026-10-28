@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { fail, json } from "@/lib/http";
-import { getAccess } from "@/lib/access";
+import { adminEmails, getAccess } from "@/lib/access";
 import { createAdminClient } from "@/lib/supabase/server";
 import { emailLayout, escapeHtml, sendEmail } from "@/lib/email";
 import { isSupabaseServerConfigured } from "@/lib/radar";
@@ -29,7 +29,8 @@ export async function POST(req: Request) {
       ticketId = data.id;
     }
 
-    const inbox = process.env.SUPPORT_INBOX ?? "suporte@mediaflowmz.com";
+    // Chamados vão para os administradores (ou SUPPORT_INBOX, se definido) e ficam no Admin → Suporte.
+    const inbox = process.env.SUPPORT_INBOX ? process.env.SUPPORT_INBOX.split(",").map((e) => e.trim()) : adminEmails();
     const ref = ticketId ? ` #${ticketId.slice(0, 8)}` : "";
     await sendEmail({
       to: inbox,

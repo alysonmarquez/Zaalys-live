@@ -14,13 +14,14 @@ export async function GET() {
   try {
     const now = Date.now();
     const since30 = new Date(now - 30 * DAY).toISOString();
-    const [profiles, subs, payments, sales, tickets, lives] = await Promise.all([
+    const [profiles, subs, payments, sales, tickets, lives, saques] = await Promise.all([
       c.db.from("profiles").select("id, email, created_at").limit(10000),
       c.db.from("subscriptions").select("*").limit(20000),
       c.db.from("payments").select("event, amount_cents, received_at").gte("received_at", new Date(now - 365 * DAY).toISOString()).limit(20000),
       c.db.from("affiliate_sales").select("status, payout_status, commission_cents, amount_cents, created_at").limit(20000),
       c.db.from("support_tickets").select("status").limit(5000),
       c.db.from("live_sessions").select("status, started_at").gte("started_at", since30).limit(20000),
+      c.db.from("payout_requests").select("amount_cents").eq("status", "pending").limit(5000),
     ]);
     for (const r of [profiles, subs, payments]) if (r.error) return fail(r.error);
 
@@ -71,6 +72,7 @@ export async function GET() {
         repassadoCents: vendas.filter((s) => s.status === "paid" && s.payout_status === "repassada").reduce((a, s) => a + s.commission_cents, 0),
       },
       suporte: { abertos: (tickets.data ?? []).filter((t) => t.status === "open").length },
+      saques: { pendentes: saques.data?.length ?? 0, valorCents: (saques.data ?? []).reduce((a, r) => a + (r.amount_cents ?? 0), 0) },
       lives: { dias30: lv.length, noAr: lv.filter((l) => l.status === "running").length },
     });
   } catch (err) {

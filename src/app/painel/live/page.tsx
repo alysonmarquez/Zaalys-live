@@ -4,12 +4,13 @@ import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Film, Laptop, Search, Smartphone, Tablet, Trash2, Wand2 } from "lucide-react";
 import { RaisedButton, cn } from "@/components/brand";
-import { formatBRL, type ZaalysProduct } from "@/lib/zaalys-data";
+import { ZAALYS_PRODUCTS, formatBRL, type ZaalysProduct } from "@/lib/zaalys-data";
 import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
 import { useIsDemo } from "@/lib/use-demo";
 import { useShowcase } from "@/lib/showcase";
 import { useExtension } from "@/lib/use-extension";
 import { LiveTools } from "./live-tools";
+import { AiClips } from "./ai-clips";
 import { LivePerformance } from "./live-performance";
 import { DesempenhoEditor } from "@/components/desempenho-editor";
 import {
@@ -197,7 +198,7 @@ export default function LivePage() {
   const [error, setError] = useState<string | null>(null);
   const [device, setDevice] = useState<Device>("desktop");
   const [detected, setDetected] = useState<Device>("desktop");
-  const [videoSource, setVideoSource] = useState<"real" | "mine" | "flow">("real");
+  const [videoSource, setVideoSource] = useState<"mine" | "flow">("flow");
   const [showTools, setShowTools] = useState(false);
   const [showObs, setShowObs] = useState(false);
   const [showPerf, setShowPerf] = useState(false);
@@ -516,7 +517,7 @@ export default function LivePage() {
   const posInStage = inStage.indexOf(step) + 1;
   const isLast = stepIdx === flow.length - 1;
   const dev = DEVICES.find((d) => d.key === device)!;
-  const prod = CATALOGO_ORIGINAL.find((x) => x.id === current.productId);
+  const prod = ZAALYS_PRODUCTS.find((x) => x.id === current.productId);
   const deviceDone = stepIdx > flow.findIndex((s) => s.key === "videos");
   const mobile = device !== "desktop";
   const os = device === "ios" ? "ios" : "android";
@@ -853,9 +854,8 @@ export default function LivePage() {
                 <p className="text-xs font-semibold text-muted-foreground">Origem dos vídeos</p>
                 <div className="space-y-2">
                   {[
-                    { key: "real" as const, label: "Usar os 1 vídeo real do produto", tag: "Recomendado", desc: "Já disponíveis no painel MediaFlowMZ. Você não precisa gerar nem baixar." },
+                    { key: "flow" as const, label: "Gere live com IA", tag: "Recomendado", desc: "Baixe a foto do produto e gere 6 clipes no Google Flow, um prompt por clipe." },
                     { key: "mine" as const, label: "Usar meus vídeos", desc: "Tenha os MP4 deste produto no aparelho que vai transmitir." },
-                    { key: "flow" as const, label: "Gerar no Google Flow", desc: "Vamos mostrar como baixar a foto e gerar os clipes, um por vez." },
                   ].map((o) => (
                     <button
                       key={o.key}
@@ -875,11 +875,7 @@ export default function LivePage() {
                     </button>
                   ))}
                 </div>
-                {videoSource === "flow" && (
-                  <Link href="/painel/influencers" className="text-sm font-semibold text-primary underline underline-offset-4">
-                    Abrir os Templates para gerar os clipes
-                  </Link>
-                )}
+                {videoSource === "flow" && <AiClips product={prod ?? null} />}
               </>
             )}
 

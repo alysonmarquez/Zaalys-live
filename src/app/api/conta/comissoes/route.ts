@@ -13,6 +13,9 @@ type Sale = {
   commission_cents: number;
   status: "pending" | "paid" | "canceled" | "refunded";
   payout_status: "a_receber" | "repassada";
+  /** Vitalício pago com split da Applyfy: a comissão já caiu na conta do afiliado. */
+  split?: boolean | null;
+  id: string;
 };
 
 const fmt = (iso: string) =>
@@ -31,12 +34,15 @@ export async function GET() {
   try {
     const { data, error } = await createAdminClient()
       .from("affiliate_sales")
-      .select("created_at, buyer_email, buyer_name, plan, method, amount_cents, commission_cents, status, payout_status")
+      .select("*")
       .eq("affiliate_id", access.userId)
       .order("created_at", { ascending: false })
       .limit(2000);
     if (error) return fail(error);
     const sales = (data ?? []) as Sale[];
+    // Comissões já incluídas em pedidos de saque em aberto.
+    const { data: pend } = await createAdminClient().from("payout_requests").select("sale_ids, amount_cents").eq("user_id", access.userId).eq("status", "pending");
+    const requested = new Set((pend ?? []).flatMap((r) => (r.sale_ids as string[]) ?? []));
 
     const comissoes = sales
       .filter((s) => s.status === "paid" || s.status === "refunded")
@@ -45,7 +51,16 @@ export async function GET() {
         plano: plano(s.plan),
         vendaCents: s.amount_cents ?? 0,
         comissaoCents: s.commission_cents,
-        status: s.status === "refunded" ? "Estornada" : s.payout_status === "repassada" ? "Repassada" : "A receber",
+        status:
+          s.status === "refunded"
+            ? "Estornada"
+            : s.split
+              ? "Via Applyfy"
+              : s.payout_status === "repassada"
+                ? "Repassada"
+                : requested.has(s.id)
+                  ? "Saque pedido"
+                  : "A receber",
       }));
 
     const transacoes = sales.map((s) => ({
@@ -71,16 +86,18 @@ export async function GET() {
 
     const sum = (f: (s: Sale) => boolean) => sales.filter(f).reduce((a, s) => a + s.commission_cents, 0);
     const estornosCents = sum((s) => s.status === "refunded");
+    const owed = (s: Sale) => s.status === "paid" && !s.split;
     return json({
       comissoes,
       transacoes,
       indicados,
       resumo: {
-        recebidoApplyfyCents: 0,
+        recebidoApplyfyCents: sum((s) => s.status === "paid" && Boolean(s.split)),
         // Na tela aparece "a receber − estornos": os estornos entram aqui para o líquido ficar certo.
-        aReceberCents: sum((s) => s.status === "paid" && s.payout_status === "a_receber") + estornosCents,
+        aReceberCents: sum((s) => owed(s) && s.payout_status === "a_receber" && !requested.has(s.id)) + estornosCents,
         estornosCents,
-        repassadoCents: sum((s) => s.status === "paid" && s.payout_status === "repassada"),
+        repassadoCents: sum((s) => owed(s) && s.payout_status === "repassada"),
+        saquePedidoCents: (pend ?? []).reduce((a, r) => a + (r.amount_cents ?? 0), 0),
         vendas: sales.filter((s) => s.status === "paid").length,
       },
     });

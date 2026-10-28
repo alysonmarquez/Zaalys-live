@@ -37,6 +37,7 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "allypda@gmail.com,nathalyahof
   .filter(Boolean);
 
 export const isAdminEmail = (email: string) => ADMIN_EMAILS.includes(email.trim().toLowerCase());
+export const adminEmails = () => [...ADMIN_EMAILS];
 
 export function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";

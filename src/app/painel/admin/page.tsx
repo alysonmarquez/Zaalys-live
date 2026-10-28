@@ -15,12 +15,13 @@ const INPUT =
   "h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-ring/30";
 const BTN = "inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold disabled:opacity-50 cursor-pointer";
 
-type Aba = "geral" | "usuarios" | "pagamentos" | "afiliados" | "suporte";
+type Aba = "geral" | "usuarios" | "pagamentos" | "afiliados" | "saques" | "suporte";
 const ABAS: { v: Aba; l: string }[] = [
   { v: "geral", l: "Visão geral" },
   { v: "usuarios", l: "Usuários e acessos" },
   { v: "pagamentos", l: "Pagamentos" },
   { v: "afiliados", l: "Afiliados" },
+  { v: "saques", l: "Saques" },
   { v: "suporte", l: "Suporte" },
 ];
 
@@ -77,6 +78,7 @@ function Admin() {
       {aba === "usuarios" && <Usuarios />}
       {aba === "pagamentos" && <Pagamentos />}
       {aba === "afiliados" && <AfiliadosAdmin />}
+      {aba === "saques" && <Saques />}
       {aba === "suporte" && <Suporte />}
     </div>
   );
@@ -90,6 +92,7 @@ type Resumo = {
   receita: { mesCents: number; dias30Cents: number; estornos30Cents: number; vendas30: number };
   afiliados: { vendas: number; aRepassarCents: number; repassadoCents: number };
   suporte: { abertos: number };
+  saques?: { pendentes: number; valorCents: number };
   lives: { dias30: number; noAr: number };
 };
 
@@ -141,6 +144,7 @@ function Geral({ onGo }: { onGo: (v: Aba) => void }) {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Stat label="Vendas por afiliados" value={String(r.afiliados.vendas)} onClick={() => onGo("afiliados")} />
           <Stat label="Chamados abertos" value={String(r.suporte.abertos)} onClick={() => onGo("suporte")} />
+          <Stat label="Saques a pagar" value={String(r.saques?.pendentes ?? 0)} sub={formatBRL(r.saques?.valorCents ?? 0)} onClick={() => onGo("saques")} />
           <Stat label="Lives (30 dias)" value={String(r.lives.dias30)} sub={`${r.lives.noAr} no ar agora`} />
         </div>
       </section>
@@ -158,6 +162,8 @@ type Usuario = {
   conta: boolean;
   codigo: string | null;
   comissaoPct: number | null;
+  applyfy?: string | null;
+  pix?: string | null;
   aparelho: { nome: string; desde: string | null } | null;
   afiliado: { vendas: number; aRepassarCents: number };
   acesso: "pago" | "manual" | "encerrado" | "sem";
@@ -328,6 +334,14 @@ function Usuarios() {
                       <p>
                         <span className="block text-muted-foreground">Vendas pelo link</span>
                         {u.afiliado.vendas} · {formatBRL(u.afiliado.aRepassarCents)} a repassar
+                      </p>
+                      <p>
+                        <span className="block text-muted-foreground">Conta Applyfy (split do vitalício)</span>
+                        {u.applyfy ?? "Não cadastrada"}
+                      </p>
+                      <p>
+                        <span className="block text-muted-foreground">Chave Pix (saques)</span>
+                        <span className="break-all">{u.pix ?? "Não cadastrada"}</span>
                       </p>
                       <p>
                         <span className="block text-muted-foreground">Aparelho da extensão</span>
@@ -550,6 +564,109 @@ function Pagamentos() {
           </tbody>
         </table>
       </div>
+    </section>
+  );
+}
+
+/* ---------------- Saques ---------------- */
+
+type SaqueAdmin = {
+  id: string;
+  email: string;
+  nome: string | null;
+  valorCents: number;
+  pixTipo: string;
+  pixChave: string;
+  comissoes: number;
+  status: "pending" | "paid" | "rejected";
+  nota: string | null;
+  criado: string;
+  pago: string | null;
+};
+const SAQUE: Record<SaqueAdmin["status"], { l: string; cls: string }> = {
+  pending: { l: "Aguardando", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+  paid: { l: "Pago", cls: "bg-primary/15 text-primary" },
+  rejected: { l: "Recusado", cls: "bg-muted text-muted-foreground" },
+};
+
+function Saques() {
+  const [lista, setLista] = useState<SaqueAdmin[] | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState<SaqueAdmin["status"] | "todos">("pending");
+  const carregar = useCallback(() => {
+    api<{ saques: SaqueAdmin[] }>("/api/admin/saques").then((d) => setLista(d.saques), (e: Error) => setErro(e.message));
+  }, []);
+  useEffect(carregar, [carregar]);
+
+  async function agir(q: SaqueAdmin, action: "pagar" | "recusar") {
+    const pergunta =
+      action === "pagar"
+        ? `Confirma que pagou ${formatBRL(q.valorCents)} no Pix de ${q.email} (${q.pixTipo}: ${q.pixChave})?`
+        : `Recusar o saque de ${formatBRL(q.valorCents)} de ${q.email}? As comissões voltam para o saldo dele.`;
+    if (!confirm(pergunta)) return;
+    try {
+      await api("/api/admin/saques", { id: q.id, action });
+      carregar();
+    } catch (e) {
+      setErro((e as Error).message);
+    }
+  }
+
+  const visiveis = (lista ?? []).filter((q) => filtro === "todos" || q.status === filtro);
+  return (
+    <section className={CARD}>
+      <p className="text-sm text-muted-foreground">
+        Pedidos de saque dos afiliados (comissões do mensal e do vitalício sem split). Pague no Pix e marque como pago: as comissões viram
+        “Repassada” para o afiliado.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-1">
+        {(["pending", "paid", "rejected", "todos"] as const).map((f) => (
+          <button
+            key={f}
+            type="button"
+            onClick={() => setFiltro(f)}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-semibold cursor-pointer",
+              filtro === f ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {f === "todos" ? "Todos" : SAQUE[f].l}{" "}
+            <span className="tabular-nums opacity-70">{f === "todos" ? lista?.length ?? 0 : (lista ?? []).filter((q) => q.status === f).length}</span>
+          </button>
+        ))}
+      </div>
+      {erro && <p className="mt-4 text-sm text-red-500">{erro}</p>}
+      <ul className="mt-4 space-y-3">
+        {lista === null && !erro && <li className="py-8 text-center text-sm text-muted-foreground">Carregando…</li>}
+        {lista !== null && visiveis.length === 0 && <li className="py-8 text-center text-sm text-muted-foreground">Nenhum pedido aqui.</li>}
+        {visiveis.map((q) => (
+          <li key={q.id} className="rounded-2xl border border-border/60 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold">
+                {q.nome || q.email} · <span className="tabular-nums">{formatBRL(q.valorCents)}</span>
+              </p>
+              <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold", SAQUE[q.status].cls)}>{SAQUE[q.status].l}</span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {q.email} · pedido em {fmtDateTime(q.criado)} · {q.comissoes} {q.comissoes === 1 ? "comissão" : "comissões"}
+              {q.pago ? ` · pago em ${fmtDateTime(q.pago)}` : ""}
+            </p>
+            <p className="mt-2 break-all text-sm">
+              Pix ({q.pixTipo}): <span className="font-mono">{q.pixChave}</span>
+            </p>
+            {q.status === "pending" && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => agir(q, "pagar")} className={cn(BTN, "bg-primary text-primary-foreground")}>
+                  Marcar como pago
+                </button>
+                <button type="button" onClick={() => agir(q, "recusar")} className={cn(BTN, "border border-border hover:bg-muted")}>
+                  Recusar
+                </button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

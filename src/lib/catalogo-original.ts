@@ -27,6 +27,12 @@ const brl = (c: number) =>
 const compact = (n: number) =>
   n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(".", ",")} mi` : n >= 1000 ? `${Math.round(n / 1000)} mil` : String(n);
 
+/** Link do produto no TikTok Shop do Brasil. "shop/pdp/<id>" sem região cai na loja dos EUA. */
+function tiktokUrl(path: string) {
+  const id = path.match(/(?:pdp|product)\/(?:[^/]+\/)?(\d{10,})/)?.[1];
+  return id ? `https://shop.tiktok.com/view/product/${id}?region=BR&locale=pt-BR` : `https://www.tiktok.com/${path}`;
+}
+
 export const CATALOGO_ORIGINAL: ZaalysProduct[] = (rows as Row[]).map((r) => {
   const [id, title, cat, price, pct, earn, sales, views, rating, trending, top, img, path, goal, change] = r;
   const label = CATEGORY_LABELS[cat] ?? cat;
@@ -45,7 +51,7 @@ export const CATALOGO_ORIGINAL: ZaalysProduct[] = (rows as Row[]).map((r) => {
     highCommission: Boolean(top),
     trending: Boolean(trending),
     imageUrl: img,
-    affiliateUrl: `https://www.tiktok.com/${path}`,
+    affiliateUrl: tiktokUrl(path),
     proofGoal: (goal === "f" ? "fit" : "use") as ProofGoal,
     reasons: [
       sales > 0 ? `${compact(sales)} vendas registradas no TikTok Shop` : "Produto novo no catálogo",

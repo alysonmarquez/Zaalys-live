@@ -9,14 +9,32 @@ import { DEFAULT_COMMISSION_PCT } from "@/lib/referrals";
 
 const DAY = 86400_000;
 
-type Profile = { id: string; email: string; name: string | null; created_at: string; ref_code: string | null; commission_pct: number | null };
+type Profile = {
+  id: string;
+  email: string;
+  name: string | null;
+  created_at: string;
+  ref_code: string | null;
+  commission_pct: number | null;
+  applyfy_email?: string | null;
+  pix_type?: string | null;
+  pix_key?: string | null;
+};
 
 export async function GET() {
   const c = await adminCtx();
   if (!c) return unauthorized();
   try {
     const [profiles, subs, licenses, sales] = await Promise.all([
-      c.db.from("profiles").select("id, email, name, created_at, ref_code, commission_pct").order("created_at", { ascending: false }).limit(5000),
+      c.db
+        .from("profiles")
+        .select("id, email, name, created_at, ref_code, commission_pct, applyfy_email, pix_type, pix_key")
+        .order("created_at", { ascending: false })
+        .limit(5000)
+        .then((r) =>
+          // Sem a migração de saques, as colunas de cadastro do afiliado não existem ainda.
+          r.error ? c.db.from("profiles").select("id, email, name, created_at, ref_code, commission_pct").order("created_at", { ascending: false }).limit(5000) : r,
+        ),
       c.db.from("subscriptions").select("*").limit(20000),
       c.db.from("licenses").select("user_id, device_id, device_label, activated_at").limit(10000),
       c.db.from("affiliate_sales").select("affiliate_id, status, payout_status, commission_cents").eq("status", "paid").limit(20000),
@@ -65,6 +83,8 @@ export async function GET() {
         conta: true,
         codigo: p.ref_code,
         comissaoPct: p.commission_pct == null ? null : Number(p.commission_pct),
+        applyfy: p.applyfy_email ?? null,
+        pix: p.pix_key ? `${p.pix_type ?? "chave"}: ${p.pix_key}` : null,
         aparelho: l?.device_id ? { nome: l.device_label || "Aparelho conectado", desde: l.activated_at } : null,
         afiliado: aff.get(p.id) ?? { vendas: 0, aRepassarCents: 0 },
         ...accessOf(byEmail.get(email) ?? []),
@@ -81,6 +101,8 @@ export async function GET() {
         conta: false,
         codigo: null,
         comissaoPct: null,
+        applyfy: null,
+        pix: null,
         aparelho: null,
         afiliado: { vendas: 0, aRepassarCents: 0 },
         ...accessOf(list),

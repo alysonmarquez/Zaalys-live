@@ -2,7 +2,6 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Check } from "lucide-react";
 import { cn } from "@/components/brand";
 import { formatBRL } from "@/lib/zaalys-data";
 import { useShowcase } from "@/lib/showcase";
@@ -29,6 +28,8 @@ const EMPTY = {
 
 const TONE: Record<string, string> = {
   "A receber": "bg-amber-500/12 text-amber-600 dark:text-amber-400",
+  "Via Applyfy": "bg-sky-500/12 text-sky-600 dark:text-sky-400",
+  "Saque pedido": "bg-violet-500/12 text-violet-600 dark:text-violet-400",
   Repassada: "bg-primary/15 text-primary",
   Estornada: "bg-red-500/12 text-red-600 dark:text-red-400",
   Pago: "bg-primary/15 text-primary",
@@ -39,6 +40,8 @@ const TONE: Record<string, string> = {
   "Não pagou": "bg-amber-500/12 text-amber-600 dark:text-amber-400",
   Bloqueado: "bg-red-500/12 text-red-600 dark:text-red-400",
 };
+
+type Saque = { id: string; amount_cents: number; status: "pending" | "paid" | "rejected"; created_at: string; paid_at: string | null; note: string | null };
 
 function Badge({ s }: { s: string }) {
   return <span className={cn("whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold", TONE[s])}>{s}</span>;
@@ -74,6 +77,67 @@ function ComissoesContent() {
   const [applyfyOpen, setApplyfyOpen] = useState(false);
   const [applyfyEmail, setApplyfyEmail] = useState("");
   const [applyfySaved, setApplyfySaved] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pixType, setPixType] = useState("cpf");
+  const [pixKey, setPixKey] = useState("");
+  const [pixSaved, setPixSaved] = useState(false);
+  const [saques, setSaques] = useState<Saque[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  // Cadastro do afiliado salvo na conta (Applyfy para o split do vitalício, Pix para os saques do mensal).
+  const loadCadastro = React.useCallback(() => {
+    fetch("/api/conta/afiliado")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d: { applyfyEmail: string | null; pixType: string | null; pixKey: string | null; saques: Saque[] } | null) => {
+        if (!d) return;
+        if (d.applyfyEmail) {
+          setApplyfyEmail(d.applyfyEmail);
+          setApplyfySaved(true);
+        }
+        if (d.pixKey) {
+          setPixType(d.pixType ?? "cpf");
+          setPixKey(d.pixKey);
+          setPixSaved(true);
+        }
+        setSaques(d.saques ?? []);
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(loadCadastro, [loadCadastro]);
+
+  async function salvar(body: Record<string, unknown>, ok: string) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/conta/afiliado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(d.error || "Não deu para salvar agora.");
+      setMsg({ ok: true, text: ok });
+      return true;
+    } catch (e) {
+      setMsg({ ok: false, text: (e as Error).message });
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function pedirSaque() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/conta/saque", { method: "POST" });
+      const d = (await res.json().catch(() => ({}))) as { error?: string; amountCents?: number };
+      if (!res.ok) throw new Error(d.error || "Não deu para pedir o saque agora.");
+      setMsg({ ok: true, text: `Saque de ${formatBRL(d.amountCents ?? 0)} pedido. O admin paga no seu Pix e você vê aqui quando for pago.` });
+      loadCadastro();
+      fetch("/api/conta/comissoes").then((r) => (r.ok ? r.json() : null)).then((x) => x && setReal(x)).catch(() => {});
+    } catch (e) {
+      setMsg({ ok: false, text: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   // Porcentagem da conta, definida no Painel do Afiliado (aba Afiliados); a demonstração usa a do exemplo.
   const [ownPct, setOwnPct] = useState<number | null>(null);
@@ -86,11 +150,12 @@ function ComissoesContent() {
   }, [demo]);
   const pctLabel = (demo ? COMMISSION_RATE * 100 : ownPct ?? COMMISSION_RATE * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 
-  const r = data.resumo;
+  const r = data.resumo as typeof data.resumo & { saquePedidoCents?: number };
+  const disponivel = Math.max(0, r.aReceberCents - r.estornosCents);
   const cards = [
-    ["Recebido via Applyfy", formatBRL(r.recebidoApplyfyCents), "Já na sua conta"],
-    ["A receber do admin", formatBRL(Math.max(0, r.aReceberCents - r.estornosCents)), `Menos ${formatBRL(r.estornosCents)} de estornos`],
-    ["Já repassado", formatBRL(r.repassadoCents), ""],
+    ["Recebido via Applyfy", formatBRL(r.recebidoApplyfyCents), "Vitalício: o split cai direto na sua conta"],
+    ["A receber do admin", formatBRL(disponivel), r.saquePedidoCents ? `Mais ${formatBRL(r.saquePedidoCents)} em saque pedido` : `Mensal: menos ${formatBRL(r.estornosCents)} de estornos`],
+    ["Já repassado", formatBRL(r.repassadoCents), "Saques pagos no Pix"],
     ["Vendas", String(r.vendas), `Comissão de ${pctLabel}%`],
   ];
 
@@ -110,8 +175,9 @@ function ComissoesContent() {
       <header>
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Saque de comissões</h1>
         <p className="mt-1 max-w-2xl text-muted-foreground">
-          Vendas do plano vitalício são divididas pela Applyfy no momento do pagamento — sua parte cai direto na sua
-          conta, e o saque você faz por lá. Renovações do plano mensal são repassadas pelo administrador via Pix.
+          Vitalício: a Applyfy divide o pagamento na hora (split) e sua parte cai direto na sua conta Applyfy, desde
+          que ela esteja cadastrada abaixo. Mensal: a Applyfy não divide pagamentos recorrentes, então a comissão fica
+          em “A receber do admin” e você pede o saque por Pix.
         </p>
       </header>
 
@@ -131,8 +197,8 @@ function ComissoesContent() {
             <h2 className="font-display text-lg font-bold tracking-tight">Sua conta Applyfy</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
               {applyfySaved
-                ? `Conta vinculada: ${applyfyEmail}. As próximas vendas já saem divididas.`
-                : "Sem conta vinculada. Suas vendas ainda não são divididas."}
+                ? `Conta vinculada: ${applyfyEmail}. O admin inclui essa conta no split do vitalício na Applyfy.`
+                : "Cadastre o e-mail da sua conta Applyfy para receber o vitalício pelo split. Sem cadastro, a comissão do vitalício fica a receber do admin."}
             </p>
           </div>
           <button
@@ -146,10 +212,12 @@ function ComissoesContent() {
         {applyfyOpen && (
           <form
             className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              setApplyfySaved(true);
-              setApplyfyOpen(false);
+              if (await salvar({ applyfyEmail: applyfyEmail.trim() }, "Conta Applyfy salva. Peça ao admin para incluir você no split do vitalício.")) {
+                setApplyfySaved(true);
+                setApplyfyOpen(false);
+              }
             }}
           >
             <input
@@ -160,10 +228,62 @@ function ComissoesContent() {
               placeholder="E-mail da sua conta Applyfy"
               className={INPUT_CLASS}
             />
-            <button type="submit" className="h-11 rounded-xl border border-border bg-background px-5 text-xs font-semibold hover:bg-muted cursor-pointer">
-              {applyfySaved ? <Check size={14} /> : "Salvar"}
+            <button type="submit" disabled={busy} className="h-11 rounded-xl border border-border bg-background px-5 text-xs font-semibold hover:bg-muted disabled:opacity-50 cursor-pointer">
+              Salvar
             </button>
           </form>
+        )}
+      </section>
+
+      <section className={CARD}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-bold tracking-tight">Saque por Pix</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Disponível para saque: <strong className="text-foreground tabular-nums">{formatBRL(disponivel)}</strong> (comissões do mensal e
+              do vitalício sem split). Saque mínimo de R$ 10,00.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={busy || !pixSaved || disponivel < 1000}
+            onClick={pedirSaque}
+            className="inline-flex h-10 items-center rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+          >
+            Solicitar saque
+          </button>
+        </div>
+        <form
+          className="mt-4 grid gap-3 sm:grid-cols-[150px_1fr_auto]"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (await salvar({ pixType, pixKey: pixKey.trim() }, "Chave Pix salva.")) setPixSaved(true);
+          }}
+        >
+          <select value={pixType} onChange={(e) => setPixType(e.target.value)} aria-label="Tipo de chave Pix" className={`${INPUT_CLASS} cursor-pointer`}>
+            <option value="cpf">CPF</option>
+            <option value="cnpj">CNPJ</option>
+            <option value="email">E-mail</option>
+            <option value="telefone">Telefone</option>
+            <option value="aleatoria">Chave aleatória</option>
+          </select>
+          <input required value={pixKey} onChange={(e) => setPixKey(e.target.value)} placeholder="Sua chave Pix" aria-label="Chave Pix" className={INPUT_CLASS} />
+          <button type="submit" disabled={busy} className="h-11 rounded-xl border border-border bg-background px-5 text-xs font-semibold hover:bg-muted disabled:opacity-50 cursor-pointer">
+            {pixSaved ? "Atualizar" : "Salvar"}
+          </button>
+        </form>
+        {!pixSaved && <p className="mt-2 text-xs text-muted-foreground">Cadastre a chave Pix para liberar o botão de saque.</p>}
+        {msg && <p className={cn("mt-3 text-sm", msg.ok ? "text-primary" : "text-red-500")}>{msg.text}</p>}
+        {saques.length > 0 && (
+          <ul className="mt-4 divide-y divide-border/60 text-sm">
+            {saques.map((q) => (
+              <li key={q.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span className="tabular-nums">{new Date(q.created_at).toLocaleDateString("pt-BR")}</span>
+                <span className="font-semibold tabular-nums">{formatBRL(q.amount_cents)}</span>
+                <Badge s={q.status === "paid" ? "Pago" : q.status === "rejected" ? "Recusado / expirado" : "Aguardando pagamento"} />
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 

@@ -62,6 +62,9 @@ export default function RadarPage() {
               <p className="mt-2 text-xs">
                 Pergunta: <strong>{PROOF_GOAL_LABELS[p.proofGoal]}</strong>
               </p>
+              <a href={p.affiliateUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs font-semibold text-primary underline-offset-4 hover:underline">
+                Ver no TikTok ↗
+              </a>
             </li>
           ))}
         </ul>

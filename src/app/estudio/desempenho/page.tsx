@@ -62,12 +62,27 @@ export default function DesempenhoPage() {
   const withData = points.filter((p) => p.session);
   const mean = withData.reduce((a, p) => a + p.v, 0) / Math.max(1, withData.length);
   const statusOf = (v: number) => (v < mean * 0.7 ? STATUS.baixo : v > mean * 1.3 ? STATUS.alto : STATUS.normal);
-  const max = Math.max(1, ...points.map((p) => p.v));
+  // Escala "redonda" (1, 2, 2,5 ou 5 × 10ⁿ) com 4 faixas; dias sem LIVE não viram zero no gráfico.
+  const rawMax = Math.max(0, ...withData.map((p) => p.v));
+  const niceMax = (() => {
+    if (rawMax <= 0) return 1;
+    const step0 = rawMax / 4;
+    const mag = 10 ** Math.floor(Math.log10(step0));
+    const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((v) => v >= step0)!;
+    return step * 4;
+  })();
+  const max = niceMax;
   const W = 960;
   const H = 260;
-  const xs = points.map((_, i) => (points.length > 1 ? 32 + (i * (W - 64)) / (points.length - 1) : W / 2));
-  const ys = points.map((p) => H - 28 - (p.v / max) * (H - 56));
-  const line = xs.map((x, i) => `${i === 0 ? "M" : "L"}${x},${ys[i]}`).join(" ");
+  const L = 72; // espaço dos valores do eixo
+  const T = 16;
+  const B = 28;
+  const xs = points.map((_, i) => (points.length > 1 ? L + 12 + (i * (W - L - 36)) / (points.length - 1) : (W + L) / 2));
+  const ys = points.map((p) => T + (1 - p.v / max) * (H - T - B));
+  const dataIdx = points.map((p, i) => (p.session ? i : -1)).filter((i) => i >= 0);
+  const line = dataIdx.map((i, k) => `${k === 0 ? "M" : "L"}${xs[i]},${ys[i]}`).join(" ");
+  const area = dataIdx.length > 1 ? `${line} L${xs[dataIdx[dataIdx.length - 1]!]},${H - B} L${xs[dataIdx[0]!]},${H - B} Z` : "";
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => ({ y: T + (1 - f) * (H - T - B), v: max * f }));
   const labelEvery = Math.max(1, Math.ceil(points.length / 10));
   const active = hover !== null ? points[hover] : undefined;
 
@@ -181,14 +196,26 @@ export default function DesempenhoPage() {
             <div className="mt-2 grid h-72 place-items-center border-b border-black/10 text-sm text-black/45">No Data</div>
           ) : (
             <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 block h-72 w-full" onMouseLeave={() => setHover(null)}>
-              {[0, 0.25, 0.5, 0.75, 1].map((g) => (
-                <line key={g} x1={0} x2={W} y1={28 + (H - 56) * g} y2={28 + (H - 56) * g} stroke="rgba(0,0,0,0.06)" />
+              <defs>
+                <linearGradient id="desemp-area" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.18} />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              {ticks.map((t) => (
+                <g key={t.v}>
+                  <line x1={L} x2={W} y1={t.y} y2={t.y} stroke="rgba(0,0,0,0.07)" strokeDasharray={t.v === 0 ? undefined : "3 4"} />
+                  <text x={L - 10} y={t.y + 4} textAnchor="end" fontSize={11} fill="rgba(0,0,0,0.45)">
+                    {m.format(t.v)}
+                  </text>
+                </g>
               ))}
-              <path d={line} fill="none" stroke="var(--primary)" strokeWidth={2} strokeLinejoin="round" />
+              {area && <path d={area} fill="url(#desemp-area)" />}
+              <path d={line} fill="none" stroke="var(--primary)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
               {points.map((p, i) => (
                 <g key={p.day} onMouseEnter={() => setHover(i)}>
-                  <rect x={xs[i]! - W / points.length / 2} y={0} width={W / points.length} height={H} fill="transparent" />
-                  {hover === i && <line x1={xs[i]} x2={xs[i]} y1={28} y2={H - 28} stroke="rgba(0,0,0,0.25)" strokeDasharray="3 3" />}
+                  <rect x={xs[i]! - (W - L) / points.length / 2} y={0} width={(W - L) / points.length} height={H} fill="transparent" />
+                  {hover === i && <line x1={xs[i]} x2={xs[i]} y1={T} y2={H - B} stroke="rgba(0,0,0,0.25)" strokeDasharray="3 3" />}
                   {p.session && <circle cx={xs[i]} cy={ys[i]} r={hover === i ? 5 : 3.5} fill={statusOf(p.v)} stroke="#fff" strokeWidth={1.5} />}
                   {(i % labelEvery === 0 || i === points.length - 1) && (
                     <text x={xs[i]} y={H - 6} textAnchor="middle" fontSize={11} fill="rgba(0,0,0,0.45)">
