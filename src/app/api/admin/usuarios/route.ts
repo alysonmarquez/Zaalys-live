@@ -37,7 +37,7 @@ export async function GET() {
         ),
       c.db.from("subscriptions").select("*").limit(20000),
       c.db.from("licenses").select("user_id, device_id, device_label, activated_at").limit(10000),
-      c.db.from("affiliate_sales").select("affiliate_id, status, payout_status, commission_cents").eq("status", "paid").limit(20000),
+      c.db.from("affiliate_sales").select("*").eq("status", "paid").limit(20000),
     ]);
     for (const r of [profiles, subs, licenses]) if (r.error) return fail(r.error);
 
@@ -52,7 +52,7 @@ export async function GET() {
       if (!s.affiliate_id) continue;
       const t = aff.get(s.affiliate_id) ?? { vendas: 0, aRepassarCents: 0 };
       t.vendas++;
-      if (s.payout_status === "a_receber") t.aRepassarCents += s.commission_cents;
+      if (s.payout_status === "a_receber" && !s.split) t.aRepassarCents += s.commission_cents;
       aff.set(s.affiliate_id, t);
     }
 

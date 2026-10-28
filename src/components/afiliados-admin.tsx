@@ -74,16 +74,22 @@ export function AfiliadosAdmin() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: a.id, action: "repassar" }),
       });
-      if (!r.ok) throw new Error();
+      const d = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) throw new Error(d.error || "Não deu certo. Tente de novo.");
       setLista((l) => l?.map((x) => (x.id === a.id ? { ...x, aReceberCents: 0 } : x)) ?? l);
-    } catch {
-      setErro("Não deu certo. Tente de novo.");
+      setErro(null);
+    } catch (e) {
+      setErro((e as Error).message);
+      void carregar();
     } finally {
       setSalvando(null);
     }
   }
 
   async function agir(id: string, action: "aprovar" | "revogar") {
+    // Ao aprovar, a porcentagem digitada na linha é salva junto.
+    const a = lista?.find((x) => x.id === id);
+    if (action === "aprovar" && a && (pcts[id] ?? "").trim() && !(await salvarComissao(a))) return;
     setSalvando(id);
     try {
       const r = await fetch("/api/admin/afiliados", {
@@ -105,7 +111,7 @@ export function AfiliadosAdmin() {
     const pct = raw === "" ? null : Number(raw);
     if (pct !== null && (!Number.isFinite(pct) || pct < 0 || pct > 100)) {
       setErro("A comissão deve ser de 0 a 100%.");
-      return;
+      return false;
     }
     setSalvando(a.id);
     try {
@@ -121,8 +127,10 @@ export function AfiliadosAdmin() {
       setErro(null);
       setSalvoPct(a.id);
       setTimeout(() => setSalvoPct(null), 1800);
+      return true;
     } catch (e) {
       setErro((e as Error).message);
+      return false;
     } finally {
       setSalvando(null);
     }
@@ -142,7 +150,9 @@ export function AfiliadosAdmin() {
   return (
       <section className={CARD}>
         <p className="mb-4 max-w-2xl text-sm text-muted-foreground">
-          Aprove quem pode entrar sem pagar e defina a comissão de cada afiliado (vazio = {PADRAO_PCT}%).
+          Aprove quem pode entrar sem pagar e defina a comissão de cada afiliado (digite a % antes de aprovar; vazio ={" "}
+          {PADRAO_PCT}%). “A repassar” é o mensal (e o vitalício pago fora do Pix com split): depois de pagar no Pix, clique em
+          Marcar repassado e o valor passa para “Já repassado” no painel do afiliado.
         </p>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex w-fit flex-wrap gap-1 rounded-full bg-muted/40 p-1">

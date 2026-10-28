@@ -4,6 +4,7 @@ import { fail, json, unauthorized } from "@/lib/http";
 import { createAdminClient } from "@/lib/supabase/server";
 import { PIX_TYPES } from "@/lib/payouts";
 import { seal } from "@/lib/secret-box";
+import { ApplyfyApiError, testCredentials } from "@/lib/applyfy-api";
 
 type Row = {
   pix_type?: string | null;
@@ -81,6 +82,14 @@ export async function POST(req: Request) {
       Object.assign(patch, { applyfy_account_id: accountId, applyfy_client_id: clientId, applyfy_linked_at: new Date().toISOString() });
       if (clientSecret) {
         if (clientSecret.length < 8) return json({ error: "O Client Secret parece curto demais. Copie de novo na Applyfy." }, 400);
+        // Confere as chaves na Applyfy antes de salvar; se a Applyfy não responder, salva assim mesmo.
+        try {
+          await testCredentials({ publicKey: clientId, secretKey: clientSecret });
+        } catch (err) {
+          if (err instanceof ApplyfyApiError && (err.status === 401 || (err.status === 403 && !/bloqueio/.test(err.message))))
+            return json({ error: "A Applyfy recusou essas chaves. Confira o Client ID e o Client Secret (crie uma credencial nova se precisar)." }, 400);
+          console.warn("[afiliado] não deu para conferir as chaves Applyfy:", (err as Error).message);
+        }
         patch.applyfy_client_secret_enc = seal(clientSecret);
       } else {
         const { data: cur } = await db.from("profiles").select("applyfy_client_secret_enc").eq("id", access.userId).maybeSingle();

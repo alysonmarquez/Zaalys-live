@@ -163,9 +163,10 @@ export async function attributeSale(admin: SupabaseClient, event: PaymentEvent) 
     status,
     updated_at: new Date().toISOString(),
   };
-  // Vitalício com a conta Applyfy vinculada no Saque de comissões: a comissão cai direto na conta dele pelo split
-  // (e a Applyfy libera em cerca de 2 dias). Mensal, ou sem conta vinculada: entra no saldo "A receber do admin".
-  const split = event.plan === "lifetime" && Boolean(affiliate.applyfy_account_id);
+  // Vitalício pago no Pix gerado com o split do afiliado (src/lib/invite-pix.ts): a comissão já caiu na conta Applyfy
+  // dele. Mensal, ou vitalício pago no checkout da Applyfy (que não divide): entra no saldo "A receber do admin".
+  const identifier = pick(raw, ["transaction.identifier", "data.transaction.identifier", "identifier", "data.identifier"]) ?? "";
+  const split = event.plan === "lifetime" && identifier.includes(".split.") && Boolean(affiliate.applyfy_account_id);
   // payout_status fica como está (o admin marca "repassada").
   let { error } = await admin.from("affiliate_sales").upsert({ ...row, split }, { onConflict: "gateway,gateway_ref" });
   if (error?.code === "PGRST204" || error?.code === "42703") ({ error } = await admin.from("affiliate_sales").upsert(row, { onConflict: "gateway,gateway_ref" }));

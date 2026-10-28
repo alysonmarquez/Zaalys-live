@@ -283,6 +283,18 @@ function CheckoutContent() {
   // Submission state
   const [submitting, setSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  // Pix gerado aqui (vitalício por convite de afiliado com Applyfy vinculada: o split vai junto).
+  const [pixCharge, setPixCharge] = useState<{ transactionId: string; code: string; image: string | null; expiresAt: string | null } | null>(null);
+  const [pixCopied, setPixCopied] = useState(false);
+  useEffect(() => {
+    if (!pixCharge) return;
+    const t = setInterval(async () => {
+      const r = await fetch(`/api/checkout/status?tx=${encodeURIComponent(pixCharge.transactionId)}`).catch(() => null);
+      const d = r?.ok ? ((await r.json().catch(() => null)) as { paid?: boolean } | null) : null;
+      if (d?.paid) window.location.href = `/obrigado?email=${encodeURIComponent(email.trim())}`;
+    }, 4000);
+    return () => clearInterval(t);
+  }, [pixCharge, email]);
 
   useEffect(() => {
     if (planParam === "monthly" && method === "boleto") {
@@ -387,9 +399,18 @@ function CheckoutContent() {
           email: email.trim(),
           coupon: invite ? undefined : appliedCoupon?.code,
           convite: invite ?? undefined,
+          method,
+          name: name.trim(),
+          phone: phone.trim(),
+          document: digitsOnly(document),
         }),
       });
       const data = await res.json().catch(() => null);
+      if (res.ok && data?.pix?.code) {
+        setPixCharge(data.pix);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
       if (res.ok && data?.url) {
         // Pix, boleto e cartão são pagos na página segura do gateway (Applyfy).
         window.location.href = data.url;
@@ -501,6 +522,35 @@ function CheckoutContent() {
         </aside>
 
         <div className="min-w-0 lg:order-1">
+          {pixCharge ? (
+            <section className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-5 text-center">
+              <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <PixMark className="size-3.5" /> Pague com Pix
+              </p>
+              <h2 className="font-display text-xl font-bold tracking-tight">Escaneie o QR Code ou copie o código</h2>
+              {pixCharge.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={pixCharge.image} alt="QR Code do Pix" className="mx-auto size-56 rounded-xl bg-white p-2" />
+              ) : null}
+              <div className="mx-auto max-w-md break-all rounded-xl border border-border/60 bg-background/60 p-3 text-left font-mono text-[12px]">
+                {pixCharge.code}
+              </div>
+              <RaisedButton
+                type="button"
+                onClick={async () => {
+                  await navigator.clipboard?.writeText(pixCharge.code).catch(() => {});
+                  setPixCopied(true);
+                  setTimeout(() => setPixCopied(false), 2000);
+                }}
+              >
+                {pixCopied ? "Código copiado" : "Copiar código Pix"}
+              </RaisedButton>
+              <p className="text-[13px] text-muted-foreground">
+                Assim que o pagamento for confirmado, esta página avança sozinha para liberar o seu acesso.
+                {pixCharge.expiresAt ? ` O código vale até ${new Date(pixCharge.expiresAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}.` : ""}
+              </p>
+            </section>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-5" data-clarity-mask="true">
               <div className="rounded-2xl border border-border/60 bg-card/70 p-5">
                 <Segmented
@@ -908,6 +958,7 @@ function CheckoutContent() {
               </div>
 
             </form>
+          )}
         </div>
       </div>
     </main>

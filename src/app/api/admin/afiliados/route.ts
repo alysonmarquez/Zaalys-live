@@ -2,6 +2,7 @@ import { z } from "zod";
 import { getAccess } from "@/lib/access";
 import { fail, json, unauthorized } from "@/lib/http";
 import { createAdminClient } from "@/lib/supabase/server";
+import { availableSales } from "@/lib/payouts";
 
 // Afiliados no Painel do Afiliado (só ADMIN_EMAILS). Aprovar cria uma assinatura vitalícia "manual" ativa para a
 // conta, que libera o painel sem pagamento; revogar cancela só essa assinatura manual (pagamentos não são tocados).
@@ -45,14 +46,14 @@ export async function GET() {
     // Vendas atribuídas pelos links de convite: comissão a repassar e total de vendas pagas.
     const { data: sales } = await c.admin
       .from("affiliate_sales")
-      .select("affiliate_id, commission_cents, status, payout_status")
+      .select("*")
       .eq("status", "paid");
     const totals = new Map<string, { vendas: number; aReceberCents: number }>();
     for (const s of sales ?? []) {
       if (!s.affiliate_id) continue;
       const t = totals.get(s.affiliate_id) ?? { vendas: 0, aReceberCents: 0 };
       t.vendas++;
-      if (s.payout_status === "a_receber") t.aReceberCents += s.commission_cents;
+      if (s.payout_status === "a_receber" && !s.split) t.aReceberCents += s.commission_cents;
       totals.set(s.affiliate_id, t);
     }
 
@@ -106,14 +107,34 @@ export async function POST(req: Request) {
     }
 
     if (body.action === "repassar") {
-      const { error } = await c.admin
+      // Comissões a repassar (mensal, ou vitalício sem split), fora de pedidos de saque em aberto.
+      const { list } = await availableSales(c.admin, userId);
+      if (!list.length) return json({ error: "Nada a repassar para esse afiliado." }, 409);
+      const now = new Date().toISOString();
+      // Só muda o que ainda está "a receber": dois cliques (ou duas abas) não contam o mesmo repasse duas vezes.
+      const { data: done, error } = await c.admin
         .from("affiliate_sales")
-        .update({ payout_status: "repassada", updated_at: new Date().toISOString() })
-        .eq("affiliate_id", userId)
-        .eq("status", "paid")
-        .eq("payout_status", "a_receber");
+        .update({ payout_status: "repassada", updated_at: now })
+        .in("id", list.map((s) => s.id))
+        .eq("payout_status", "a_receber")
+        .select("id, commission_cents");
       if (error) return fail(error);
-      return json({ ok: true });
+      const amount = (done ?? []).reduce((a, s) => a + (s.commission_cents as number), 0);
+      if (!done?.length || amount <= 0) return json({ error: "Esse repasse já foi registrado." }, 409);
+      // Registro do repasse: aparece no histórico do afiliado (Saque de comissões).
+      const { data: pix } = await c.admin.from("profiles").select("pix_type, pix_key").eq("id", userId).maybeSingle();
+      const { error: logError } = await c.admin.from("payout_requests").insert({
+        user_id: userId,
+        amount_cents: amount,
+        pix_type: pix?.pix_type ?? "—",
+        pix_key: pix?.pix_key ?? "—",
+        sale_ids: done.map((s) => s.id),
+        status: "paid",
+        paid_at: now,
+        note: "Repasse registrado pelo admin",
+      });
+      if (logError) console.error("[afiliados] repasse sem registro no histórico:", logError);
+      return json({ ok: true, amountCents: amount, comissoes: done.length });
     }
 
     if (action === "aprovar") {
