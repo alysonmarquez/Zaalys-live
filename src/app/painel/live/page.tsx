@@ -785,7 +785,7 @@ export default function LivePage() {
                   <li className="flex gap-3">
                     <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">3</span>
                     <span>
-                      Clique em <strong>Carregar sem compactação</strong> e escolha a pasta <strong>mediaflowmz-live</strong>.
+                      Clique em <strong>Carregar sem compactação</strong> e escolha a pasta que foi extraída (a que tem o arquivo <strong>manifest.json</strong>).
                     </span>
                   </li>
                 </ol>

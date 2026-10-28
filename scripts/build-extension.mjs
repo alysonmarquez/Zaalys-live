@@ -30,7 +30,9 @@ const dl = join(root, "public", "downloads");
 mkdirSync(dl, { recursive: true });
 const zip = join(dl, "mediaflowmz-live.zip");
 rmSync(zip, { force: true });
-execFileSync("zip", ["-r", "-q", "-X", zip, "mediaflowmz-live"], { cwd: tmp });
+// Arquivos na raiz do .zip (sem pasta dentro): o "Extrair tudo" do Windows cria a pasta
+// (ex.: "mediaflowmz-live (2)") e é essa mesma que se escolhe em "Carregar sem compactação".
+execFileSync("zip", ["-r", "-q", "-X", zip, "."], { cwd: out });
 console.log(`zip: public/downloads/mediaflowmz-live.zip → ${api}`);
 
 const keyPath = process.env.EXTENSION_KEY_PATH || join(root, ".extension-key.pem");
