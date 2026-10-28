@@ -180,6 +180,11 @@ digitados valem na LIVE de hoje e nos períodos do Desempenho. Ficam no navegado
 `profiles.live_settings` (`supabase/migration-2026-10-live-settings.sql`), também na conta, valendo em qualquer
 aparelho. Comentários automáticos e OBS continuam só nas contas de demonstração.
 
+### Marca de apresentação
+
+As contas de demonstração (`SHOWCASE_EMAILS`) veem o logo e o favicon do TikTok Shop no Estúdio de LIVE
+(`public/presentation/`), para apresentar a ideia em sala. As demais contas veem a marca MediaFlowMZ.
+
 ## Aprovar afiliados e comissões
 
 As contas em `ADMIN_EMAILS` (padrão: `nathalyahoff@gmail.com`) veem o **Painel do Afiliado** no menu da conta, com

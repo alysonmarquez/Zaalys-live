@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Brand, cn } from "@/components/brand";
 import { useLiveSimEngine } from "@/lib/estudio-live-sim";
-import { ShowcaseProvider } from "@/lib/showcase";
+import { PRESENTATION_LOGO, ShowcaseProvider, usePresentationFavicon } from "@/lib/showcase";
 import { useLiveSettingsSync } from "@/lib/live-settings-sync";
 
 // Logo personalizado no topo do Estúdio (ex.: apresentações), definido por máquina em .env.local.
@@ -120,6 +120,9 @@ export function StudioShell({ handle, showcase, children }: { handle: string; sh
   const [collapsed, setCollapsed] = useState(false);
   // Pedidos da LIVE simulada caem enquanto o Estúdio estiver aberto (só na conta de demonstração).
   useLiveSimEngine(showcase);
+  // Apresentação: conta de demonstração com logo e favicon do TikTok Shop.
+  usePresentationFavicon(showcase);
+  const logo = STUDIO_LOGO || (showcase ? PRESENTATION_LOGO : null);
   // Números editados da LIVE valem em qualquer aparelho.
   useLiveSettingsSync();
 
@@ -128,7 +131,7 @@ export function StudioShell({ handle, showcase, children }: { handle: string; sh
       <header className="flex h-14 shrink-0 items-center justify-between bg-neutral-950 px-4 text-white">
         <div className="flex items-center gap-3">
           <Link href="/painel" className="[--color-primary:#ade74e] [&_span]:!text-white">
-            {STUDIO_LOGO ? <img src={STUDIO_LOGO} alt="" className="h-7 w-auto" /> : <Brand />}
+            {logo ? <img src={logo} alt="" className="h-7 w-auto" /> : <Brand />}
           </Link>
           <span className="h-5 w-px bg-white/30" />
           <span className="text-[17px] font-semibold">Estúdio de LIVE</span>

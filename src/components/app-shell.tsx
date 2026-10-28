@@ -28,7 +28,7 @@ import { ZAALYS_NOTIFICATIONS, formatBRL } from "@/lib/zaalys-data";
 import { BottomDock } from "@/components/bottom-dock";
 import { CreatorModal } from "@/components/creator-modal";
 import { LiveSaleToast } from "@/components/live-sale-toast";
-import { AdminProvider, ShowcaseProvider } from "@/lib/showcase";
+import { AdminProvider, ShowcaseProvider, usePresentationFavicon } from "@/lib/showcase";
 import { useLiveSettingsSync } from "@/lib/live-settings-sync";
 
 type AppShellProps = {
@@ -133,6 +133,7 @@ export function BrandLogo() {
 export function AppShell({ userEmail, userName, userHandle, demo, showcase = false, admin = false, children }: AppShellProps) {
   // Números editados da LIVE valem em qualquer aparelho.
   useLiveSettingsSync();
+  usePresentationFavicon(showcase);
   const pathname = usePathname();
   const router = useRouter();
 
