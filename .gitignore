@@ -8,3 +8,5 @@ next-env.d.ts
 .extension-key.pem
 
 
+# Arquivos só desta máquina (ex.: logo e favicon da apresentação)
+public/local/

@@ -90,7 +90,7 @@ export function LiveTools() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="font-display text-lg font-bold">MediaFlowMZ Live · Extensão Oficial</h2>
                     <span className="rounded-full bg-primary/15 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-primary">
-                      v4.0.0
+                      v4.1.0
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">

@@ -11,7 +11,7 @@ import { ZAALYS_PRODUCTS } from "@/lib/zaalys-data";
 // com corpo { json: entrada } e devolve { json: saída }; erro vem com status HTTP e { json: { message } }.
 // A extensão manda a chave em x-mf-key, o id do aparelho em x-mf-device e a versão em x-mf-version.
 
-const EXT_VERSION = "4.0.0";
+const EXT_VERSION = "4.1.0";
 const DEMO_USER = "00000000-0000-0000-0000-000000000000";
 
 const ok = (data: unknown) => NextResponse.json({ json: data ?? null });

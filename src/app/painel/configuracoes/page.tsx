@@ -318,7 +318,7 @@ export default function SettingsPage() {
             download
             className="text-xs font-medium text-primary underline underline-offset-4"
           >
-            Baixar extensão (.zip v4.0.0){ext.installed ? ` · instalada: v${ext.version}` : ""}
+            Baixar extensão (.zip v4.1.0){ext.installed ? ` · instalada: v${ext.version}` : ""}
           </a>
         </div>
 
@@ -336,7 +336,7 @@ export default function SettingsPage() {
                 Instalou pelo .zip? Troque pela Chrome Web Store
               </span>
               <span className="block text-xs text-muted-foreground">
-                Versão atual: <span className="tabular-nums">4.0.0</span>. Pela
+                Versão atual: <span className="tabular-nums">4.1.0</span>. Pela
                 loja, a extensão se atualiza sozinha, sempre fora da live.
               </span>
             </span>

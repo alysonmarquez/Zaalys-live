@@ -1497,6 +1497,7 @@ html.zaalys-paged #zaalys-workbench-pager { display: grid; }
       rotate: 0,
       pace: "normal",
       blockOn: !0,
+      violationGuard: !0,
       blockWords: Do.join(", "),
       mirror: !1,
       realClips: !0,
@@ -1652,8 +1653,16 @@ html.zaalys-paged #zaalys-workbench-pager { display: grid; }
     }
     violation(e) {
       if (!this.runner || this.violationSeen) return;
-      this.violationSeen = !0;
       let t = qt(e);
+      // Proteção desligada: só avisa (uma vez por aviso) e a live continua.
+      if (this.settings?.violationGuard === !1) {
+        if (this.lastViolation === e) return;
+        (this.lastViolation = e),
+          this.hooks.log(`⚠️ Aviso do TikTok (nível ${t}): “${e.slice(0, 140)}” — proteção desligada, a live continua.`),
+          this.hooks.alert({ type: "violation", text: e, level: t });
+        return;
+      }
+      this.violationSeen = !0;
       this.hooks.log(`⚠️ Aviso do TikTok (nível ${t}): “${e.slice(0, 140)}”`),
         this.hooks.alert({ type: "violation", text: e, level: t }),
         (this.lastStatus = this.runner.status()),
@@ -3025,9 +3034,10 @@ onmessage = (e) => {
       ambient: "zaalys-live-ambient",
       sfx: "zaalys-live-sfx",
       life: "zaalys-live-life",
+      own: "zaalys-live-own",
       ui: "zaalys-live-ui",
     },
-    sc = [C.voice, C.ambient, C.sfx, C.life],
+    sc = [C.voice, C.ambient, C.sfx, C.life, C.own],
     an = "__zaalysLive";
   function si(e, t) {
     return (
@@ -3241,6 +3251,10 @@ onmessage = (e) => {
     lifeEvery: 0,
     lifeSounds: [...ze],
     lifeVolume: 0.5,
+    ownOn: !1,
+    own: 0.8,
+    ownLoop: !0,
+    ownName: "",
   };
   async function li(e) {
     let t = await fetch(chrome.runtime.getURL(e));
@@ -3255,6 +3269,22 @@ onmessage = (e) => {
     voice = new Fe(C.voice, 1);
     ambient = new Fe(C.ambient, 0.06);
     sfx = new Fe(C.sfx, 0.2);
+    own = new Fe(C.own, Se.own);
+    ownUrl = null;
+    ownPlaying = !1;
+    setOwn(e) {
+      if (this.ownUrl && this.ownUrl !== e) URL.revokeObjectURL(this.ownUrl);
+      (this.ownUrl = e), (this.ownPlaying = !1), this.own.stop(), this.syncOwn();
+    }
+    syncOwn() {
+      let e = this.settings;
+      if (this.running && !this.silent && e.ownOn && this.ownUrl) {
+        if (this.ownPlaying) return void (this.own.el.loop = e.ownLoop);
+        (this.ownPlaying = !0),
+          this.own.play(this.ownUrl, !0),
+          (this.own.el.loop = e.ownLoop);
+      } else if (this.ownPlaying) (this.ownPlaying = !1), this.own.stop();
+    }
     sequencer = null;
     audio = new Zt((e) => (/^https?:/.test(e) ? is(e) : li(e)));
     library = null;
@@ -3350,6 +3380,8 @@ onmessage = (e) => {
         (this.settings = e),
         (this.voice.gain = e.voice),
         (this.ambient.gain = e.ambientOn ? e.ambient : 0),
+        (this.own.gain = e.own),
+        this.syncOwn(),
         t && !e.voiceOn)
       )
         this.voice.stop();
@@ -3360,7 +3392,7 @@ onmessage = (e) => {
     }
     async start() {
       if (!this.sequencer || this.running || this.silent) return;
-      this.running = !0;
+      (this.running = !0), this.syncOwn();
       let e = ++this.run,
         t = await this.loadLibrary();
       if (!this.running || e !== this.run) return;
@@ -3377,7 +3409,9 @@ onmessage = (e) => {
         clearTimeout(this.pauseTimer),
         this.voice.stop(),
         this.ambient.stop(),
-        this.sfx.stop();
+        this.sfx.stop(),
+        (this.ownPlaying = !1),
+        this.own.stop();
     }
     async celebrate() {
       if (!this.sequencer || this.silent || !this.running) return;
@@ -6744,6 +6778,21 @@ input[type="range"]::-moz-range-thumb {
         `\uD83C\uDFAC ${t.length} ${t.length === 1 ? "clipe carregado" : "clipes carregados"}`,
       );
   });
+  // Áudio próprio (gravado com a sua voz): fica no IndexedDB da extensão e toca na live pelo microfone virtual.
+  var Ue = u("input", { type: "file", accept: "audio/*", hidden: "" });
+  M.append(Ue);
+  Ue.addEventListener("change", async () => {
+    let e = Ue.files?.[0];
+    if (((Ue.value = ""), !e)) return;
+    E.setOwn(URL.createObjectURL(e)),
+      (m.audio.ownName = e.name),
+      (m.audio.ownOn = !0),
+      E.apply(m.audio),
+      H(),
+      x(),
+      await Yi("readwrite", (t) => t.put({ name: e.name, blob: e }, "ownAudio")).catch(() => {}),
+      f(`\uD83C\uDF99️ Seu áudio carregado: ${e.name}`);
+  });
   var Ke = u("input", {
     type: "text",
     placeholder: "Cole a chave (24 letras e números)",
@@ -7485,6 +7534,12 @@ input[type="range"]::-moz-range-thumb {
         "Proteção",
         [
           z(
+            "Proteção contra violação",
+            "Ao primeiro aviso do TikTok, para a automação e encerra a LIVE",
+            e.violationGuard !== !1,
+            (t) => (e.violationGuard = t),
+          ),
+          z(
             "Bloquear por palavra",
             "Bloqueia quem comentar — ou se chamar — uma destas palavras",
             e.blockOn,
@@ -7502,7 +7557,9 @@ input[type="range"]::-moz-range-thumb {
               : null,
           ),
         ],
-        "Sempre ativa: ao primeiro aviso do TikTok, a automação para e tenta encerrar a LIVE. A retomada automática fica bloqueada.",
+        e.violationGuard !== !1
+          ? "Ligada: ao primeiro aviso do TikTok, a automação para e tenta encerrar a LIVE. A retomada automática fica bloqueada."
+          : "Desligada: os avisos do TikTok aparecem no Log, mas a live continua no ar.",
       ),
       pe("Encerramento", [
         J(
@@ -7642,6 +7699,38 @@ input[type="range"]::-moz-range-thumb {
             ),
           ],
           "A voz vai só para a live: você não escuta no computador.",
+        ),
+        pe(
+          "Seu áudio",
+          [
+            u(
+              "div",
+              { class: "row" },
+              Re("Áudio próprio", e.ownName || "Grave com a sua voz e envie (mp3, m4a, wav…)"),
+              (() => {
+                let n = u("button", { class: "btn", type: "button", "data-key": "own-audio" }, e.ownName ? "Trocar" : "Enviar áudio");
+                return (n.onclick = () => Ue.click()), n;
+              })(),
+            ),
+            Ae(
+              "ownOn",
+              e.ownName
+                ? z("Tocar na live", "Seu áudio vai para a live junto com os clipes", e.ownOn, (n) => {
+                    (e.ownOn = n), E.apply(e);
+                  })
+                : null,
+            ),
+            Ae(
+              "ownLoop",
+              e.ownName && e.ownOn
+                ? z("Repetir sem parar", "Toca em loop durante toda a live", e.ownLoop, (n) => {
+                    (e.ownLoop = n), E.apply(e);
+                  })
+                : null,
+            ),
+            Ae("own", e.ownName && e.ownOn ? _n("Volume do seu áudio", e.own, 1, (n) => (e.own = n)) : null),
+          ],
+          "Se o seu áudio já fala do produto, desligue a Narração para as vozes não se sobreporem.",
         ),
         pe("Ambiente", [
           z(
@@ -8037,6 +8126,14 @@ input[type="range"]::-moz-range-thumb {
       }),
       ir(!0),
       E.apply(m.audio),
+      Yi("readonly", (n) => n.get("ownAudio"))
+        .then((n) => {
+          if (!n?.blob) return;
+          E.setOwn(URL.createObjectURL(n.blob));
+          if (!m.audio.ownName) m.audio.ownName = n.name;
+          x();
+        })
+        .catch(() => {}),
       m.planId)
     )
       At();

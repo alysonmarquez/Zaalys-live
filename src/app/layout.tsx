@@ -20,7 +20,10 @@ export const metadata: Metadata = {
   applicationName: "MediaFlowMZ",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: [{ url: "/favicon/favicon.svg", type: "image/svg+xml" }],
+    // NEXT_PUBLIC_FAVICON troca o favicon por máquina (ex.: apresentações), definido em .env.local.
+    icon: process.env.NEXT_PUBLIC_FAVICON
+      ? [{ url: process.env.NEXT_PUBLIC_FAVICON }]
+      : [{ url: "/favicon/favicon.svg", type: "image/svg+xml" }],
   },
   openGraph: {
     title: "MediaFlowMZ — Faça live e vídeos para o TikTok Shop",

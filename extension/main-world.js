@@ -99,9 +99,10 @@
       ambient: "zaalys-live-ambient",
       sfx: "zaalys-live-sfx",
       life: "zaalys-live-life",
+      own: "zaalys-live-own",
       ui: "zaalys-live-ui",
     },
-    f = [d.voice, d.ambient, d.sfx, d.life],
+    f = [d.voice, d.ambient, d.sfx, d.life, d.own],
     S = "__zaalysLive";
   class X {
     reason = null;
@@ -360,7 +361,12 @@
     for (let t of f) {
       let n = document.getElementById(t),
         a = n ? p.get(t) : void 0;
-      if (!n || !a) continue;
+      if (!n) continue;
+      // Canal que começou a tocar depois de montar o microfone (ex.: áudio próprio): conecta agora.
+      if (!a) {
+        if (V(n).length) Q(t, v), (e = !0);
+        continue;
+      }
       let r = V(n);
       if (!r.length) continue;
       C(t, n, r, a), (e = !0);
