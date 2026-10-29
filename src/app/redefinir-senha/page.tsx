@@ -25,7 +25,7 @@ function ResetPasswordForm() {
         const supabase = createClient();
         await supabase.auth
           .resetPasswordForEmail(email.trim(), {
-            redirectTo: `${window.location.origin}/auth/callback?next=/painel/conta`,
+            redirectTo: `${window.location.origin}/definir-senha`,
           })
           .catch(() => {});
       }

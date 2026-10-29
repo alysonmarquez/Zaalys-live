@@ -2,6 +2,7 @@ import { z } from "zod";
 import { fail, json, unauthorized } from "@/lib/http";
 import { adminCtx, manualRef, validSub, type SubRow } from "@/lib/admin";
 import { DEFAULT_COMMISSION_PCT } from "@/lib/referrals";
+import { sendInvite } from "@/lib/invite-email";
 
 // Usuários e acessos (Admin). GET: contas + quem pagou e ainda não criou conta, com o acesso de cada um.
 // POST: conceder acesso (vitalício ou mensal por N dias, com convite por e-mail opcional), revogar acesso
@@ -168,14 +169,12 @@ export async function POST(req: Request) {
 
       let convite: "enviado" | "ja-tem-conta" | "falhou" | null = null;
       if (body.convidar) {
-        if (profile) convite = "ja-tem-conta";
+        // Conta que nunca entrou (ex.: convite antigo com link quebrado) recebe um link novo para criar a senha.
+        const { data: authUser } = profile ? await c.db.auth.admin.getUserById(profile.id) : { data: null };
+        if (profile && authUser?.user?.last_sign_in_at) convite = "ja-tem-conta";
         else {
-          const origin = new URL(req.url).origin;
-          const { error: invErr } = await c.db.auth.admin.inviteUserByEmail(body.email, {
-            redirectTo: `${origin}/auth/callback?next=/redefinir-senha`,
-          });
-          convite = invErr ? "falhou" : "enviado";
-          if (invErr) console.error("[admin] convite:", invErr.message);
+          const origin = (process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin).replace(/\/$/, "");
+          convite = (await sendInvite(c.db, body.email, origin, Boolean(profile))) ? "enviado" : "falhou";
         }
       }
       return json({ ok: true, expira: expires, convite });
