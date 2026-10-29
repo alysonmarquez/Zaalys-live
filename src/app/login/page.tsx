@@ -151,10 +151,22 @@ function LoginScreen() {
     if (defaultEmail && !email) setEmail(defaultEmail);
   }, [defaultEmail, email]);
 
+  // Conta criada sem confirmar o e-mail: dá para pedir o link de novo.
+  const [unconfirmed, setUnconfirmed] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
+  async function resendConfirmation() {
+    if (!unconfirmed) return;
+    await createClient()
+      .auth.resend({ type: "signup", email: unconfirmed, options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` } })
+      .catch(() => {});
+    setResent(true);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrors({});
     setNotice(null);
+    setResent(false);
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim();
@@ -206,11 +218,12 @@ function LoginScreen() {
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
         if (error) {
+          const unconfirmed = error.message.toLowerCase().includes("confirm");
+          setUnconfirmed(unconfirmed ? cleanEmail : null);
           setErrors({
-            form:
-              error.message.toLowerCase().includes("confirm")
-                ? "Confirme seu e-mail pelo link que enviamos antes de entrar."
-                : "E-mail ou senha incorretos.",
+            form: unconfirmed
+              ? "Falta confirmar o seu e-mail. Abra o link que enviamos (veja também o spam) ou peça um novo abaixo."
+              : "E-mail ou senha incorretos. Se você recebeu o acesso por convite, use “Esqueci minha senha” para criar a sua.",
           });
           return;
         }
@@ -236,7 +249,8 @@ function LoginScreen() {
         return;
       }
       if (!data.session) {
-        setNotice("Conta criada! Enviamos um link para o seu e-mail: confirme para entrar.");
+        setUnconfirmed(cleanEmail);
+        setNotice("Conta criada! Enviamos um link para o seu e-mail (veja também o spam): confirme para entrar.");
         return;
       }
       setNotice("Conta criada com sucesso! Redirecionando…");
@@ -382,14 +396,29 @@ function LoginScreen() {
                 )}
               </RaisedButton>
 
-              <div className="pt-1 text-center">
-                <Link
-                  href="/painel"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline-offset-4 hover:underline"
-                >
-                  Entrar direto na Central MediaFlowMZ (Demo) →
-                </Link>
-              </div>
+              {unconfirmed && (
+                <div className="text-center">
+                  <button
+                    type="button"
+                    disabled={resent}
+                    onClick={resendConfirmation}
+                    className="text-xs font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-60 cursor-pointer"
+                  >
+                    {resent ? `Link reenviado para ${unconfirmed}` : "Reenviar link de confirmação"}
+                  </button>
+                </div>
+              )}
+
+              {!isSupabaseConfigured() && (
+                <div className="pt-1 text-center">
+                  <Link
+                    href="/painel"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                  >
+                    Entrar direto na Central MediaFlowMZ (Demo) →
+                  </Link>
+                </div>
+              )}
             </form>
           </div>
 
