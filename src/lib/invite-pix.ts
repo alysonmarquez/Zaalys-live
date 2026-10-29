@@ -33,12 +33,36 @@ export async function inviteSplit(admin: SupabaseClient, convite: string, buyerE
   return { ref, producerId: affiliate.applyfy_account_id as string, splitCents: Math.round((INVITE_LIFETIME_CENTS * pct) / 100) };
 }
 
+/**
+ * Coprodutores do produto na Applyfy. A cobrança pela API é um produto avulso, então a coprodução configurada
+ * lá não roda nela: os coprodutores entram aqui como recebedores fixos do split.
+ * APPLYFY_COPRODUCERS="<ID da conta>:20,<outro ID>:10" (% sobre o que fica para a MediaFlowMZ depois da comissão
+ * do afiliado, como na coprodução).
+ */
+export function coproducers(): { producerId: string; pct: number }[] {
+  return (process.env.APPLYFY_COPRODUCERS ?? "")
+    .split(",")
+    .map((p) => p.trim().split(":"))
+    .map(([id, pct]) => ({ producerId: (id ?? "").trim(), pct: Number((pct ?? "").replace(",", ".")) }))
+    .filter((c) => c.producerId.length >= 6 && Number.isFinite(c.pct) && c.pct > 0 && c.pct < 100);
+}
+
+/** Recebedores do split: o afiliado do convite e os coprodutores (o mesmo ID recebe as duas partes somadas). */
+function splitsFor(split: Split) {
+  const rest = INVITE_LIFETIME_CENTS - split.splitCents;
+  const parts = [{ producerId: split.producerId, cents: split.splitCents }, ...coproducers().map((c) => ({ producerId: c.producerId, cents: Math.floor((rest * c.pct) / 100) }))];
+  const byId = new Map<string, number>();
+  for (const p of parts) if (p.cents > 0) byId.set(p.producerId, (byId.get(p.producerId) ?? 0) + p.cents);
+  const list = [...byId].map(([producerId, cents]) => ({ producerId, amount: reais(cents) }));
+  return list.length ? list : undefined;
+}
+
 function common(split: Split, app: string) {
   const token = (process.env.APPLYFY_WEBHOOK_TOKEN ?? "").trim();
   return {
     identifier: `${refMark(split.ref)}${SPLIT_TAG}${randomUUID()}`,
     products: [PRODUCT],
-    splits: split.splitCents > 0 ? [{ producerId: split.producerId, amount: reais(split.splitCents) }] : undefined,
+    splits: splitsFor(split),
     metadata: { provider: "MediaFlowMZ", orderId: refMark(split.ref) },
     callbackUrl: token ? `${app}/api/webhooks/payment?token=${encodeURIComponent(token)}` : undefined,
   };
