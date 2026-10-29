@@ -188,9 +188,9 @@ const readPreps = (): Prep[] => {
 
 export default function LivePage() {
   const demo = useIsDemo();
-  // Estúdio de LIVE e "Editar desempenho" para todos; comentários automáticos e OBS só na conta de demonstração.
+  // Os dados de exemplo são só da conta de demonstração.
   const showcase = useShowcase();
-  // Estúdio de LIVE e "Editar desempenho": só a Nat e os afiliados aprovados por ela.
+  // Estúdio de LIVE, "Editar desempenho", comentários automáticos e OBS: a Nat e os afiliados aprovados por ela.
   const studio = useStudioAccess();
   const [preps, setPreps] = useState<Prep[]>([]);
   const [current, setCurrent] = useState<Prep | null>(null);
@@ -366,7 +366,7 @@ export default function LivePage() {
       </div>
       </>
       )}
-      {showcase && (
+      {studio && (
       <>
       <button
         type="button"

@@ -5,7 +5,6 @@ import { ChevronLeft, ChevronRight, CircleHelp, Download, Pencil, SlidersHorizon
 import { cn } from "@/components/brand";
 import { LIVE_METRICS, inRange, isoDay, metricByLabel, metricValue, totalsOf, useLiveSessions, useOverrides, type LiveSession, type PeriodPreset } from "@/lib/estudio-lives";
 import { DesempenhoEditor } from "@/components/desempenho-editor";
-import { useShowcase } from "@/lib/showcase";
 import { formatBRL } from "@/lib/zaalys-data";
 import { Card, GrayButton, PageTitle, Table, UnderlineTabs } from "../ui";
 import { DateBar, brDate, useDateRange } from "../date-bar";
@@ -46,7 +45,6 @@ export default function DesempenhoPage() {
   const [editing, setEditing] = useState(false);
   const overrides = useOverrides();
   // "Editar números" é ferramenta da conta de demonstração.
-  const showcase = useShowcase();
 
   const selected = sessions.filter((s) => inRange(s, r.from, r.to));
   const totals = totalsOf(selected);
@@ -120,17 +118,15 @@ export default function DesempenhoPage() {
               <p className="mt-0.5 text-sm text-black/65">Mostra apenas dados de transmissões ao vivo que foram iniciadas durante o período selecionado.</p>
             </div>
             <div className="flex gap-2">
-              {showcase && (
-                <GrayButton onClick={() => setEditing((e) => !e)}>
-                  <Pencil size={14} /> {editing ? "Fechar edição" : "Editar números"}
-                </GrayButton>
-              )}
+              <GrayButton onClick={() => setEditing((e) => !e)}>
+                <Pencil size={14} /> {editing ? "Fechar edição" : "Editar números"}
+              </GrayButton>
               <GrayButton>
                 <SlidersHorizontal size={14} /> Métricas
               </GrayButton>
             </div>
           </div>
-          {showcase && editing && (
+          {editing && (
             <div className="mt-4">
               <DesempenhoEditor initial={(r.preset === "custom" ? "7" : r.preset) as PeriodPreset} />
             </div>

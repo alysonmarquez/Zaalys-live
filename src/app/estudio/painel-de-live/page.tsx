@@ -156,7 +156,6 @@ export default function PainelDeLivePage() {
               <Timer size={14} /> {clock(elapsed)}
             </span>
             {showcase && (
-            <>
             <button
               type="button"
               onClick={() => saveLiveSim({ ...loadLiveSim(), enabled: !cfg.enabled })}
@@ -164,11 +163,10 @@ export default function PainelDeLivePage() {
             >
               {cfg.enabled ? <Pause size={14} /> : <Play size={14} />} {cfg.enabled ? "Pausar pedidos" : "Retomar pedidos"}
             </button>
+            )}
             <Link href="/painel/live?desempenho=1" className="flex items-center gap-1.5 rounded-md bg-white/[0.06] px-3 py-1.5 hover:bg-white/10">
               <Settings2 size={14} /> Editar desempenho
             </Link>
-            </>
-            )}
             <Link href="/estudio/desempenho" aria-label="Sair da tela cheia" className="grid size-8 place-items-center rounded-md bg-white/[0.06] hover:bg-white/10">
               <X size={16} />
             </Link>
