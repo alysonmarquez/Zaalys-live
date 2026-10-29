@@ -98,30 +98,22 @@ export const getAccess = cache(async (): Promise<Access | null> => {
   try {
     const admin = createAdminClient();
     const now = Date.now();
-    const readValid = async () => {
-      const { data: subs } = await admin
-        .from("subscriptions")
-        .select("plan, expires_at, gateway")
-        .eq("user_id", user.id)
-        .eq("status", "active");
-      const current = (subs ?? []).filter((s) => s.plan === "lifetime" || (s.expires_at && Date.parse(s.expires_at) > now));
-      // Aprovação manual da Nat (aba Afiliados) libera também o Estúdio de LIVE.
-      approved = current.some((s) => s.gateway === "manual");
-      return current.find((s) => s.plan === "lifetime") ?? current[0];
-    };
-
-    let valid = await readValid();
-    if (!valid) {
-      // Vincula pagamentos feitos antes do cadastro (mesmo e-mail). Só quando ainda não há assinatura válida,
-      // para não gravar no banco a cada página.
-      const { data: linked } = await admin
-        .from("subscriptions")
-        .update({ user_id: user.id })
-        .is("user_id", null)
-        .eq("email", email)
-        .select("id");
-      if (linked?.length) valid = await readValid();
-    }
+    // Assinaturas da conta e do e-mail dela: um acesso liberado (ou pago) antes de a conta existir, ou numa conta
+    // apagada e criada de novo, fica preso ao e-mail com outro user_id (ou nenhum).
+    const cols = "id, user_id, plan, expires_at, gateway, gateway_ref";
+    const [byId, byEmail] = await Promise.all([
+      admin.from("subscriptions").select(cols).eq("user_id", user.id).eq("status", "active"),
+      admin.from("subscriptions").select(cols).eq("email", email).eq("status", "active"),
+    ]);
+    const seen = new Set<string>();
+    const subs = [...(byId.data ?? []), ...(byEmail.data ?? [])].filter((s) => !seen.has(s.id) && seen.add(s.id));
+    const current = subs.filter((s) => s.plan === "lifetime" || (s.expires_at && Date.parse(s.expires_at) > now));
+    // Só a aprovação de afiliado da Nat (aba Afiliados) libera o Estúdio de LIVE; acesso liberado em Usuários, não.
+    approved = current.some((s) => s.gateway === "manual" && String(s.gateway_ref).startsWith("aprovacao:"));
+    const valid = current.find((s) => s.plan === "lifetime") ?? current[0];
+    // Passa a ligar à conta o que só estava no e-mail (grava só quando precisa).
+    const stray = subs.filter((s) => s.user_id !== user.id).map((s) => s.id);
+    if (stray.length) await admin.from("subscriptions").update({ user_id: user.id }).in("id", stray);
     if (valid) {
       plan = valid.plan as Access["plan"];
       expiresAt = valid.expires_at ?? null;

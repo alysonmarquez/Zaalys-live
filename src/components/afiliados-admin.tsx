@@ -20,6 +20,8 @@ type Afiliado = {
   aReceberCents?: number;
   /** ID da conta Applyfy vinculada pelo afiliado: o vitalício cai direto nela pelo split. */
   applyfyAccountId?: string | null;
+  /** Acesso liberado na aba Usuários (Vitalício ou Mensal), separado da aprovação de afiliado. */
+  acessoUsuarios?: "lifetime" | "monthly" | null;
 };
 const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -207,6 +209,11 @@ export function AfiliadosAdmin() {
                     "Applyfy não vinculada: o vitalício também fica a repassar"
                   )}
                 </p>
+                {a.acessoUsuarios && (
+                  <p className="mt-0.5 text-xs text-sky-600 dark:text-sky-400">
+                    Também tem acesso {a.acessoUsuarios === "lifetime" ? "vitalício" : "mensal"} liberado em Usuários
+                  </p>
+                )}
               </div>
               <label className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Comissão do afiliado">
                 Comissão
@@ -258,7 +265,7 @@ export function AfiliadosAdmin() {
                   onClick={() => agir(a.id, "revogar")}
                   className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border px-3.5 text-xs font-semibold hover:bg-muted disabled:opacity-50 cursor-pointer"
                 >
-                  <RotateCcw size={13} /> Revogar
+                  <RotateCcw size={13} /> Revogar afiliado
                 </button>
               )}
               {a.situacao === "pago" && (

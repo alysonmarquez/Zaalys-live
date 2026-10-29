@@ -39,7 +39,7 @@ export async function GET() {
     const profiles = (data ?? []) as unknown as Row[];
     const { data: subs, error: subError } = await c.admin
       .from("subscriptions")
-      .select("user_id, email, plan, status, gateway, expires_at")
+      .select("user_id, email, plan, status, gateway, gateway_ref, expires_at")
       .eq("status", "active");
     if (subError) return fail(subError);
 
@@ -57,26 +57,40 @@ export async function GET() {
       totals.set(s.affiliate_id, t);
     }
 
+    // Quem já foi aprovado como afiliado alguma vez (mesmo revogado) continua na lista.
+    const { data: everApproved } = await c.admin.from("subscriptions").select("gateway_ref").eq("gateway", "manual").like("gateway_ref", "aprovacao:%");
+    const approvedEver = new Set((everApproved ?? []).map((s) => String(s.gateway_ref).slice("aprovacao:".length)));
+
     const now = Date.now();
     const valid = (subs ?? []).filter((s) => s.plan === "lifetime" || (s.expires_at && Date.parse(s.expires_at) > now));
-    return json({
-      afiliados: profiles.map((p) => {
-        const mine = valid.filter((s) => s.user_id === p.id || s.email?.toLowerCase() === p.email?.toLowerCase());
-        const paid = mine.some((s) => s.gateway !== "manual");
-        const approved = mine.some((s) => s.gateway === "manual");
-        return {
+    // Afiliado é quem a Nat aprovou nesta aba (ou tem comissão, conta Applyfy ou vendas pelo link). Lead que só
+    // comprou ou teve o acesso liberado em Usuários não aparece aqui; quem se cadastrou sem acesso aparece como pendente.
+    const afiliados = profiles.flatMap((p) => {
+      const mine = valid.filter((s) => s.user_id === p.id || s.email?.toLowerCase() === p.email?.toLowerCase());
+      const paid = mine.some((s) => s.gateway !== "manual");
+      const approved = mine.some((s) => s.gateway === "manual" && s.gateway_ref === manualRef(p.id));
+      const liberado = mine.find((s) => s.gateway === "manual" && s.gateway_ref !== manualRef(p.id));
+      const vendas = totals.get(p.id)?.vendas ?? 0;
+      const affiliate =
+        approved || approvedEver.has(p.id) || p.commission_pct != null || Boolean(p.applyfy_account_id) || vendas > 0 || (!paid && !liberado);
+      if (!affiliate) return [];
+      return [
+        {
           id: p.id,
           email: p.email,
           name: p.name,
           createdAt: p.created_at,
           commissionPct: p.commission_pct == null ? null : Number(p.commission_pct),
           applyfyAccountId: p.applyfy_account_id ?? null,
-          situacao: paid ? "pago" : approved ? "aprovado" : "pendente",
-          vendas: totals.get(p.id)?.vendas ?? 0,
+          situacao: approved ? "aprovado" : paid ? "pago" : "pendente",
+          // Acesso liberado na aba Usuários (separado da aprovação de afiliado).
+          acessoUsuarios: liberado ? (liberado.plan as "lifetime" | "monthly") : null,
+          vendas,
           aReceberCents: totals.get(p.id)?.aReceberCents ?? 0,
-        };
-      }),
+        },
+      ];
     });
+    return json({ afiliados });
   } catch (err) {
     return fail(err);
   }
@@ -153,10 +167,13 @@ export async function POST(req: Request) {
       );
       if (error) return fail(error);
     } else {
-      // Toda liberação sem pagamento da conta (a desta aba e o "Dar vitalício" / "+30 dias" da aba Usuários).
-      const cancel = () =>
-        c.admin.from("subscriptions").update({ status: "canceled", updated_at: new Date().toISOString() }).eq("gateway", "manual").eq("status", "active");
-      for (const r of [await cancel().eq("user_id", userId), await cancel().eq("email", profile.email.toLowerCase())]) if (r.error) return fail(r.error);
+      // Só a aprovação de afiliado (e o acesso que veio com ela). Acesso liberado na aba Usuários sai por lá.
+      const { error } = await c.admin
+        .from("subscriptions")
+        .update({ status: "canceled", updated_at: new Date().toISOString() })
+        .eq("gateway", "manual")
+        .eq("gateway_ref", manualRef(userId));
+      if (error) return fail(error);
     }
     return json({ ok: true });
   } catch (err) {
