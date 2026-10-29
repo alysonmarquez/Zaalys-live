@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PaymentEvent } from "@/lib/payments";
 import { pick } from "@/lib/payments/applyfy";
+import { INVITE_LIFETIME_CENTS, INVITE_MONTHLY_CENTS } from "@/lib/pricing";
 
 // Indicações: cada conta tem um código fixo (profiles.ref_code). Os links /convite/<código> levam ao checkout
 // com a marca "mfz_<código>"; quando a Applyfy avisa a venda, a marca (ou a sessão de checkout aberta por
@@ -8,7 +9,8 @@ import { pick } from "@/lib/payments/applyfy";
 
 export const DEFAULT_COMMISSION_PCT = 40;
 const MARK = "mfz_";
-const PLAN_CENTS = { lifetime: 29700, monthly: 17000 } as const; // ofertas com desconto dos convites
+// Preços de convite (os mesmos do checkout, inclusive quando mudados por variável para um teste).
+const PLAN_CENTS = { lifetime: INVITE_LIFETIME_CENTS, monthly: INVITE_MONTHLY_CENTS } as const;
 
 const clean = (s: string) =>
   s
