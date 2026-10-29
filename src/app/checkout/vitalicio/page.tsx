@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useMemo, useState } from "react";
-import { Brand, BrandLoader, RaisedButton, Segmented } from "@/components/brand";
+import { Brand, BrandLoader, RaisedButton, Segmented, cn } from "@/components/brand";
 import { INVITE_LIFETIME_CENTS, INVITE_MONTHLY_CENTS, LIFETIME_CENTS, MONTHLY_CENTS, formatBRL, installmentQuote } from "@/lib/pricing";
 
 // Cupom próprio só vale no Mercado Pago. Na Applyfy, os cupons são da própria Applyfy.
@@ -263,7 +263,17 @@ function loadApplyfy3ds(): Promise<Applyfy3dsCtor> {
 
 function CheckoutContent() {
   const params = useSearchParams();
-  const planParam = params.get("plan") === "monthly" ? "monthly" : "lifetime";
+  const [planParam, setPlan] = useState<"monthly" | "lifetime">(params.get("plan") === "monthly" ? "monthly" : "lifetime");
+  // Troca de plano no seletor do convite: o endereço acompanha (dá para compartilhar com o plano escolhido).
+  function choosePlan(next: "monthly" | "lifetime") {
+    setPlan(next);
+    try {
+      const u = new URL(window.location.href);
+      if (next === "monthly") u.searchParams.set("plan", "monthly");
+      else u.searchParams.delete("plan");
+      window.history.replaceState(null, "", u.toString());
+    } catch {}
+  }
   const initialEmail = params.get("email") ?? "";
   const initialCoupon = params.get("coupon") ?? params.get("cupom") ?? "";
   // Convite do Acesso Creator / Indique (/convite/<codigo>): preço de convite, venda atribuída ao afiliado.
@@ -667,6 +677,68 @@ function CheckoutContent() {
             </section>
           ) : (
           <form onSubmit={handleSubmit} className="space-y-5" data-clarity-mask="true">
+              {invite && (
+                <div role="radiogroup" aria-label="Escolha o plano" className="grid gap-3 sm:grid-cols-2">
+                  {(
+                    [
+                      {
+                        v: "monthly" as const,
+                        label: "Mensal",
+                        full: MONTHLY_CENTS,
+                        price: INVITE_MONTHLY_CENTS,
+                        main: `${formatBRL(INVITE_MONTHLY_CENTS)}`,
+                        suffix: "/mês",
+                        sub: null as string | null,
+                      },
+                      {
+                        v: "lifetime" as const,
+                        label: "Vitalício",
+                        full: LIFETIME_CENTS,
+                        price: INVITE_LIFETIME_CENTS,
+                        main: `12x ${formatBRL(installmentQuote(INVITE_LIFETIME_CENTS, 12).cents)}`,
+                        suffix: "",
+                        sub: `ou ${formatBRL(INVITE_LIFETIME_CENTS)} pagamento único`,
+                      },
+                    ]
+                  ).map((o) => {
+                    const on = planParam === o.v;
+                    return (
+                      <button
+                        key={o.v}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => choosePlan(o.v)}
+                        className={cn(
+                          "relative rounded-2xl border p-5 text-left transition-[border-color,background-color,box-shadow] cursor-pointer",
+                          on
+                            ? "border-primary bg-primary/[0.07] shadow-[0_0_0_1px_var(--primary),0_0_28px_-6px_color-mix(in_oklch,var(--primary)_55%,transparent)]"
+                            : "border-border/60 bg-card/70 hover:border-border",
+                        )}
+                      >
+                        {o.v === "lifetime" && (
+                          <span className="absolute right-4 top-4 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
+                            Mais popular
+                          </span>
+                        )}
+                        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{o.label}</p>
+                        <p className="mt-2 text-[13px] text-muted-foreground line-through tabular-nums">{formatBRL(o.full)}</p>
+                        <p className="font-display text-2xl font-extrabold tracking-tight tabular-nums">
+                          {o.main}
+                          {o.suffix && <span className="ml-1 text-sm font-medium text-muted-foreground">{o.suffix}</span>}
+                        </p>
+                        {o.sub && <p className="text-[13px] text-muted-foreground">{o.sub}</p>}
+                        <div className="mt-3 border-t border-border/60 pt-3 text-[13px]">
+                          <p className="text-primary">✓ Economia de {formatBRL(o.full - o.price)}</p>
+                          <p className={cn("mt-1 font-semibold", on ? "text-primary" : "text-muted-foreground")}>
+                            {on ? "Plano selecionado" : `Escolher ${o.label}`}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <div className="rounded-2xl border border-border/60 bg-card/70 p-5">
                 <Segmented
                   label="Forma de pagamento"
@@ -1053,12 +1125,19 @@ function CheckoutContent() {
                     <p className="rounded-xl border border-border/60 px-4 py-3 text-sm">
                       O vitalício custa {formatBRL(invite ? INVITE_LIFETIME_CENTS : LIFETIME_CENTS)} uma vez, menos que dois meses deste
                       plano.{" "}
-                      <Link
-                        href={invite ? `/checkout/vitalicio?convite=${encodeURIComponent(invite)}` : "/checkout/vitalicio"}
-                        className="font-semibold underline decoration-primary underline-offset-4"
-                      >
-                        Trocar para o vitalício
-                      </Link>
+                      {invite ? (
+                        <button
+                          type="button"
+                          onClick={() => choosePlan("lifetime")}
+                          className="font-semibold underline decoration-primary underline-offset-4 cursor-pointer"
+                        >
+                          Trocar para o vitalício
+                        </button>
+                      ) : (
+                        <Link href="/checkout/vitalicio" className="font-semibold underline decoration-primary underline-offset-4">
+                          Trocar para o vitalício
+                        </Link>
+                      )}
                     </p>
                   </>
                 )}
