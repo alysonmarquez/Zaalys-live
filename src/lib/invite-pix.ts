@@ -41,8 +41,9 @@ export async function inviteSplit(admin: SupabaseClient, convite: string | null 
  */
 export function coproducers(): { producerId: string; pct: number }[] {
   return (process.env.APPLYFY_COPRODUCERS ?? "")
-    // Valor colado junto com o nome da variável na Vercel.
-    .replace(/^\s*APPLYFY_COPRODUCERS\s*=\s*/i, "")
+    // Valor colado com aspas ou junto com o nome da variável na Vercel.
+    .replace(/["']/g, "")
+    .replace(/APPLYFY_COPRODUCERS\s*=\s*/gi, "")
     .split(",")
     .map((p) => p.trim().split(":"))
     .map(([id, pct]) => ({ producerId: (id ?? "").trim(), pct: Number((pct ?? "").replace(",", ".")) }))
