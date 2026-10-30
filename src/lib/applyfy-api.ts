@@ -43,7 +43,10 @@ async function call<T>(path: string, keys: ApplyfyKeys, init: { method?: string;
     // O firewall da Applyfy responde HTML (403) para origens bloqueadas.
   }
   if (!res.ok || data === null) {
-    const msg = (data as { message?: string } | null)?.message;
+    const body = data as { message?: string; details?: unknown } | null;
+    // "details" diz qual campo a Applyfy recusou (sem repetir os dados enviados, como os do cartão).
+    const details = body?.details ? ` ${JSON.stringify(body.details).slice(0, 300)}` : "";
+    const msg = body?.message ? `${body.message}${details}` : "";
     throw new ApplyfyApiError(msg || `Applyfy respondeu ${res.status}${data === null ? " (bloqueio por localização?)" : ""}`, res.status);
   }
   return data as T;
