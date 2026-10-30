@@ -70,9 +70,8 @@ export async function POST(req: Request) {
           return json({ error: charge.errorDescription || "Pagamento recusado. Confira os dados ou tente outro cartão." }, 402);
         return json({ card: { transactionId: charge.transactionId, needThreeDs: Boolean(charge.needThreeDs), paid: charge.transactionStatus === "COMPLETED" } });
       } catch (err) {
-        console.error("[checkout] cartão com split:", err instanceof ApplyfyApiError ? `${err.status} ${err.message}` : "erro");
-        const msg = err instanceof ApplyfyApiError && err.status === 400 ? err.message : null;
-        return json({ error: msg || "Não deu para processar o cartão agora. Tente de novo ou pague pelo Pix." }, 502);
+        console.error("[checkout] cartão pela API:", err instanceof ApplyfyApiError ? `${err.status} ${err.message}${err.details}` : "erro");
+        return json({ error: "Não deu para processar o cartão agora. Confira os dados, tente de novo ou pague pelo Pix." }, 502);
       }
     }
     // Vitalício no Pix: Pix aqui mesmo, com o split do afiliado (se houver) e dos coprodutores.
@@ -87,9 +86,8 @@ export async function POST(req: Request) {
           return json({ error: charge.errorDescription || "Não deu para gerar o Pix agora. Confira os dados e tente de novo." }, 402);
         }
       } catch (err) {
-        console.error("[checkout] Pix pela API indisponível:", err instanceof ApplyfyApiError ? `${err.status} ${err.message}` : "erro");
-        const msg = err instanceof ApplyfyApiError && err.status < 500 ? err.message : null;
-        return json({ error: msg || "Não deu para gerar o Pix agora. Tente de novo em instantes." }, 502);
+        console.error("[checkout] Pix pela API indisponível:", err instanceof ApplyfyApiError ? `${err.status} ${err.message}${err.details}` : "erro");
+        return json({ error: "Não deu para gerar o Pix agora. Confira nome, telefone e CPF e tente de novo." }, 502);
       }
     }
     if (convite) {

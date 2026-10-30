@@ -10,6 +10,8 @@ export class ApplyfyApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /** Campo recusado, para o log (nunca para a tela do comprador). */
+    readonly details = "",
   ) {
     super(message);
   }
@@ -46,8 +48,7 @@ async function call<T>(path: string, keys: ApplyfyKeys, init: { method?: string;
     const body = data as { message?: string; details?: unknown } | null;
     // "details" diz qual campo a Applyfy recusou (sem repetir os dados enviados, como os do cartão).
     const details = body?.details ? ` ${JSON.stringify(body.details).slice(0, 300)}` : "";
-    const msg = body?.message ? `${body.message}${details}` : "";
-    throw new ApplyfyApiError(msg || `Applyfy respondeu ${res.status}${data === null ? " (bloqueio por localização?)" : ""}`, res.status);
+    throw new ApplyfyApiError(body?.message || `Applyfy respondeu ${res.status}${data === null ? " (bloqueio por localização?)" : ""}`, res.status, details);
   }
   return data as T;
 }
