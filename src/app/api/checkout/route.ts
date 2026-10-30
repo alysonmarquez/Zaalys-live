@@ -81,10 +81,15 @@ export async function POST(req: Request) {
         const charge = await createInvitePix(createAdminClient(), { convite, name, email: email.toLowerCase(), phone, document, app });
         if (charge?.pix?.code && charge.status !== "FAILED")
           return json({ pix: { transactionId: charge.transactionId, code: charge.pix.code, image: charge.pix.image ?? null, expiresAt: charge.pix.expiresAt ?? null } });
-        if (charge) console.error("[checkout] Pix pela API recusado:", charge.errorDescription ?? charge.status);
+        // Com a API disponível, nunca cai no checkout da Applyfy: lá não há split e aparecem os dados do produtor.
+        if (charge) {
+          console.error("[checkout] Pix pela API recusado:", charge.errorDescription ?? charge.status);
+          return json({ error: charge.errorDescription || "Não deu para gerar o Pix agora. Confira os dados e tente de novo." }, 402);
+        }
       } catch (err) {
-        // Sem o Pix pela API, segue para o checkout da Applyfy (sem split: a comissão fica a receber do admin).
-        console.error("[checkout] Pix pela API indisponível:", (err as Error).message);
+        console.error("[checkout] Pix pela API indisponível:", err instanceof ApplyfyApiError ? `${err.status} ${err.message}` : "erro");
+        const msg = err instanceof ApplyfyApiError && err.status < 500 ? err.message : null;
+        return json({ error: msg || "Não deu para gerar o Pix agora. Tente de novo em instantes." }, 502);
       }
     }
     if (convite) {

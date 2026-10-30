@@ -468,9 +468,7 @@ function CheckoutContent() {
         window.location.href = data.url;
         return;
       }
-      setCheckoutError(
-        "Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com suporte@mediaflowmz.com.",
-      );
+      setCheckoutError(data?.error || "Não conseguimos abrir o pagamento agora. Tente de novo em instantes.");
     } catch {
       setCheckoutError("Sem conexão com o servidor. Confira sua internet e tente de novo.");
     } finally {
@@ -745,7 +743,7 @@ function CheckoutContent() {
                   value={method}
                   onChange={setMethod}
                   options={
-                    planParam === "monthly"
+                    planParam === "monthly" || cardHere
                       ? [
                           { value: "pix", label: "Pix" },
                           { value: "card", label: "Cartão" },
