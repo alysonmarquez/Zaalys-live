@@ -1,5 +1,6 @@
 import { getPayments } from "@/lib/payments";
 import { createAdminClient } from "@/lib/supabase/server";
+import { sendPurchaseAccess } from "@/lib/invite-email";
 import { attributeSale, rememberCheckout } from "@/lib/referrals";
 
 // Recebe notificações do gateway e libera/revoga o acesso.
@@ -49,10 +50,29 @@ export async function POST(req: Request) {
   // Só mexe na validade quando o evento traz uma (não encurta acesso já pago).
   if (event.expiresAt) row.expires_at = event.expiresAt;
 
+  // Situação anterior: o e-mail de acesso sai só quando a assinatura passa a ativa (não em aviso repetido nem renovação).
+  const { data: before } = await admin
+    .from("subscriptions")
+    .select("status")
+    .eq("gateway", event.gateway)
+    .eq("gateway_ref", event.ref)
+    .maybeSingle();
+
   const { error } = await admin.from("subscriptions").upsert(row, { onConflict: "gateway,gateway_ref" });
   if (error) {
     console.error("[webhook] erro ao gravar:", error);
     return new Response("retry", { status: 500 }); // o gateway tenta de novo
+  }
+
+  // E-mail com o caminho para entrar (não bloqueia a liberação do acesso).
+  if (event.status === "active" && before?.status !== "active") {
+    try {
+      const origin = (process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin).replace(/\/$/, "");
+      const sent = await sendPurchaseAccess(admin, event.email, origin);
+      if (!sent) console.error("[webhook] e-mail de acesso não enviado:", event.ref);
+    } catch (err) {
+      console.error("[webhook] e-mail de acesso:", err);
+    }
   }
 
   // Comissão do afiliado que indicou (não bloqueia a liberação do acesso).

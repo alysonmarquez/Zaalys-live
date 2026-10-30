@@ -339,7 +339,7 @@ function CheckoutContent() {
     const t = setInterval(async () => {
       const r = await fetch(`/api/checkout/status?tx=${encodeURIComponent(waitingTx)}`).catch(() => null);
       const d = r?.ok ? ((await r.json().catch(() => null)) as { paid?: boolean } | null) : null;
-      if (d?.paid) window.location.href = `/obrigado?email=${encodeURIComponent(email.trim())}`;
+      if (d?.paid) window.location.href = `/obrigado?email=${encodeURIComponent(email.trim())}&tx=${encodeURIComponent(waitingTx)}`;
     }, 4000);
     return () => clearInterval(t);
   }, [waitingTx, email]);
@@ -514,7 +514,7 @@ function CheckoutContent() {
         return;
       }
       if (data.card.paid) {
-        window.location.href = `/obrigado?email=${encodeURIComponent(email.trim())}`;
+        window.location.href = `/obrigado?email=${encodeURIComponent(email.trim())}&tx=${encodeURIComponent(data.card.transactionId)}`;
         return;
       }
       if (data.card.needThreeDs && splitInfo?.publicKey) {

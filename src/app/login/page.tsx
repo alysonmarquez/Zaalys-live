@@ -243,7 +243,7 @@ function LoginScreen() {
       if (error) {
         setErrors({
           form: error.message.toLowerCase().includes("registered")
-            ? "Este e-mail já tem conta. Entre com sua senha."
+            ? "Este e-mail já tem conta. Entre com sua senha. Acabou de comprar? Use o link que enviamos por e-mail ou “Esqueci minha senha”."
             : "Não foi possível criar a conta agora. Tente de novo em instantes.",
         });
         return;
