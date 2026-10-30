@@ -37,8 +37,7 @@ export async function inviteSplit(admin: SupabaseClient, convite: string | null 
 /**
  * Coprodutores do produto na Applyfy. A cobrança pela API é um produto avulso, então a coprodução configurada
  * lá não roda nela: os coprodutores entram aqui como recebedores fixos do split.
- * APPLYFY_COPRODUCERS="<ID da conta>:20,<outro ID>:10" (% sobre o que fica para a MediaFlowMZ depois da comissão
- * do afiliado, como na coprodução).
+ * APPLYFY_COPRODUCERS="<ID da conta>:20,<outro ID>:10" (% sobre o preço total, antes da comissão do afiliado).
  */
 export function coproducers(): { producerId: string; pct: number }[] {
   return (process.env.APPLYFY_COPRODUCERS ?? "")
@@ -53,7 +52,7 @@ function splitsFor(split: Split) {
   const rest = split.priceCents - split.splitCents;
   const parts = [
     ...(split.producerId ? [{ producerId: split.producerId, cents: split.splitCents }] : []),
-    ...coproducers().map((c) => ({ producerId: c.producerId, cents: Math.floor((rest * c.pct) / 100) })),
+    ...coproducers().map((c) => ({ producerId: c.producerId, cents: Math.min(rest, Math.floor((split.priceCents * c.pct) / 100)) })),
   ];
   const byId = new Map<string, number>();
   for (const p of parts) if (p.cents > 0) byId.set(p.producerId, (byId.get(p.producerId) ?? 0) + p.cents);

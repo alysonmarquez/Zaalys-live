@@ -51,9 +51,9 @@ export default async function AuditoriaPage() {
     const api = identifier.includes(".split.");
     const sale = (sales ?? []).find((s) => s.gateway_ref === ref);
     const mensal = Object.entries(PRODUCT_PLAN).some(([id, p]) => p === "monthly" && text.includes(id));
-    // Pela API o coprodutor vai no split, sobre o preço menos a comissão enviada ao afiliado no mesmo split.
+    // Pela API o coprodutor vai no split, sobre o preço total (sem os juros do parcelamento).
     const base = identifier.startsWith("mfz_") ? INVITE_LIFETIME_CENTS : LIFETIME_CENTS;
-    const parteCents = api && copro && situacao === "Paga" ? Math.floor(((base - (sale?.split ? Number(sale.commission_cents) : 0)) * copro.pct) / 100) : null;
+    const parteCents = api && copro && situacao === "Paga" ? Math.floor((base * copro.pct) / 100) : null;
     return [
       {
         ref,
@@ -114,7 +114,7 @@ export default async function AuditoriaPage() {
           ) : (
             <p className="mt-1 text-sm font-semibold text-destructive">Nenhum: as vendas pela API não estão mandando nada para você.</p>
           )}
-          <p className="mt-1 text-xs text-muted-foreground">Confira se é o ID da sua conta. O % vale sobre o preço menos a comissão do afiliado.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Confira se é o ID da sua conta. O % vale sobre o preço total. Vendas pela API feitas antes de 30/10 usaram o % sobre o que sobrava depois do afiliado.</p>
           <p className="mt-2 text-xs text-muted-foreground">Saldo na sua Applyfy: {saldo ?? "vincule a sua conta em Saque de comissões para ver aqui"}</p>
         </div>
 
