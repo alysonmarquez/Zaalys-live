@@ -152,8 +152,8 @@ export async function attributeSale(admin: SupabaseClient, event: PaymentEvent) 
   // dele. Mensal, ou vitalício pago no checkout da Applyfy (que não divide): entra no saldo "A receber do admin".
   const identifier = pick(raw, ["transaction.identifier", "data.transaction.identifier", "identifier", "data.identifier"]) ?? "";
   const split = event.plan === "lifetime" && identifier.includes(".split.") && Boolean(affiliate.applyfy_account_id);
-  // No split, a comissão é sobre o preço do convite (os juros do parcelamento não entram, como no split enviado).
-  const amount = split ? PLAN_CENTS.lifetime : event.amountCents ?? PLAN_CENTS[event.plan];
+  // Cobrado pela API, a comissão é sobre o preço do convite (os juros do parcelamento não entram, como no split enviado).
+  const amount = event.plan === "lifetime" && identifier.includes(".split.") ? PLAN_CENTS.lifetime : event.amountCents ?? PLAN_CENTS[event.plan];
   const status = SALE_STATUS[event.status];
   const row = {
     affiliate_id: affiliate.id,

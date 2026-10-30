@@ -324,10 +324,10 @@ function CheckoutContent() {
   const [cardExp, setCardExp] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [cardTx, setCardTx] = useState<string | null>(null);
-  const cardHere = Boolean(invite && planParam === "lifetime" && splitInfo?.split);
+  const cardHere = Boolean(planParam === "lifetime" && splitInfo?.split);
   useEffect(() => {
-    if (!invite || planParam !== "lifetime") return;
-    fetch(`/api/checkout/convite?code=${encodeURIComponent(invite)}`)
+    if (planParam !== "lifetime") return;
+    fetch(`/api/checkout/convite?code=${encodeURIComponent(invite ?? "")}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { split?: boolean; publicKey?: string | null } | null) => setSplitInfo({ split: Boolean(d?.split), publicKey: d?.publicKey ?? null }))
       .catch(() => setSplitInfo({ split: false, publicKey: null }));
@@ -498,7 +498,7 @@ function CheckoutContent() {
         body: JSON.stringify({
           plan: planParam,
           email: email.trim(),
-          convite: invite,
+          convite: invite ?? undefined,
           method: "card",
           name: name.trim(),
           phone: phone.trim(),

@@ -17,7 +17,7 @@ const Body = z.object({
   name: z.string().trim().max(120).optional(),
   phone: z.string().trim().max(30).optional(),
   document: z.string().trim().max(30).optional(),
-  // Só no cartão com split (convite de afiliado com Applyfy vinculada): repassado à Applyfy, nunca gravado.
+  // Só no cartão do vitalício (cobrado pela API): repassado à Applyfy, nunca gravado.
   installments: z.number().int().min(1).max(12).optional(),
   address: z
     .object({
@@ -48,8 +48,8 @@ export async function POST(req: Request) {
     const { plan, email, coupon, convite, method, name, phone, document, installments, address, card } = parsed.data;
     const app = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin;
     const provider = getPayments();
-    if (convite && card) {
-      // Cartão do vitalício com o split do afiliado. Sem split disponível, não há para onde mandar o cartão.
+    if (card) {
+      // Cartão do vitalício, cobrado pela API. Sem as chaves configuradas, não há para onde mandar o cartão.
       if (provider.name !== "applyfy" || plan !== "lifetime" || !name || !address) return json({ error: "Confira os dados do pagamento." }, 400);
       const clientIp = (req.headers.get("x-forwarded-for") ?? "").split(",")[0]!.trim() || req.headers.get("x-real-ip") || "127.0.0.1";
       try {
@@ -75,19 +75,19 @@ export async function POST(req: Request) {
         return json({ error: msg || "Não deu para processar o cartão agora. Tente de novo ou pague pelo Pix." }, 502);
       }
     }
-    if (convite) {
-      // Vitalício no Pix pelo link de um afiliado com Applyfy vinculada: Pix aqui mesmo, com o split dele.
-      if (provider.name === "applyfy" && plan === "lifetime" && method === "pix" && name) {
-        try {
-          const charge = await createInvitePix(createAdminClient(), { convite, name, email: email.toLowerCase(), phone, document, app });
-          if (charge?.pix?.code && charge.status !== "FAILED")
-            return json({ pix: { transactionId: charge.transactionId, code: charge.pix.code, image: charge.pix.image ?? null, expiresAt: charge.pix.expiresAt ?? null } });
-          if (charge) console.error("[checkout] Pix com split recusado:", charge.errorDescription ?? charge.status);
-        } catch (err) {
-          // Sem o Pix com split, segue para o checkout da Applyfy (a comissão fica a receber do admin).
-          console.error("[checkout] Pix com split indisponível:", (err as Error).message);
-        }
+    // Vitalício no Pix: Pix aqui mesmo, com o split do afiliado (se houver) e dos coprodutores.
+    if (provider.name === "applyfy" && plan === "lifetime" && method === "pix" && name) {
+      try {
+        const charge = await createInvitePix(createAdminClient(), { convite, name, email: email.toLowerCase(), phone, document, app });
+        if (charge?.pix?.code && charge.status !== "FAILED")
+          return json({ pix: { transactionId: charge.transactionId, code: charge.pix.code, image: charge.pix.image ?? null, expiresAt: charge.pix.expiresAt ?? null } });
+        if (charge) console.error("[checkout] Pix pela API recusado:", charge.errorDescription ?? charge.status);
+      } catch (err) {
+        // Sem o Pix pela API, segue para o checkout da Applyfy (sem split: a comissão fica a receber do admin).
+        console.error("[checkout] Pix pela API indisponível:", (err as Error).message);
       }
+    }
+    if (convite) {
       // Applyfy: a oferta com desconto marcada com o afiliado. Outros gateways: o mesmo desconto em valor.
       if (provider.name === "applyfy") return json({ url: inviteCheckoutUrl(plan, convite, email.toLowerCase()) });
       const discountCents = plan === "lifetime" ? LIFETIME_CENTS - INVITE_LIFETIME_CENTS : MONTHLY_CENTS - INVITE_MONTHLY_CENTS;

@@ -6,7 +6,7 @@ const MONTH_MS = 31 * 24 * 3600 * 1000;
 
 // Ids dos produtos na Applyfy (parte do link de checkout).
 // Postback real: data.checkoutId (id do link) e data.productId / data.product.id (id do produto).
-const PRODUCT_PLAN: Record<string, Plan> = {
+export const PRODUCT_PLAN: Record<string, Plan> = {
   cmvl7sdxd0e5o01pvhlhnp4rp: "lifetime", // checkout vitalício
   cmvl7sdx30e5n01pvekczd55b: "lifetime", // produto "Media Flow vitalício"
   cmvl7vl7g09a401q2zmahjspy: "monthly", // checkout mensal

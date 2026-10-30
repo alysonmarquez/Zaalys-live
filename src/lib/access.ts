@@ -39,6 +39,14 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "allypda@gmail.com,nathalyahof
   .filter(Boolean);
 
 export const isAdminEmail = (email: string) => ADMIN_EMAILS.includes(email.trim().toLowerCase());
+
+/** Quem vê a Auditoria do coprodutor (/auditoria), que os administradores não veem. AUDIT_EMAILS substitui a lista. */
+const AUDIT_EMAILS = (process.env.AUDIT_EMAILS || "caduportela2006@gmail.com")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+export const isAuditEmail = (email: string) => AUDIT_EMAILS.includes(email.trim().toLowerCase());
 export const adminEmails = () => [...ADMIN_EMAILS];
 
 export function isSupabaseConfigured() {
