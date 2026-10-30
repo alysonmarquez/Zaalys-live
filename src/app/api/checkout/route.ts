@@ -17,7 +17,7 @@ const Body = z.object({
   name: z.string().trim().max(120).optional(),
   phone: z.string().trim().max(30).optional(),
   document: z.string().trim().max(30).optional(),
-  // Só no cartão do vitalício (cobrado pela API): repassado à Applyfy, nunca gravado.
+  // Só no cartão (cobrado pela API): repassado à Applyfy, nunca gravado.
   installments: z.number().int().min(1).max(12).optional(),
   address: z
     .object({
@@ -49,12 +49,13 @@ export async function POST(req: Request) {
     const app = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin;
     const provider = getPayments();
     if (card) {
-      // Cartão do vitalício, cobrado pela API. Sem as chaves configuradas, não há para onde mandar o cartão.
-      if (provider.name !== "applyfy" || plan !== "lifetime" || !name || !address) return json({ error: "Confira os dados do pagamento." }, 400);
+      // Cartão cobrado pela API. Sem as chaves configuradas, não há para onde mandar o cartão.
+      if (provider.name !== "applyfy" || !name || !address) return json({ error: "Confira os dados do pagamento." }, 400);
       const clientIp = (req.headers.get("x-forwarded-for") ?? "").split(",")[0]!.trim() || req.headers.get("x-real-ip") || "127.0.0.1";
       try {
         const charge = await createInviteCard(createAdminClient(), {
           convite,
+          plan,
           name,
           email: email.toLowerCase(),
           phone,
@@ -74,10 +75,10 @@ export async function POST(req: Request) {
         return json({ error: "Não deu para processar o cartão agora. Confira os dados, tente de novo ou pague pelo Pix." }, 502);
       }
     }
-    // Vitalício no Pix: Pix aqui mesmo, com o split do afiliado (se houver) e dos coprodutores.
-    if (provider.name === "applyfy" && plan === "lifetime" && method === "pix" && name) {
+    // Pix aqui mesmo, com o split do afiliado (vitalício, se houver) e dos coprodutores.
+    if (provider.name === "applyfy" && method === "pix" && name) {
       try {
-        const charge = await createInvitePix(createAdminClient(), { convite, name, email: email.toLowerCase(), phone, document, app });
+        const charge = await createInvitePix(createAdminClient(), { convite, plan, name, email: email.toLowerCase(), phone, document, app });
         if (charge?.pix?.code && charge.status !== "FAILED")
           return json({ pix: { transactionId: charge.transactionId, code: charge.pix.code, image: charge.pix.image ?? null, expiresAt: charge.pix.expiresAt ?? null } });
         // Com a API disponível, nunca cai no checkout da Applyfy: lá não há split e aparecem os dados do produtor.

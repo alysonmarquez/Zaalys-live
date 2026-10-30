@@ -1,27 +1,31 @@
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { producerKeys, receiveCard, receivePix, type CardCharge, type PixCharge } from "@/lib/applyfy-api";
-import { INVITE_LIFETIME_CENTS, LIFETIME_CENTS, installmentQuote } from "@/lib/pricing";
+import { INVITE_LIFETIME_CENTS, INVITE_MONTHLY_CENTS, LIFETIME_CENTS, MONTHLY_CENTS, installmentQuote } from "@/lib/pricing";
 import { DEFAULT_COMMISSION_PCT, refFromInvite, refMark } from "@/lib/referrals";
 
 // Vitalício: o Pix e o cartão são sempre cobrados aqui, pela API da Applyfy (checkout transparente). Com link de afiliado
 // de conta Applyfy vinculada, a comissão (porcentagem definida pelo admin, sobre o preço do convite) cai direto na conta
 // dele pelo split; sem conta vinculada, fica a receber do admin. O identificador leva a marca do afiliado e ".split.":
 // é por ele que o webhook sabe que a cobrança passou pela API. Os coprodutores entram no split em todos os casos.
+// Mensal: cada mês é uma cobrança avulsa (a assinatura da API não tem split), marcada com ".mensal.". O afiliado não entra
+// no split do mensal: a comissão fica a receber do admin. A renovação é por link (src/app/api/cron/renovacao).
 
 export const SPLIT_TAG = ".split.";
+export const MONTHLY_TAG = ".mensal.";
+type Plan = "monthly" | "lifetime";
 
 const reais = (cents: number) => Math.round(cents) / 100;
 
-type Split = { ref: string | null; priceCents: number; producerId: string | null; splitCents: number };
+type Split = { plan: Plan; ref: string | null; priceCents: number; producerId: string | null; splitCents: number };
 
 /** Dados da cobrança pela API; null só sem as chaves da MediaFlowMZ configuradas (aí vai para o checkout hospedado). */
-export async function inviteSplit(admin: SupabaseClient, convite: string | null | undefined, buyerEmail?: string): Promise<Split | null> {
+export async function inviteSplit(admin: SupabaseClient, convite: string | null | undefined, buyerEmail?: string, plan: Plan = "lifetime"): Promise<Split | null> {
   if (!producerKeys()) return null;
-  if (!convite) return { ref: null, priceCents: LIFETIME_CENTS, producerId: null, splitCents: 0 };
+  if (!convite) return { plan, ref: null, priceCents: plan === "monthly" ? MONTHLY_CENTS : LIFETIME_CENTS, producerId: null, splitCents: 0 };
   const ref = refFromInvite(convite) || null;
-  const noAffiliate = { ref, priceCents: INVITE_LIFETIME_CENTS, producerId: null, splitCents: 0 };
-  if (!ref) return noAffiliate;
+  const noAffiliate = { plan, ref, priceCents: plan === "monthly" ? INVITE_MONTHLY_CENTS : INVITE_LIFETIME_CENTS, producerId: null, splitCents: 0 };
+  if (!ref || plan === "monthly") return noAffiliate;
   const { data: affiliate, error } = await admin
     .from("profiles")
     .select("email, commission_pct, applyfy_account_id")
@@ -66,8 +70,12 @@ function splitsFor(split: Split) {
 function common(split: Split, app: string) {
   const token = (process.env.APPLYFY_WEBHOOK_TOKEN ?? "").trim();
   return {
-    identifier: `${split.ref ? refMark(split.ref) : "venda"}${SPLIT_TAG}${randomUUID()}`,
-    products: [{ id: "mediaflowmz-vitalicio", name: "MediaFlowMZ · Acesso Vitalício", quantity: 1, price: reais(split.priceCents) }],
+    identifier: `${split.ref ? refMark(split.ref) : "venda"}${SPLIT_TAG}${split.plan === "monthly" ? MONTHLY_TAG.slice(1) : ""}${randomUUID()}`,
+    products: [
+      split.plan === "monthly"
+        ? { id: "mediaflowmz-mensal", name: "MediaFlowMZ · Acesso Mensal (30 dias)", quantity: 1, price: reais(split.priceCents) }
+        : { id: "mediaflowmz-vitalicio", name: "MediaFlowMZ · Acesso Vitalício", quantity: 1, price: reais(split.priceCents) },
+    ],
     splits: splitsFor(split),
     metadata: { provider: "MediaFlowMZ", orderId: split.ref ? refMark(split.ref) : "venda" },
     callbackUrl: token ? `${app}/api/webhooks/payment?token=${encodeURIComponent(token)}` : undefined,
@@ -76,9 +84,9 @@ function common(split: Split, app: string) {
 
 export async function createInvitePix(
   admin: SupabaseClient,
-  input: { convite?: string | null; name: string; email: string; phone?: string; document?: string; app: string },
+  input: { convite?: string | null; plan?: Plan; name: string; email: string; phone?: string; document?: string; app: string },
 ): Promise<PixCharge | null> {
-  const split = await inviteSplit(admin, input.convite, input.email);
+  const split = await inviteSplit(admin, input.convite, input.email, input.plan);
   if (!split) return null;
   return receivePix(producerKeys()!, {
     ...common(split, input.app),
@@ -89,6 +97,7 @@ export async function createInvitePix(
 
 export type CardInput = {
   convite?: string | null;
+  plan?: Plan;
   name: string;
   email: string;
   phone?: string;
@@ -101,10 +110,10 @@ export type CardInput = {
 };
 
 export async function createInviteCard(admin: SupabaseClient, input: CardInput): Promise<CardCharge | null> {
-  const split = await inviteSplit(admin, input.convite, input.email);
+  const split = await inviteSplit(admin, input.convite, input.email, input.plan);
   if (!split) return null;
   // Juros do parcelamento (os mesmos da tela) entram como taxa extra; o split é só sobre o preço.
-  const q = installmentQuote(split.priceCents, Math.min(12, Math.max(1, input.installments)));
+  const q = installmentQuote(split.priceCents, split.plan === "monthly" ? 1 : Math.min(12, Math.max(1, input.installments)));
   return receiveCard(producerKeys()!, {
     ...common(split, input.app),
     amount: reais(q.totalCents),

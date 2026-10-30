@@ -118,7 +118,8 @@ export const getAccess = cache(async (): Promise<Access | null> => {
     const current = subs.filter((s) => s.plan === "lifetime" || (s.expires_at && Date.parse(s.expires_at) > now));
     // Só a aprovação de afiliado da Nat (aba Afiliados) libera o Estúdio de LIVE; acesso liberado em Usuários, não.
     approved = current.some((s) => s.gateway === "manual" && String(s.gateway_ref).startsWith("aprovacao:"));
-    const valid = current.find((s) => s.plan === "lifetime") ?? current[0];
+    const latest = [...current].sort((a, b) => Date.parse(b.expires_at ?? "") - Date.parse(a.expires_at ?? ""))[0];
+    const valid = current.find((s) => s.plan === "lifetime") ?? latest;
     // Passa a ligar à conta o que só estava no e-mail (grava só quando precisa).
     const stray = subs.filter((s) => s.user_id !== user.id).map((s) => s.id);
     if (stray.length) await admin.from("subscriptions").update({ user_id: user.id }).in("id", stray);

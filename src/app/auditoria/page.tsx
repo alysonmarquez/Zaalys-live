@@ -50,9 +50,9 @@ export default async function AuditoriaPage() {
     const identifier = pick(raw, ["transaction.identifier", "data.transaction.identifier", "identifier", "data.identifier"]) ?? "";
     const api = identifier.includes(".split.");
     const sale = (sales ?? []).find((s) => s.gateway_ref === ref);
-    const mensal = Object.entries(PRODUCT_PLAN).some(([id, p]) => p === "monthly" && text.includes(id));
+    const mensal = identifier.includes(".mensal.") || Object.entries(PRODUCT_PLAN).some(([id, p]) => p === "monthly" && text.includes(id));
     // Pela API o coprodutor vai no split, sobre o preço total (sem os juros do parcelamento).
-    const base = identifier.startsWith("mfz_") ? INVITE_LIFETIME_CENTS : LIFETIME_CENTS;
+    const base = mensal ? Number(e.amount_cents ?? 0) : identifier.startsWith("mfz_") ? INVITE_LIFETIME_CENTS : LIFETIME_CENTS;
     const parteCents = api && copro && situacao === "Paga" ? Math.floor((base * copro.pct) / 100) : null;
     return [
       {

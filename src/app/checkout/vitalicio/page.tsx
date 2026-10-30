@@ -215,7 +215,7 @@ const LIFETIME_FEATURES = [
 const MONTHLY_FEATURES = [
   "Todas as ferramentas, Raio-X e Assistente de Live incluídos",
   "Acesso durante o período pago",
-  "Renovação mensal",
+  "Renovação por link a cada mês, sem cobrança automática",
 ];
 
 function SplitPriceDisplay({
@@ -324,14 +324,13 @@ function CheckoutContent() {
   const [cardExp, setCardExp] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [cardTx, setCardTx] = useState<string | null>(null);
-  const cardHere = Boolean(planParam === "lifetime" && splitInfo?.split);
+  const cardHere = Boolean(splitInfo?.split);
   useEffect(() => {
-    if (planParam !== "lifetime") return;
     fetch(`/api/checkout/convite?code=${encodeURIComponent(invite ?? "")}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { split?: boolean; publicKey?: string | null } | null) => setSplitInfo({ split: Boolean(d?.split), publicKey: d?.publicKey ?? null }))
       .catch(() => setSplitInfo({ split: false, publicKey: null }));
-  }, [invite, planParam]);
+  }, [invite]);
   // Pix ou cartão cobrados aqui: o webhook da Applyfy confirma o pagamento e a página avança sozinha.
   const waitingTx = pixCharge?.transactionId ?? cardTx;
   useEffect(() => {
@@ -590,7 +589,7 @@ function CheckoutContent() {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {planParam === "monthly"
-                        ? "Assinatura mensal"
+                        ? "Plano mensal"
                         : "Pagamento único do acesso base"}
                     </p>
                   </div>
@@ -1113,12 +1112,8 @@ function CheckoutContent() {
                 {planParam === "monthly" && (
                   <>
                     <p className="text-sm text-muted-foreground">
-                      Assinatura mensal de {formatBRL(amountCents)}.
-                      {method === "pix"
-                        ? " A cada mês você recebe uma nova cobrança Pix."
-                        : " O cartão será cobrado mensalmente."}{" "}
-                      Cancele quando quiser por e-mail, sem multa: o acesso segue até o fim do mês
-                      já pago.
+                      {formatBRL(amountCents)} por 30 dias de acesso, sem cobrança automática. Perto do vencimento, enviamos
+                      por e-mail o link para renovar. Se não renovar, o acesso termina no fim do período pago, sem multa.
                     </p>
                     <p className="rounded-xl border border-border/60 px-4 py-3 text-sm">
                       O vitalício custa {formatBRL(invite ? INVITE_LIFETIME_CENTS : LIFETIME_CENTS)} uma vez, menos que dois meses deste

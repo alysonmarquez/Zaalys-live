@@ -1,4 +1,5 @@
 import { json } from "@/lib/http";
+import { AVULSO_PREFIX } from "@/lib/payments/applyfy";
 import { createAdminClient } from "@/lib/supabase/server";
 
 // Pix gerado no checkout: a página pergunta aqui se o webhook da Applyfy já confirmou o pagamento.
@@ -10,7 +11,7 @@ export async function GET(req: Request) {
       .from("subscriptions")
       .select("status")
       .eq("gateway", "applyfy")
-      .eq("gateway_ref", tx)
+      .in("gateway_ref", [tx, `${AVULSO_PREFIX}${tx}`])
       .maybeSingle();
     return json({ paid: data?.status === "active" });
   } catch {

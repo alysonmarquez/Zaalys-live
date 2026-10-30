@@ -6,6 +6,8 @@ const MONTH_MS = 31 * 24 * 3600 * 1000;
 
 // Ids dos produtos na Applyfy (parte do link de checkout).
 // Postback real: data.checkoutId (id do link) e data.productId / data.product.id (id do produto).
+export const AVULSO_PREFIX = "avulso:";
+
 export const PRODUCT_PLAN: Record<string, Plan> = {
   cmvl7sdxd0e5o01pvhlhnp4rp: "lifetime", // checkout vitalício
   cmvl7sdx30e5n01pvekczd55b: "lifetime", // produto "Media Flow vitalício"
@@ -95,7 +97,11 @@ export class ApplyfyProvider implements PaymentProvider {
     const kind = (pick(raw, ["event", "type"]) ?? "").toLowerCase();
     if (/^session/.test(kind) || !email || !ref) return null;
 
+    // Mensal cobrado pela API (src/lib/invite-pix.ts): cada mês é uma cobrança avulsa, marcada no identificador e na referência.
+    const identifier = pick(raw, ["transaction.identifier", "data.transaction.identifier", "identifier", "data.identifier"]) ?? "";
+    const avulso = identifier.includes(".mensal.");
     const isMonthly =
+      avulso ||
       productIds.some((id) => PRODUCT_PLAN[id] === "monthly") ||
       ["95RF27C", "POL2VBI"].includes(offer.toUpperCase()) ||
       /assinatura|subscription|recorr/.test(statusRaw);
@@ -114,7 +120,7 @@ export class ApplyfyProvider implements PaymentProvider {
     return {
       gateway: this.name,
       // Na assinatura, todas as cobranças precisam cair na mesma linha: usa a assinatura, se vier.
-      ref: (isMonthly && pick(raw, ["data.subscriptionId", "data.subscription.id", "subscription.id", "subscription_id"])) || ref,
+      ref: avulso ? `${AVULSO_PREFIX}${ref}` : (isMonthly && pick(raw, ["data.subscriptionId", "data.subscription.id", "subscription.id", "subscription_id"])) || ref,
       email,
       plan,
       status,

@@ -1,6 +1,7 @@
 import { getPayments } from "@/lib/payments";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendPurchaseAccess } from "@/lib/invite-email";
+import { AVULSO_PREFIX } from "@/lib/payments/applyfy";
 import { attributeSale, rememberCheckout } from "@/lib/referrals";
 
 // Recebe notificações do gateway e libera/revoga o acesso.
@@ -57,6 +58,24 @@ export async function POST(req: Request) {
     .eq("gateway", event.gateway)
     .eq("gateway_ref", event.ref)
     .maybeSingle();
+
+  // Mensal cobrado mês a mês: soma 30 dias ao que ainda resta, e aviso repetido não soma de novo.
+  if (event.ref.startsWith(AVULSO_PREFIX) && event.status === "active") {
+    if (before?.status === "active") delete row.expires_at;
+    else {
+      const { data: last } = await admin
+        .from("subscriptions")
+        .select("expires_at")
+        .eq("email", event.email)
+        .eq("status", "active")
+        .eq("plan", "monthly")
+        .order("expires_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const base = Math.max(Date.now(), last?.expires_at ? Date.parse(last.expires_at) : 0);
+      row.expires_at = new Date(base + 30 * 86400_000).toISOString();
+    }
+  }
 
   const { error } = await admin.from("subscriptions").upsert(row, { onConflict: "gateway,gateway_ref" });
   if (error) {
