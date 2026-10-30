@@ -2,7 +2,8 @@ import { z } from "zod";
 import { fail, json, unauthorized } from "@/lib/http";
 import { adminCtx, manualRef, validSub, type SubRow } from "@/lib/admin";
 import { DEFAULT_COMMISSION_PCT } from "@/lib/referrals";
-import { sendInvite } from "@/lib/invite-email";
+import { isEmailConfigured } from "@/lib/email";
+import { createAccessLink, sendAccessLink } from "@/lib/invite-email";
 
 // Usuários e acessos (Admin). GET: contas + quem pagou e ainda não criou conta, com o acesso de cada um.
 // POST: conceder acesso (vitalício ou mensal por N dias, com convite por e-mail opcional), revogar acesso
@@ -124,10 +125,24 @@ const Body = z.discriminatedUnion("action", [
     dias: z.number().int().min(1).max(3650).optional(),
     convidar: z.boolean().optional(),
   }),
+  // Só um link novo para criar a senha, sem mexer no acesso.
+  z.object({ action: z.literal("link"), email: Email }),
   z.object({ action: z.literal("revogar"), email: Email }),
   z.object({ action: z.literal("liberar-aparelho"), userId: z.string().uuid() }),
   z.object({ action: z.literal("comissao"), userId: z.string().uuid(), pct: z.number().min(0).max(100).nullable() }),
 ]);
+
+/**
+ * Quem nunca entrou recebe um link de uso único para criar a senha: vai por e-mail se houver Resend e volta sempre para
+ * o admin mandar por WhatsApp (os e-mails do Supabase são limitados a poucos por hora).
+ */
+async function convite(db: NonNullable<Awaited<ReturnType<typeof adminCtx>>>["db"], email: string, userId: string | undefined, origin: string) {
+  const { data: authUser } = userId ? await db.auth.admin.getUserById(userId) : { data: null };
+  if (userId && authUser?.user?.last_sign_in_at) return { convite: "ja-tem-conta" as const, link: `${origin}/login?mode=signin&email=${encodeURIComponent(email)}` };
+  const link = await createAccessLink(db, email, origin, Boolean(userId));
+  if (!link) return { convite: "falhou" as const, link: null };
+  return { convite: isEmailConfigured() && (await sendAccessLink(email, link)) ? ("enviado" as const) : ("link" as const), link };
+}
 
 export async function POST(req: Request) {
   const c = await adminCtx();
@@ -137,6 +152,12 @@ export async function POST(req: Request) {
     if (!parsed.success) return json({ error: "Dados inválidos: confira o e-mail e os campos." }, 400);
     const body = parsed.data;
     const nowIso = new Date().toISOString();
+    const origin = (process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin).replace(/\/$/, "");
+
+    if (body.action === "link") {
+      const { data: profile } = await c.db.from("profiles").select("id").eq("email", body.email).maybeSingle();
+      return json({ ok: true, ...(await convite(c.db, body.email, profile?.id, origin)) });
+    }
 
     if (body.action === "conceder") {
       const { data: profile } = await c.db.from("profiles").select("id").eq("email", body.email).maybeSingle();
@@ -167,17 +188,8 @@ export async function POST(req: Request) {
       );
       if (error) return fail(error);
 
-      let convite: "enviado" | "ja-tem-conta" | "falhou" | null = null;
-      if (body.convidar) {
-        // Conta que nunca entrou (ex.: convite antigo com link quebrado) recebe um link novo para criar a senha.
-        const { data: authUser } = profile ? await c.db.auth.admin.getUserById(profile.id) : { data: null };
-        if (profile && authUser?.user?.last_sign_in_at) convite = "ja-tem-conta";
-        else {
-          const origin = (process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin).replace(/\/$/, "");
-          convite = (await sendInvite(c.db, body.email, origin, Boolean(profile))) ? "enviado" : "falhou";
-        }
-      }
-      return json({ ok: true, expira: expires, convite });
+      // Conta que nunca entrou (ex.: convite antigo com link quebrado) recebe um link novo para criar a senha.
+      return json({ ok: true, expira: expires, ...(body.convidar ? await convite(c.db, body.email, profile?.id, origin) : { convite: null, link: null }) });
     }
 
     if (body.action === "revogar") {

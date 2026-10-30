@@ -270,7 +270,7 @@ function Usuarios() {
 
   return (
     <div className="space-y-5">
-      <ConcederAcesso salvando={salvando === "novo"} onSubmit={(body, ok) => agir("novo", body, ok)} />
+      <ConcederAcesso onDone={carregar} />
 
       <section className={CARD}>
         <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
@@ -467,55 +467,114 @@ function ComissaoInput({ valor, padrao, busy, onSave }: { valor: number | null; 
   );
 }
 
-function ConcederAcesso({ salvando, onSubmit }: { salvando: boolean; onSubmit: (body: Record<string, unknown>, ok: string) => void }) {
-  const [email, setEmail] = useState("");
+type Liberado = { email: string; situacao: string; link: string | null };
+
+function ConcederAcesso({ onDone }: { onDone: () => void }) {
+  const [emails, setEmails] = useState("");
   const [plano, setPlano] = useState<"lifetime" | "monthly">("lifetime");
   const [dias, setDias] = useState("30");
-  const [convidar, setConvidar] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [lista, setLista] = useState<Liberado[]>([]);
+  const [copiado, setCopiado] = useState<string | null>(null);
+
+  // Um e-mail por vez: cada um tem o próprio resultado e o próprio link.
+  async function rodar(base: Record<string, unknown>) {
+    const todos = [...new Set(emails.toLowerCase().split(/[\s,;]+/).filter((e) => e.includes("@")))];
+    if (!todos.length) return setErro("Cole ao menos um e-mail.");
+    setSalvando(true);
+    setErro(null);
+    setLista([]);
+    for (const email of todos) {
+      try {
+        const d = await api<{ convite?: string | null; link?: string | null }>("/api/admin/usuarios", { ...base, email });
+        const situacao =
+          d.convite === "enviado" ? "E-mail enviado" : d.convite === "ja-tem-conta" ? "Já tem conta: link para entrar" : d.convite === "falhou" ? "Acesso ok, mas o link falhou" : "Mande o link";
+        setLista((l) => [...l, { email, situacao, link: d.link ?? null }]);
+      } catch (e) {
+        setLista((l) => [...l, { email, situacao: (e as Error).message, link: null }]);
+      }
+    }
+    setSalvando(false);
+    onDone();
+  }
+
+  function copiar(chave: string, texto: string) {
+    navigator.clipboard?.writeText(texto).catch(() => {});
+    setCopiado(chave);
+    setTimeout(() => setCopiado(null), 1800);
+  }
+
+  const comLink = lista.filter((l) => l.link);
   return (
     <section className={CARD}>
       <h2 className="flex items-center gap-2 font-display text-lg font-bold">
         <UserPlus size={18} className="text-primary" /> Liberar acesso
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Dá acesso sem pagamento a um e-mail. Se a pessoa ainda não tem conta, o acesso fica esperando e entra quando ela se cadastrar com esse e-mail (ou pelo convite).
+        Cole um ou vários e-mails (um por linha). O acesso é liberado sem pagamento e cada pessoa ganha um link de uso único para criar a senha: copie e mande no WhatsApp.
       </p>
       <form
-        className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end"
+        className="mt-4 space-y-3"
         onSubmit={(e) => {
           e.preventDefault();
           const d = Math.max(1, Math.min(3650, Number(dias) || 30));
-          onSubmit(
-            { action: "conceder", email: email.trim(), plano, ...(plano === "monthly" ? { dias: d } : {}), convidar },
-            `${email.trim()}: ${plano === "lifetime" ? "acesso vitalício liberado" : `${d} dias de acesso mensal`}.`,
-          );
+          void rodar({ action: "conceder", plano, ...(plano === "monthly" ? { dias: d } : {}), convidar: true });
         }}
       >
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted-foreground">E-mail</span>
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="pessoa@email.com" className={INPUT} />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted-foreground">Plano</span>
-          <select value={plano} onChange={(e) => setPlano(e.target.value as "lifetime" | "monthly")} className={cn(INPUT, "cursor-pointer sm:w-36")}>
-            <option value="lifetime">Vitalício</option>
-            <option value="monthly">Mensal</option>
-          </select>
-        </label>
-        {plano === "monthly" && (
+        <textarea
+          required
+          rows={4}
+          value={emails}
+          onChange={(e) => setEmails(e.target.value)}
+          placeholder={"pessoa@email.com\noutra@email.com"}
+          aria-label="E-mails"
+          className={cn(INPUT, "h-auto py-2")}
+        />
+        <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground">Dias</span>
-            <input inputMode="numeric" value={dias} onChange={(e) => setDias(e.target.value.replace(/\D/g, ""))} className={cn(INPUT, "sm:w-20")} />
+            <span className="text-xs font-medium text-muted-foreground">Plano</span>
+            <select value={plano} onChange={(e) => setPlano(e.target.value as "lifetime" | "monthly")} className={cn(INPUT, "w-36 cursor-pointer")}>
+              <option value="lifetime">Vitalício</option>
+              <option value="monthly">Mensal</option>
+            </select>
           </label>
-        )}
-        <button type="submit" disabled={salvando} className={cn(BTN, "h-10 bg-primary px-4 text-primary-foreground")}>
-          <UserPlus size={14} /> {salvando ? "Liberando…" : "Liberar"}
-        </button>
-        <label className="flex items-center gap-2 text-xs text-muted-foreground sm:col-span-4">
-          <input type="checkbox" checked={convidar} onChange={(e) => setConvidar(e.target.checked)} className="accent-primary" />
-          <MailPlus size={14} /> Enviar convite por e-mail para criar a senha (se ainda não tiver conta)
-        </label>
+          {plano === "monthly" && (
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Dias</span>
+              <input inputMode="numeric" value={dias} onChange={(e) => setDias(e.target.value.replace(/\D/g, ""))} className={cn(INPUT, "w-20")} />
+            </label>
+          )}
+          <button type="submit" disabled={salvando} className={cn(BTN, "h-10 bg-primary px-4 text-primary-foreground")}>
+            <UserPlus size={14} /> {salvando ? "Liberando…" : "Liberar e gerar links"}
+          </button>
+          <button type="button" disabled={salvando} onClick={() => void rodar({ action: "link" })} className={cn(BTN, "h-10 border border-border px-4 hover:bg-muted")}>
+            <MailPlus size={14} /> Só gerar link novo
+          </button>
+        </div>
       </form>
+      {erro && <p className="mt-3 text-sm text-destructive">{erro}</p>}
+      {lista.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {comLink.length > 1 && (
+            <button type="button" onClick={() => copiar("todos", comLink.map((l) => `${l.email}: ${l.link}`).join("\n"))} className={cn(BTN, "border border-border hover:bg-muted")}>
+              {copiado === "todos" ? "Copiados" : `Copiar os ${comLink.length} links`}
+            </button>
+          )}
+          {lista.map((l) => (
+            <div key={l.email} className="flex flex-wrap items-center gap-2 rounded-xl bg-muted/40 p-2.5 text-xs">
+              <span className="min-w-0 flex-1 break-all font-semibold">{l.email}</span>
+              <span className="text-muted-foreground">{l.situacao}</span>
+              {l.link && (
+                <button type="button" onClick={() => copiar(l.email, l.link!)} className={cn(BTN, "h-8 border border-border hover:bg-muted")}>
+                  {copiado === l.email ? "Copiado" : "Copiar link"}
+                </button>
+              )}
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground">Cada link funciona uma vez e vence. Se vencer, use “Só gerar link novo”: o acesso liberado continua.</p>
+        </div>
+      )}
     </section>
   );
 }
