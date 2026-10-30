@@ -7,12 +7,10 @@ import { RaisedButton, cn } from "@/components/brand";
 import { ZAALYS_PRODUCTS, formatBRL, type ZaalysProduct } from "@/lib/zaalys-data";
 import { CATALOGO_ORIGINAL } from "@/lib/catalogo-original";
 import { useIsDemo } from "@/lib/use-demo";
-import { useShowcase, useStudioAccess } from "@/lib/showcase";
+import { useAdmin, useStudioAccess } from "@/lib/showcase";
 import { useExtension } from "@/lib/use-extension";
-import { LiveTools } from "./live-tools";
+import { LiveConfig } from "./live-config";
 import { AiClips } from "./ai-clips";
-import { LivePerformance } from "./live-performance";
-import { DesempenhoEditor } from "@/components/desempenho-editor";
 import {
   ChromeStoreDemo,
   ZipInstallDemo,
@@ -188,10 +186,9 @@ const readPreps = (): Prep[] => {
 
 export default function LivePage() {
   const demo = useIsDemo();
-  // Os dados de exemplo são só da conta de demonstração.
-  const showcase = useShowcase();
-  // Estúdio de LIVE, "Editar desempenho", comentários automáticos e OBS: a Nat e os afiliados aprovados por ela.
+  // Estúdio de LIVE, "Editar desempenho", comentários automáticos e OBS: aqui só para os afiliados aprovados; o admin tem no Admin.
   const studio = useStudioAccess();
+  const admin = useAdmin();
   const [preps, setPreps] = useState<Prep[]>([]);
   const [current, setCurrent] = useState<Prep | null>(null);
   const [query, setQuery] = useState("");
@@ -201,13 +198,13 @@ export default function LivePage() {
   const [device, setDevice] = useState<Device>("desktop");
   const [detected, setDetected] = useState<Device>("desktop");
   const [videoSource, setVideoSource] = useState<"mine" | "flow">("flow");
-  const [showTools, setShowTools] = useState(false);
-  const [showObs, setShowObs] = useState(false);
-  const [showPerf, setShowPerf] = useState(false);
-  // "Editar desempenho" do Painel de LIVE do Estúdio chega aqui com ?desempenho=1.
+  const [openPerf, setOpenPerf] = useState(false);
+  // "Editar desempenho" do Painel de LIVE do Estúdio chega aqui com ?desempenho=1 (o admin segue para o Admin).
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has("desempenho")) setShowPerf(true);
-  }, []);
+    if (!new URLSearchParams(window.location.search).has("desempenho")) return;
+    if (admin) window.location.replace("/painel/admin?aba=live&desempenho=1");
+    else setOpenPerf(true);
+  }, [admin]);
   const [copied, setCopied] = useState(false);
 
   // Conta real: preparações vêm do banco (valem em qualquer aparelho). Demonstração: navegador.
@@ -332,77 +329,7 @@ export default function LivePage() {
     </>
   );
 
-  const extras = (
-    <div className="space-y-2">
-      {studio && (
-      <>
-      <div>
-        <Link
-          href="/estudio/console"
-          target="_blank"
-          className="text-sm font-semibold text-muted-foreground underline underline-offset-4 hover:text-foreground"
-        >
-          Abrir o Estúdio de LIVE
-        </Link>
-        <p className="text-xs text-muted-foreground">Console e desempenho das transmissões, numa janela própria.</p>
-      </div>
-      <div>
-        <button
-          type="button"
-          onClick={() => setShowPerf((v) => !v)}
-          className="text-sm font-semibold text-muted-foreground underline underline-offset-4 hover:text-foreground cursor-pointer"
-        >
-          {showPerf ? "Fechar desempenho da LIVE" : "Editar desempenho da LIVE"}
-        </button>
-        <p className="text-xs text-muted-foreground">
-          {showcase ? "Pedidos caindo em tempo real no Painel de LIVE do Estúdio, no padrão do TikTok." : "Ajuste os números da sua LIVE no Estúdio de LIVE."}
-        </p>
-        {showPerf && (
-          <div className="space-y-3 pt-3">
-            <LivePerformance />
-            <DesempenhoEditor initial="hoje" />
-          </div>
-        )}
-      </div>
-      </>
-      )}
-      {studio && (
-      <>
-      <button
-        type="button"
-        onClick={() => setShowTools((v) => !v)}
-        className="text-sm font-semibold text-muted-foreground underline underline-offset-4 hover:text-foreground cursor-pointer"
-      >
-        {showTools ? "Fechar comentários automáticos" : "Editar comentários automáticos"}
-      </button>
-      <div>
-        <button
-          type="button"
-          onClick={() => setShowObs((v) => !v)}
-          className="text-sm font-semibold text-muted-foreground underline underline-offset-4 hover:text-foreground cursor-pointer"
-        >
-          Transmitir pelo OBS ou LIVE Studio
-        </button>
-        <p className="text-xs text-muted-foreground">
-          Só se o seu computador não transmite pelo navegador. Por esse caminho a extensão não comenta, não fixa o produto e não
-          bloqueia ninguém.
-        </p>
-        {showObs && (
-          <p className="mt-2 rounded-2xl bg-muted/50 p-3 text-xs text-muted-foreground">
-            No OBS, adicione os clipes como fonte de mídia em loop e use a chave de transmissão do LIVE Studio. Comentários,
-            produto fixado e respostas ficam por sua conta.
-          </p>
-        )}
-      </div>
-      {showTools && (
-        <div className="pt-4">
-          <LiveTools />
-        </div>
-      )}
-      </>
-      )}
-    </div>
-  );
+  const extras = studio && !admin ? <LiveConfig openPerf={openPerf} /> : null;
 
   // Etapa 1: produto
   if (!current) {

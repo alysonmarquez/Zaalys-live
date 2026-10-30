@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, Crown, KeyRound, MailPlus, RefreshCw, Search, ShieldOff, Smartphone, UserPlus } from "lucide-react";
 import { cn } from "@/components/brand";
 import { AfiliadosAdmin } from "@/components/afiliados-admin";
+import { LiveConfig } from "@/app/painel/live/live-config";
 import { formatBRL } from "@/lib/zaalys-data";
 
 // Admin: visão geral com os números reais do sistema, usuários e acessos por plano, pagamentos da Applyfy,
@@ -15,13 +16,14 @@ const INPUT =
   "h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-ring/30";
 const BTN = "inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold disabled:opacity-50 cursor-pointer";
 
-type Aba = "geral" | "usuarios" | "pagamentos" | "afiliados" | "saques" | "suporte";
+type Aba = "geral" | "usuarios" | "pagamentos" | "afiliados" | "saques" | "live" | "suporte";
 const ABAS: { v: Aba; l: string }[] = [
   { v: "geral", l: "Visão geral" },
   { v: "usuarios", l: "Usuários e acessos" },
   { v: "pagamentos", l: "Pagamentos" },
   { v: "afiliados", l: "Afiliados" },
   { v: "saques", l: "Saques" },
+  { v: "live", l: "LIVE" },
   { v: "suporte", l: "Suporte" },
 ];
 
@@ -79,6 +81,7 @@ function Admin() {
       {aba === "pagamentos" && <Pagamentos />}
       {aba === "afiliados" && <AfiliadosAdmin />}
       {aba === "saques" && <Saques />}
+      {aba === "live" && <LiveConfig openPerf={params.has("desempenho")} />}
       {aba === "suporte" && <Suporte />}
     </div>
   );
