@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
+import { isJunkEmail } from "@/lib/junk-email";
 import { appUrl, confirmEmail, isSupabaseServerConfigured } from "@/lib/radar";
 
 const Email = z.string().trim().toLowerCase().email().max(254);
@@ -25,8 +26,11 @@ export async function POST(req: Request) {
   const email = parsed.data;
 
   // Anti-robô: campo armadilha preenchido ou envio em menos de 2 s após carregar a página.
+  // Também: e-mail de domínio reservado para testes, envio sem o horário da página (só robôs) ou vindo de outro site.
   const renderedAt = Number(fields.t || 0);
-  if (fields.website || (renderedAt && Date.now() - renderedAt < 2000)) {
+  const origin = req.headers.get("origin") || req.headers.get("referer") || "";
+  const foreign = origin !== "" && !/^https:\/\/([a-z0-9-]+\.)*(mediaflowmz\.com|vercel\.app)(\/|$)|^http:\/\/localhost(:\d+)?(\/|$)/i.test(origin);
+  if (fields.website || !renderedAt || Date.now() - renderedAt < 2000 || isJunkEmail(email) || foreign) {
     return NextResponse.json({ ok: true, outcome: "sent" });
   }
 

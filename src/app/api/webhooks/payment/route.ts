@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { sendPurchaseAccess } from "@/lib/invite-email";
 import { AVULSO_PREFIX } from "@/lib/payments/applyfy";
 import { attributeSale, rememberCheckout } from "@/lib/referrals";
+import { isJunkEmail } from "@/lib/junk-email";
 
 // Recebe notificações do gateway e libera/revoga o acesso.
 export async function POST(req: Request) {
@@ -15,6 +16,8 @@ export async function POST(req: Request) {
     console.error("[webhook] rejeitado:", (err as Error).message);
     return new Response("invalid", { status: 401 });
   }
+  // Comprador de teste (ex.: @example.invalid): não grava nada nem manda e-mail.
+  if (event && isJunkEmail(event.email)) return new Response("ignored", { status: 200 });
   const admin = createAdminClient();
   // Checkout aberto por link de afiliado: guarda a sessão para atribuir a venda depois.
   try {

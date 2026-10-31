@@ -42,37 +42,26 @@ export class ApplyfyProvider implements PaymentProvider {
   }
 
   /**
-   * Confere o token do webhook. O lugar em que a Applyfy envia o token ainda não foi confirmado: aceita o
-   * endereço (?token=), os cabeçalhos mais comuns e os campos do corpo, e registra onde ele veio (sem o valor).
+   * Confere o token do webhook. A Applyfy chama o endereço cadastrado com ?token=; só ele vale. Cabeçalhos e corpo
+   * deixaram de valer em 31/10, quando o token foi usado de fora em cabeçalho para mandar milhares de vendas falsas.
    */
-  private verify(req: Request, raw: unknown) {
+  private verify(req: Request) {
     const expected = (process.env.APPLYFY_WEBHOOK_TOKEN ?? "").trim();
     if (!expected) throw new Error("APPLYFY_WEBHOOK_TOKEN não configurado (vazio nesta implantação: crie a variável e faça Redeploy)");
     if (expected.length < 8) throw new Error(`APPLYFY_WEBHOOK_TOKEN curto demais (${expected.length} caracteres, mínimo 8)`);
-    const bearer = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-    const candidates: [string, string | undefined | null][] = [
-      ["query", new URL(req.url).searchParams.get("token")],
-      ["x-webhook-token", req.headers.get("x-webhook-token")],
-      ["x-applyfy-token", req.headers.get("x-applyfy-token")],
-      ["x-token", req.headers.get("x-token")],
-      ["authorization", bearer],
-      ["body", pick(raw, ["token", "webhook_token", "webhookToken", "data.token"])],
-    ];
     const a = Buffer.from(expected);
-    const match = candidates.find(([, got]) => {
-      const b = Buffer.from((got ?? "").trim());
-      return b.length === a.length && timingSafeEqual(a, b);
-    });
+    const b = Buffer.from((new URL(req.url).searchParams.get("token") ?? "").trim());
+    const match: [string] | null = b.length === a.length && timingSafeEqual(a, b) ? ["query"] : null;
     if (!match) {
-      const sizes = candidates.filter(([, got]) => (got ?? "").trim()).map(([where, got]) => `${where}: ${(got ?? "").trim().length}`);
-      throw new Error(`Token do webhook inválido (recebido ${sizes.join(", ") || "nenhum"}; esperado ${a.length} caracteres)`);
+      const extra = ["x-webhook-token", "x-applyfy-token", "x-token", "authorization"].filter((h) => req.headers.get(h));
+      throw new Error(`Token do webhook inválido (no endereço: ${b.length} caracteres; esperado ${a.length}${extra.length ? `; cabeçalhos ignorados: ${extra.join(", ")}` : ""})`);
     }
     console.info(`[applyfy] token conferido (${match[0]})`);
   }
 
   async handleWebhook(req: Request): Promise<PaymentEvent | null> {
     const raw = (await req.json().catch(() => null)) as unknown;
-    this.verify(req, raw);
+    this.verify(req);
     if (!raw) return null;
     // Registra o formato recebido para ajustar o mapeamento, se precisar (sem o token, que também pode vir no corpo).
     const safe = JSON.stringify(raw, (k, v) => (/^(token|webhook_?token)$/i.test(k) ? "[oculto]" : v));
